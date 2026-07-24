@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace NexusLabs.Eve;
 
@@ -25,6 +24,7 @@ internal static class EveStreamFollower
         int initialStartIndex,
         IReadOnlyDictionary<string, string>? headers,
         EveStreamReconnectPolicy? configuredPolicy,
+        int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy);
@@ -42,6 +42,7 @@ internal static class EveStreamFollower
                 startIndex,
                 headers,
                 policy,
+                maximumEventBytes,
                 cancellationToken).GetAsyncEnumerator(cancellationToken);
             while (true)
             {
@@ -98,6 +99,7 @@ internal static class EveStreamFollower
         int startIndex,
         IReadOnlyDictionary<string, string>? headers,
         ResolvedReconnectPolicy policy,
+        int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using HttpResponseMessage response = await OpenStreamAsync(
@@ -108,12 +110,7 @@ internal static class EveStreamFollower
             policy,
             cancellationToken);
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using StreamReader reader = new(
-            stream,
-            Encoding.UTF8,
-            false,
-            4096,
-            true);
+        using EveNdjsonLineReader reader = new(stream, maximumEventBytes);
 
         while (true)
         {
@@ -299,8 +296,8 @@ internal static class EveStreamFollower
     }
 
     private static bool IsStreamDisconnect(Exception exception) =>
-        exception is HttpRequestException or IOException
-        || exception is OperationCanceledException;
+        exception is not EveProtocolException
+        && (exception is HttpRequestException or IOException or OperationCanceledException);
 
     private static async Task<bool> DelayAsync(
         EveClient client,

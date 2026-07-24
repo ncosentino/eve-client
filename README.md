@@ -141,6 +141,9 @@ EveMessageResponse response = await session.SendAsync(
     cancellationToken);
 ```
 
+Set `EveClientOptions.MaxStreamEventBytes` to opt into a client-wide UTF-8 byte limit
+for one NDJSON event. The default remains unbounded to preserve upstream compatibility.
+
 ## Continuations and cancellation
 
 Persist `session.State` after consuming a stream, then resume it later:
