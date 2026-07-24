@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: documentation
-      url: https://eve-client.pages.dev/
+      url: https://www.devleader.ca/projects/eve-client
     permissions:
       contents: read
 
