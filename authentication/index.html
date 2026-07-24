@@ -1133,10 +1133,26 @@ stream reconnects.</p>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nf">GetProtectionBypassAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">),</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">};</span>
 </code></pre></div>
+<p>Use <code>RequestHeadersProvider</code> when a dynamic header belongs to one HTTP operation.
+The immutable context exposes a stable <code>EveRequestKind</code>, so bootstrap credentials can
+be limited to session creation without relying on provider invocation order:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">RequestHeadersProvider</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">ValueTask</span><span class="p">.</span><span class="n">FromResult</span><span class="o">&lt;</span><span class="n">IReadOnlyDictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;&gt;</span><span class="p">(</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveRequestKind</span><span class="p">.</span><span class="n">CreateSession</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">            </span><span class="o">?</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">            </span><span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">                </span><span class="na">[&quot;x-session-bootstrap&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">encryptedBootstrapCredential</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">            </span><span class="p">:</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span><span class="p">());</span>
+</code></pre></div>
+<p>Both dynamic providers are resolved before every applicable HTTP call, including
+stream reconnects. <code>EveRequestKind</code> may gain members as the upstream client adds
+routes, so exhaustive switches should include a default arm.</p>
 <p>Header precedence is:</p>
 <ol>
 <li>Static client headers.</li>
 <li>Dynamic client headers.</li>
+<li>Request-aware dynamic headers.</li>
 <li>Per-turn headers.</li>
 <li>Authentication headers.</li>
 </ol>

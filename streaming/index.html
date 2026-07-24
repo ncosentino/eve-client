@@ -688,6 +688,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bound-individual-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bound individual events
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1116,6 +1127,17 @@ from being abandoned.</p>
 </code></pre></div>
 <p>Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.</p>
+<h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
+<p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
+behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">};</span>
+</code></pre></div>
+<p>The limit applies to one raw NDJSON line before trimming, excluding its line ending.
+An oversized event throws <code>EveProtocolException</code> without including the rejected
+payload, and the deterministic protocol failure is not retried.</p>
 
 
 
