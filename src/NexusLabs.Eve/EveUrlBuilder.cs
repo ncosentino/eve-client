@@ -13,7 +13,8 @@ internal static class EveUrlBuilder
             ? routePath
             : $"/{routePath}";
 
-        if (Uri.TryCreate(host, UriKind.Absolute, out Uri? absoluteHost))
+        if (IsAbsoluteUrl(host)
+            && Uri.TryCreate(host, UriKind.Absolute, out Uri? absoluteHost))
         {
             UriBuilder builder = new(absoluteHost)
             {
@@ -39,6 +40,31 @@ internal static class EveUrlBuilder
             : value.EndsWith("/", StringComparison.Ordinal)
                 ? value[..^1]
                 : value;
+
+    private static bool IsAbsoluteUrl(string value)
+    {
+        if (value.Length == 0 || !char.IsAsciiLetter(value[0]))
+        {
+            return false;
+        }
+
+        for (int index = 1; index < value.Length; index++)
+        {
+            char character = value[index];
+            if (character == ':')
+            {
+                return true;
+            }
+
+            if (!char.IsAsciiLetterOrDigit(character)
+                && character is not '+' and not '-' and not '.')
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
 
     private static List<KeyValuePair<string, string>> ParseQuery(string query)
     {
