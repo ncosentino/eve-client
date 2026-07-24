@@ -204,7 +204,6 @@ public sealed class EveClientTests
         await Assert.That(secondHandler.Calls[0].Headers["x-session-bootstrap"])
             .IsEqualTo("bootstrap_2");
     }
-
     [Test]
     public async Task Constructor_RejectsNonPositiveStreamEventLimit()
     {
