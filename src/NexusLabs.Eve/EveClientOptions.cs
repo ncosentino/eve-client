@@ -49,6 +49,20 @@ public sealed record EveClientOptions
     }
 
     /// <summary>
+    /// Gets an optional dynamic header provider that receives the request operation before
+    /// every request.
+    /// Values override <see cref="HeadersProvider"/> but not per-request or authentication headers.
+    /// </summary>
+    public Func<
+        EveHttpRequestContext,
+        CancellationToken,
+        ValueTask<IReadOnlyDictionary<string, string>>>? RequestHeadersProvider
+    {
+        get;
+        init;
+    }
+
+    /// <summary>
     /// Gets whether a normally completed session retains its continuation state for another turn.
     /// Failed sessions still reset.
     /// </summary>

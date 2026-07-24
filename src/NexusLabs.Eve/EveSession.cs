@@ -116,6 +116,7 @@ public sealed class EveSession
         content.Headers.ContentType = new("application/json");
         using HttpRequestMessage request = await _client.CreateRequestAsync(
             HttpMethod.Post,
+            EveRequestKind.CancelTurn,
             EveRoutes.CancelTurn(sessionId),
             null,
             content,
@@ -211,6 +212,9 @@ public sealed class EveSession
         string route = state.SessionId is null
             ? EveRoutes.CreateSession
             : EveRoutes.ContinueSession(state.SessionId);
+        EveRequestKind requestKind = state.SessionId is null
+            ? EveRequestKind.CreateSession
+            : EveRequestKind.ContinueSession;
         bool mustDeliver = request.InputResponses is { Count: > 0 };
         int attempts = mustDeliver ? _client.DeliveryRetryAttempts : 1;
 
@@ -220,6 +224,7 @@ public sealed class EveSession
             content.Headers.ContentType = new("application/json");
             using HttpRequestMessage httpRequest = await _client.CreateRequestAsync(
                 HttpMethod.Post,
+                requestKind,
                 route,
                 request.Headers,
                 content,

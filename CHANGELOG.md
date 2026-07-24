@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Request-aware dynamic headers through `RequestHeadersProvider` and `EveRequestKind`.
+
 ## [0.1.0-alpha.1] - 2026-07-23
 
 ### Added
