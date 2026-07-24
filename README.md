@@ -1,7 +1,7 @@
 # NexusLabs.Eve
 
 [![CI](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml/badge.svg)](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml)
-[![Documentation](https://github.com/ncosentino/eve-client/actions/workflows/docs.yml/badge.svg)](https://ncosentino.github.io/eve-client/)
+[![Documentation](https://github.com/ncosentino/eve-client/actions/workflows/docs.yml/badge.svg)](https://eve-client.pages.dev/)
 [![NuGet](https://img.shields.io/nuget/vpre/NexusLabs.Eve.svg)](https://www.nuget.org/packages/NexusLabs.Eve)
 
 <!-- genesis:description:start -->
@@ -34,7 +34,7 @@ The package has no runtime dependencies outside .NET. Supply a caller-managed
 directly because it derives from `HttpMessageInvoker`.
 
 Full documentation is published at
-[ncosentino.github.io/eve-client](https://ncosentino.github.io/eve-client/).
+[eve-client.pages.dev](https://eve-client.pages.dev/).
 
 ## Quick start
 

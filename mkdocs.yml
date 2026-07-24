@@ -1,5 +1,5 @@
 site_name: NexusLabs.Eve
-site_url: https://ncosentino.github.io/eve-client/
+site_url: https://eve-client.pages.dev/
 site_description: A C# client for the Vercel eve HTTP API.
 site_author: Nick Cosentino
 repo_url: https://github.com/ncosentino/eve-client

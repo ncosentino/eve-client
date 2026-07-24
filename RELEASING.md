@@ -30,6 +30,20 @@ credential through `NuGet/login@v1`.
 No NuGet secret is required. `GITHUB_TOKEN` publishes to GitHub Packages and
 creates the GitHub Release.
 
+## One-time Cloudflare setup
+
+1. Create a Cloudflare Pages project named `eve-client`.
+2. Create a scoped API token that can deploy to that Pages project.
+3. Add repository or `documentation` environment secrets:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+4. Add the repository variable `DOCS_DEPLOY_ENABLED` with value `true`.
+5. Optionally attach a custom domain to the Pages project.
+
+After successful `Documentation` or `Release` workflows,
+`docs-cloudflare.yml` mirrors the complete persisted `gh-pages` site to
+Cloudflare. GitHub Pages remains the fallback and archive source.
+
 ## Prepare a release
 
 ```powershell

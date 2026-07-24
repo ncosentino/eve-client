@@ -1,0 +1,72 @@
+name: Documentation Deployment
+
+on:
+  workflow_run:
+    workflows:
+      - Documentation
+      - Release
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: eve-client-docs-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: >-
+      vars.DOCS_DEPLOY_ENABLED == 'true' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event != 'pull_request'
+        )
+      )
+    runs-on: ubuntu-latest
+    environment:
+      name: documentation
+      url: https://eve-client.pages.dev/
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: source
+
+      - name: Checkout merged documentation
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages-mirror
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Trim Cloudflare mirror
+        run: >-
+          python source/scripts/trim_cloudflare_mirror.py
+          gh-pages-mirror
+          --keep 20
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy gh-pages-mirror
+            --project-name=eve-client
+            --branch=main
+            --commit-dirty=true

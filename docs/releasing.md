@@ -14,6 +14,7 @@ Releases require:
 - A matching NBGV version, semantic version tag, and changelog section.
 - The protected `release` GitHub environment.
 - A NuGet.org trusted publishing policy for `release.yml`.
+- Cloudflare Pages secrets and `DOCS_DEPLOY_ENABLED=true` for canonical docs.
 
 The release script validates and tags locally but never pushes `main`:
 
