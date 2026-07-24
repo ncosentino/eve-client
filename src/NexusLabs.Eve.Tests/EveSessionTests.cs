@@ -108,6 +108,111 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task RequestHeadersProvider_ScopesBootstrapHeaderByRequestKind(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"status":"ready","workflowId":"workflow_1"}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {
+              "kind": "eve-agent-info",
+              "version": 1,
+              "mode": "production",
+              "agent": { "name": "Agent", "model": { "id": "model_1" } },
+              "capabilities": { "devRoutes": false }
+            }
+            """)));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse(
+            "session_1",
+            "eve:continued")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        List<EveRequestKind> requestKinds = [];
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                HeadersProvider = _ =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["x-infrastructure"] = "present",
+                        }),
+                RequestHeadersProvider = (context, _) =>
+                {
+                    requestKinds.Add(context.Kind);
+                    Dictionary<string, string> headers = new()
+                    {
+                        ["x-request-kind"] = context.Kind.ToString(),
+                    };
+                    if (context.Kind == EveRequestKind.CreateSession)
+                    {
+                        headers["x-session-bootstrap"] = "bootstrap";
+                    }
+
+                    return ValueTask.FromResult<IReadOnlyDictionary<string, string>>(headers);
+                },
+            });
+
+        await client.GetHealthAsync(cancellationToken);
+        await client.GetInfoAsync(cancellationToken);
+        EveSession session = client.CreateSession();
+        EveMessageResponse firstResponse = await session.SendAsync(
+            new EveSendTurnRequest
+            {
+                Message = EveMessageContent.FromText("First"),
+                Headers = new Dictionary<string, string>
+                {
+                    ["x-turn"] = "first",
+                },
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken);
+        await firstResponse.GetOutcomeAsync(cancellationToken);
+        await session.SendAsync("Second", cancellationToken);
+        await session.CancelAsync(cancellationToken);
+
+        EveRequestKind[] expectedKinds =
+        [
+            EveRequestKind.Health,
+            EveRequestKind.Info,
+            EveRequestKind.CreateSession,
+            EveRequestKind.StreamSession,
+            EveRequestKind.StreamSession,
+            EveRequestKind.ContinueSession,
+            EveRequestKind.CancelTurn,
+        ];
+        await Assert.That(requestKinds.Count).IsEqualTo(expectedKinds.Length);
+        await Assert.That(handler.Calls.Count).IsEqualTo(expectedKinds.Length);
+        for (int index = 0; index < expectedKinds.Length; index++)
+        {
+            await Assert.That(requestKinds[index]).IsEqualTo(expectedKinds[index]);
+            await Assert.That(handler.Calls[index].Headers["x-infrastructure"])
+                .IsEqualTo("present");
+            await Assert.That(handler.Calls[index].Headers["x-request-kind"])
+                .IsEqualTo(expectedKinds[index].ToString());
+            await Assert.That(handler.Calls[index].Headers.ContainsKey("x-session-bootstrap"))
+                .IsEqualTo(index == 2);
+        }
+
+        await Assert.That(handler.Calls[2].Headers["x-turn"]).IsEqualTo("first");
+        await Assert.That(handler.Calls[3].Headers["x-turn"]).IsEqualTo("first");
+        await Assert.That(handler.Calls[4].Headers["x-turn"]).IsEqualTo("first");
+        await Assert.That(handler.Calls[5].Headers.ContainsKey("x-turn")).IsFalse();
+    }
+
+    [Test]
     public async Task CompletedSession_ResetsByDefault(CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();

@@ -109,6 +109,12 @@ public sealed class EveClientTests
                     ["x-scope"] = "client",
                     ["authorization"] = "Bearer stale",
                 },
+                RequestHeadersProvider = static (_, _) =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["authorization"] = "request-aware",
+                        }),
                 Authentication = new EveBearerAuthentication("fresh"),
             });
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
@@ -121,6 +127,82 @@ public sealed class EveClientTests
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
         await Assert.That(handler.Calls[0].Headers["x-scope"]).IsEqualTo("request");
         await Assert.That(handler.Calls[0].Headers["authorization"]).IsEqualTo("Bearer fresh");
+    }
+
+    [Test]
+    public async Task RequestHeadersProvider_ReceivesRawKindAndPreservesPrecedence(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveHttpRequestContext? observedContext = null;
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                HeadersProvider = _ =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["x-layer"] = "legacy",
+                            ["x-provider-layer"] = "legacy",
+                        }),
+                RequestHeadersProvider = (context, _) =>
+                {
+                    observedContext = context;
+                    return ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["x-layer"] = "request-aware",
+                            ["x-provider-layer"] = "request-aware",
+                        });
+                },
+            });
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("x-layer", "request");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            cancellationToken);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+        await Assert.That(handler.Calls[0].Headers["x-layer"]).IsEqualTo("request");
+        await Assert.That(handler.Calls[0].Headers["x-provider-layer"])
+            .IsEqualTo("request-aware");
+        await Assert.That(observedContext?.Kind).IsEqualTo(EveRequestKind.Raw);
+    }
+
+    [Test]
+    public async Task RequestHeadersProvider_IsIndependentAcrossConcurrentClients(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler firstHandler = new();
+        using RecordingHttpMessageHandler secondHandler = new();
+        using HttpMessageInvoker firstTransport = new(firstHandler, false);
+        using HttpMessageInvoker secondTransport = new(secondHandler, false);
+        firstHandler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","continuationToken":"eve:first"}""")));
+        secondHandler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_2","continuationToken":"eve:second"}""")));
+        EveClient firstClient = CreateBootstrapClient(firstTransport, "bootstrap_1");
+        EveClient secondClient = CreateBootstrapClient(secondTransport, "bootstrap_2");
+
+        Task<EveMessageResponse> firstSend = firstClient
+            .CreateSession()
+            .SendAsync("First", cancellationToken);
+        Task<EveMessageResponse> secondSend = secondClient
+            .CreateSession()
+            .SendAsync("Second", cancellationToken);
+        await Task.WhenAll(firstSend, secondSend);
+
+        await Assert.That(firstHandler.Calls[0].Headers["x-session-bootstrap"])
+            .IsEqualTo("bootstrap_1");
+        await Assert.That(secondHandler.Calls[0].Headers["x-session-bootstrap"])
+            .IsEqualTo("bootstrap_2");
     }
 
     [Test]
@@ -140,6 +222,23 @@ public sealed class EveClientTests
             """{"error":"Credentials are invalid."}""");
         await Assert.That(exception.ResponseHeaders["www-authenticate"][0]).IsEqualTo("Bearer");
     }
+
+    private static EveClient CreateBootstrapClient(
+        HttpMessageInvoker transport,
+        string bootstrapValue) =>
+        new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                RequestHeadersProvider = (context, _) =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        context.Kind == EveRequestKind.CreateSession
+                            ? new Dictionary<string, string>
+                            {
+                                ["x-session-bootstrap"] = bootstrapValue,
+                            }
+                            : new Dictionary<string, string>()),
+            });
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json) =>
         new(statusCode)

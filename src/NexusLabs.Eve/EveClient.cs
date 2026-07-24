@@ -58,6 +58,7 @@ public sealed class EveClient
     {
         using HttpRequestMessage request = await CreateRequestAsync(
             HttpMethod.Get,
+            EveRequestKind.Health,
             EveRoutes.Health,
             null,
             null,
@@ -111,6 +112,7 @@ public sealed class EveClient
     {
         using HttpRequestMessage request = await CreateRequestAsync(
             HttpMethod.Get,
+            EveRequestKind.Info,
             EveRoutes.Info,
             null,
             null,
@@ -151,14 +153,17 @@ public sealed class EveClient
                 nameof(request));
         }
 
+        string route = request.RequestUri.OriginalString;
         Dictionary<string, string> perRequestHeaders = request.Headers
             .ToDictionary(
                 static header => header.Key,
                 static header => string.Join(",", header.Value),
                 StringComparer.OrdinalIgnoreCase);
         request.Headers.Clear();
-        request.RequestUri = EveUrlBuilder.Create(_options.Host, request.RequestUri.OriginalString);
+        request.RequestUri = EveUrlBuilder.Create(_options.Host, route);
+        EveHttpRequestContext requestContext = new(EveRequestKind.Raw);
         IReadOnlyDictionary<string, string> headers = await ResolveHeadersAsync(
+            requestContext,
             perRequestHeaders,
             cancellationToken);
         ApplyHeaders(request, headers);
@@ -218,6 +223,7 @@ public sealed class EveClient
 
     internal async Task<HttpRequestMessage> CreateRequestAsync(
         HttpMethod method,
+        EveRequestKind requestKind,
         string route,
         IReadOnlyDictionary<string, string>? perRequestHeaders,
         HttpContent? content,
@@ -231,7 +237,9 @@ public sealed class EveClient
 
         try
         {
+            EveHttpRequestContext requestContext = new(requestKind);
             IReadOnlyDictionary<string, string> headers = await ResolveHeadersAsync(
+                requestContext,
                 perRequestHeaders,
                 cancellationToken);
             ApplyHeaders(request, headers);
@@ -287,6 +295,7 @@ public sealed class EveClient
     }
 
     private async Task<IReadOnlyDictionary<string, string>> ResolveHeadersAsync(
+        EveHttpRequestContext requestContext,
         IReadOnlyDictionary<string, string>? perRequestHeaders,
         CancellationToken cancellationToken)
     {
@@ -295,17 +304,23 @@ public sealed class EveClient
                 ? Task.FromResult<IReadOnlyDictionary<string, string>>(
                     ReadOnlyDictionary<string, string>.Empty)
                 : _options.HeadersProvider(cancellationToken).AsTask();
+        Task<IReadOnlyDictionary<string, string>> requestHeadersTask =
+            _options.RequestHeadersProvider is null
+                ? Task.FromResult<IReadOnlyDictionary<string, string>>(
+                    ReadOnlyDictionary<string, string>.Empty)
+                : _options.RequestHeadersProvider(requestContext, cancellationToken).AsTask();
         Task<IReadOnlyDictionary<string, string>> authenticationTask =
             _options.Authentication is null
                 ? Task.FromResult<IReadOnlyDictionary<string, string>>(
                     ReadOnlyDictionary<string, string>.Empty)
                 : _options.Authentication.GetHeadersAsync(cancellationToken).AsTask();
 
-        await Task.WhenAll(dynamicHeadersTask, authenticationTask);
+        await Task.WhenAll(dynamicHeadersTask, requestHeadersTask, authenticationTask);
 
         Dictionary<string, string> resolved = new(StringComparer.OrdinalIgnoreCase);
         AddHeaders(resolved, _options.Headers);
         AddHeaders(resolved, await dynamicHeadersTask);
+        AddHeaders(resolved, await requestHeadersTask);
         AddHeaders(resolved, perRequestHeaders);
         AddHeaders(resolved, await authenticationTask);
         return resolved;

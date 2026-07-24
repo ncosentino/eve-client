@@ -169,6 +169,7 @@ internal static class EveStreamFollower
                 };
             using HttpRequestMessage request = await client.CreateRequestAsync(
                 HttpMethod.Get,
+                EveRequestKind.StreamSession,
                 EveRoutes.StreamSession(sessionId),
                 headers,
                 null,
