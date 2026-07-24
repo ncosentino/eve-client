@@ -81,6 +81,59 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public Task BearerAuthentication_AppliesAuthorizationToRequestHeaders(
+        CancellationToken cancellationToken) =>
+        AssertAuthenticationHeaderPlacementAsync(
+            new EveBearerAuthentication("service-token"),
+            cancellationToken);
+
+    [Test]
+    public Task BasicAuthentication_AppliesAuthorizationToRequestHeaders(
+        CancellationToken cancellationToken) =>
+        AssertAuthenticationHeaderPlacementAsync(
+            new EveBasicAuthentication("agent-client", "password"),
+            cancellationToken);
+
+    [Test]
+    public async Task SendAsync_AppliesHeadersToCompatibleCollections(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"status":"ready","workflowId":"workflow_1"}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.completed"}""")));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["content-language"] = "en-US",
+                    ["x-client"] = "extension",
+                },
+            });
+
+        await client.GetHealthAsync(cancellationToken);
+        EveMessageResponse response = await client
+            .CreateSession()
+            .SendAsync("Place headers", cancellationToken);
+        await response.GetOutcomeAsync(cancellationToken);
+
+        RecordedHttpCall healthCall = handler.Calls[0];
+        RecordedHttpCall call = handler.Calls[1];
+        RecordedHttpCall streamCall = handler.Calls[2];
+        await Assert.That(healthCall.Headers.ContainsKey("content-language")).IsFalse();
+        await Assert.That(call.ContentHeaders["content-language"]).IsEqualTo("en-US");
+        await Assert.That(call.RequestHeaders["x-client"]).IsEqualTo("extension");
+        await Assert.That(call.ContentHeaders.ContainsKey("x-client")).IsFalse();
+        await Assert.That(streamCall.Headers.ContainsKey("content-language")).IsFalse();
+    }
+
+    [Test]
     public async Task SendAsync_ContinuesWithWaitingContinuationToken(
         CancellationToken cancellationToken)
     {
@@ -503,6 +556,32 @@ public sealed class EveSessionTests
 
         await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
             .Throws<InvalidOperationException>();
+    }
+
+    private static async Task AssertAuthenticationHeaderPlacementAsync(
+        IEveAuthentication authentication,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyDictionary<string, string> expectedHeaders =
+            await authentication.GetHeadersAsync(cancellationToken);
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Authentication = authentication,
+            });
+
+        await client.CreateSession().SendAsync("Authenticate", cancellationToken);
+
+        RecordedHttpCall call = handler.Calls[0];
+        IReadOnlyList<string> authorizationValues =
+            call.RequestHeaderValues["authorization"];
+        await Assert.That(authorizationValues.Count).IsEqualTo(1);
+        await Assert.That(authorizationValues[0]).IsEqualTo(expectedHeaders["authorization"]);
+        await Assert.That(call.ContentHeaders.ContainsKey("content-type")).IsTrue();
     }
 
     private static EveClient CreateClient(

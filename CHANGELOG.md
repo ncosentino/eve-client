@@ -12,6 +12,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Request-aware dynamic headers through `RequestHeadersProvider` and `EveRequestKind`.
 - An opt-in `MaxStreamEventBytes` limit for individual NDJSON events.
 
+### Fixed
+
+- Request-only and content-only headers are applied only to compatible .NET header collections.
+
 ## [0.1.0-alpha.1] - 2026-07-23
 
 ### Added

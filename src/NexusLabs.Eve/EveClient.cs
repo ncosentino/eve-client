@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace NexusLabs.Eve;
@@ -162,11 +163,14 @@ public sealed class EveClient
         }
 
         string route = request.RequestUri.OriginalString;
-        Dictionary<string, string> perRequestHeaders = request.Headers
-            .ToDictionary(
-                static header => header.Key,
-                static header => string.Join(",", header.Value),
-                StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> perRequestHeaders = new(StringComparer.OrdinalIgnoreCase);
+        if (request.Content is not null)
+        {
+            AddHttpHeaders(perRequestHeaders, request.Content.Headers);
+            request.Content.Headers.Clear();
+        }
+
+        AddHttpHeaders(perRequestHeaders, request.Headers);
         request.Headers.Clear();
         request.RequestUri = EveUrlBuilder.Create(_options.Host, route);
         EveHttpRequestContext requestContext = new(EveRequestKind.Raw);
@@ -351,21 +355,83 @@ public sealed class EveClient
         }
     }
 
+    private static void AddHttpHeaders(
+        IDictionary<string, string> target,
+        HttpHeaders source)
+    {
+        foreach ((string name, IEnumerable<string> values) in source)
+        {
+            target[name] = string.Join(",", values);
+        }
+    }
+
     private static void ApplyHeaders(
         HttpRequestMessage request,
         IReadOnlyDictionary<string, string> headers)
     {
         foreach ((string name, string value) in headers)
         {
-            request.Headers.Remove(name);
-            request.Content?.Headers.Remove(name);
-            if (!request.Headers.TryAddWithoutValidation(name, value)
-                && (request.Content is null
-                    || !request.Content.Headers.TryAddWithoutValidation(name, value)))
+            if (ReplaceHeaderIfSupported(request.Headers, name, value))
             {
-                throw new InvalidOperationException($"The HTTP header '{name}' could not be applied.");
+                if (request.Content is not null)
+                {
+                    RemoveHeaderIfSupported(request.Content.Headers, name, value);
+                }
+
+                continue;
             }
+
+            if (request.Content is not null
+                && ReplaceHeaderIfSupported(request.Content.Headers, name, value))
+            {
+                continue;
+            }
+
+            if (request.Content is null
+                && IsSupportedByContentHeaders(name, value))
+            {
+                continue;
+            }
+
+            throw new InvalidOperationException($"The HTTP header '{name}' could not be applied.");
         }
+    }
+
+    private static bool IsSupportedByContentHeaders(string name, string value)
+    {
+        using ByteArrayContent content = new([]);
+        return content.Headers.TryAddWithoutValidation(name, value);
+    }
+
+    private static void RemoveHeaderIfSupported(
+        HttpHeaders headers,
+        string name,
+        string value)
+    {
+        if (headers.TryAddWithoutValidation(name, value))
+        {
+            headers.Remove(name);
+        }
+    }
+
+    private static bool ReplaceHeaderIfSupported(
+        HttpHeaders headers,
+        string name,
+        string value)
+    {
+        if (!headers.TryAddWithoutValidation(name, value))
+        {
+            return false;
+        }
+
+        headers.Remove(name);
+        if (!headers.TryAddWithoutValidation(name, value))
+        {
+            throw new InvalidOperationException(
+                $"The HTTP header '{name}' could not be replaced.");
+        }
+
+        return true;
     }
 
     private static EveAgentInfo ParseAgentInfo(string body)

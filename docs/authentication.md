@@ -69,4 +69,7 @@ Header precedence is:
 4. Per-turn headers.
 5. Authentication headers.
 
+Content-specific headers are applied only to requests with content. They are
+omitted from health, info, stream, and other bodiless requests.
+
 Configure credential-bearing transports not to follow cross-origin redirects.

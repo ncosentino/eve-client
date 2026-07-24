@@ -35,6 +35,7 @@ public sealed record EveClientOptions
 
     /// <summary>
     /// Gets static headers included on every request.
+    /// Content-specific headers are omitted when a request has no content.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Headers { get; init; }
 
