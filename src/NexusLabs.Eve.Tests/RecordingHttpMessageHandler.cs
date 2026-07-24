@@ -22,24 +22,43 @@ internal sealed class RecordingHttpMessageHandler : HttpMessageHandler
         string? body = request.Content is null
             ? null
             : await request.Content.ReadAsStringAsync(cancellationToken);
-        Dictionary<string, string> headers = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> requestHeaders = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, IReadOnlyList<string>> requestHeaderValues =
+            new(StringComparer.OrdinalIgnoreCase);
         foreach ((string name, IEnumerable<string> values) in request.Headers)
         {
-            headers[name] = string.Join(",", values);
+            string[] recordedValues = values.ToArray();
+            requestHeaders[name] = string.Join(",", recordedValues);
+            requestHeaderValues[name] = recordedValues;
         }
 
+        Dictionary<string, string> contentHeaders = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, IReadOnlyList<string>> contentHeaderValues =
+            new(StringComparer.OrdinalIgnoreCase);
         if (request.Content is not null)
         {
             foreach ((string name, IEnumerable<string> values) in request.Content.Headers)
             {
-                headers[name] = string.Join(",", values);
+                string[] recordedValues = values.ToArray();
+                contentHeaders[name] = string.Join(",", recordedValues);
+                contentHeaderValues[name] = recordedValues;
             }
+        }
+
+        Dictionary<string, string> headers = new(requestHeaders, StringComparer.OrdinalIgnoreCase);
+        foreach ((string name, string value) in contentHeaders)
+        {
+            headers[name] = value;
         }
 
         RecordedHttpCall call = new(
             request.Method,
             request.RequestUri?.ToString() ?? string.Empty,
             headers,
+            requestHeaders,
+            contentHeaders,
+            requestHeaderValues,
+            contentHeaderValues,
             body);
         _calls.Add(call);
 

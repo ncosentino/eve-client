@@ -175,6 +175,43 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task SendRawAsync_PreservesContentHeaderPrecedenceAndNormalizesExtensions(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["content-language"] = "en-US",
+                    ["x-client"] = "client",
+                },
+            });
+        using HttpRequestMessage request = new(
+            HttpMethod.Post,
+            new Uri("/custom", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        request.Content.Headers.ContentLanguage.Add("fr-CA");
+        request.Content.Headers.TryAddWithoutValidation("x-client", "raw-content");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            cancellationToken);
+
+        RecordedHttpCall call = handler.Calls[0];
+        await Assert.That(call.ContentHeaders["content-language"]).IsEqualTo("fr-CA");
+        await Assert.That(call.RequestHeaders["x-client"]).IsEqualTo("raw-content");
+        await Assert.That(call.ContentHeaders.ContainsKey("x-client")).IsFalse();
+    }
+
+    [Test]
     public async Task RequestHeadersProvider_IsIndependentAcrossConcurrentClients(
         CancellationToken cancellationToken)
     {
