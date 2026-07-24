@@ -43,6 +43,7 @@ node_modules/
 .eve/
 .output/
 .nitro/
+.wrangler/
 
 # Generated API documentation
 docs/api/dev/

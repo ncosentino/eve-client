@@ -49,6 +49,7 @@ try {
     $entries = @($archive.Entries | ForEach-Object { $_.FullName })
     $requiredEntries = @(
         "README.md",
+        "eve-icon-256.png",
         "lib/net10.0/NexusLabs.Eve.dll",
         "lib/net10.0/NexusLabs.Eve.xml"
     )
@@ -89,6 +90,10 @@ try {
 
     if ($metadata.readme -cne "README.md") {
         throw "The package readme must be README.md."
+    }
+
+    if ($metadata.icon -cne "eve-icon-256.png") {
+        throw "The package icon must be eve-icon-256.png."
     }
 
     if ($metadata.repository.url -cne "https://github.com/ncosentino/eve-client.git") {

@@ -1,5 +1,12 @@
 # NexusLabs.Eve
 
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/ncosentino/eve-client/main/docs/assets/eve-brand.png"
+    alt="eve.NET logo"
+    width="320" />
+</p>
+
 [![CI](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml/badge.svg)](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml)
 [![Documentation](https://github.com/ncosentino/eve-client/actions/workflows/docs.yml/badge.svg)](https://eve-client.pages.dev/)
 [![NuGet](https://img.shields.io/nuget/vpre/NexusLabs.Eve.svg)](https://www.nuget.org/packages/NexusLabs.Eve)

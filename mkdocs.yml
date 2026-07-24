@@ -16,6 +16,8 @@ copyright: >
 theme:
   name: material
   custom_dir: docs/overrides
+  logo: assets/eve-icon.png
+  favicon: assets/eve-favicon.png
   features:
     - navigation.tabs
     - navigation.sections

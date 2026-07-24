@@ -4,8 +4,16 @@
     <Description>A C# client for the Vercel eve HTTP API.</Description>
     <PackageId>NexusLabs.Eve</PackageId>
     <PackageTitle>NexusLabs.Eve</PackageTitle>
+    <PackageIcon>eve-icon-256.png</PackageIcon>
     <PackageTags>vercel;eve;ai;agents;http-client</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\assets\eve-icon-256.png"
+          Pack="true"
+          PackagePath="\"
+          Link="eve-icon-256.png" />
+  </ItemGroup>
 
 </Project>

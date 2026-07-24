@@ -4,6 +4,8 @@ description: Use Vercel eve agents from .NET with durable sessions, streaming, c
 
 # NexusLabs.Eve
 
+![eve.NET logo](assets/eve-brand.png){ width="320" }
+
 `NexusLabs.Eve` is a .NET client for the stable HTTP protocol exposed by
 [Vercel eve](https://github.com/vercel/eve).
 
