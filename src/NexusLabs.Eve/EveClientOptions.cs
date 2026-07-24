@@ -64,6 +64,12 @@ public sealed record EveClientOptions
     }
 
     /// <summary>
+    /// Gets the optional maximum UTF-8 byte count for one NDJSON stream event, excluding its
+    /// line ending. A <see langword="null"/> value preserves the upstream unbounded behavior.
+    /// </summary>
+    public int? MaxStreamEventBytes { get; init; }
+
+    /// <summary>
     /// Gets whether a normally completed session retains its continuation state for another turn.
     /// Failed sessions still reset.
     /// </summary>

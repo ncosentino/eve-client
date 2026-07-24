@@ -145,7 +145,7 @@ public sealed class EveSessionTests
         handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse(
             "session_1",
             "eve:second")));
-        EveSession session = CreateClient(transport).CreateSession();
+        EveSession session = CreateClient(transport, 1024).CreateSession();
 
         EveMessageResponse first = await session.SendAsync("First", cancellationToken);
         await first.GetOutcomeAsync(cancellationToken);
@@ -366,6 +366,52 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task OversizedTurnEvent_FailsWithoutReconnect(
+        CancellationToken cancellationToken)
+    {
+        const string payloadMarker = "payload-must-not-be-echoed";
+        const string oversizedEvent = "{\"type\":\"message.appended\",\"data\":{\"messageDelta\":\""
+            + payloadMarker
+            + "\"}}";
+        int maximumEventBytes = Encoding.UTF8.GetByteCount(oversizedEvent) - 1;
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(oversizedEvent)));
+        EveSession session = CreateClient(transport, maximumEventBytes).CreateSession();
+        EveMessageResponse response = await session.SendAsync(
+            new EveSendTurnRequest
+            {
+                Message = EveMessageContent.FromText("Bound this event"),
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken);
+        EveProtocolException? exception = null;
+
+        try
+        {
+            await response.GetOutcomeAsync(cancellationToken);
+        }
+        catch (EveProtocolException caught)
+        {
+            exception = caught;
+        }
+
+        await Assert.That(exception).IsNotNull();
+        string message = exception?.Message ?? string.Empty;
+        await Assert.That(message.Contains(
+            maximumEventBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            StringComparison.Ordinal)).IsTrue();
+        await Assert.That(message.Contains(payloadMarker, StringComparison.Ordinal)).IsFalse();
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            ContinuationToken = "eve:accepted",
+            SessionId = "session_1",
+        });
+    }
+
+    [Test]
     public async Task DisabledReconnect_UsesOneStreamConnectionAndPreservesPartialCursor(
         CancellationToken cancellationToken)
     {
@@ -538,10 +584,15 @@ public sealed class EveSessionTests
         await Assert.That(call.ContentHeaders.ContainsKey("content-type")).IsTrue();
     }
 
-    private static EveClient CreateClient(HttpMessageInvoker transport) =>
+    private static EveClient CreateClient(
+        HttpMessageInvoker transport,
+        int? maximumEventBytes = null) =>
         new(
             transport,
-            new EveClientOptions("https://agent.example.com"));
+            new EveClientOptions("https://agent.example.com")
+            {
+                MaxStreamEventBytes = maximumEventBytes,
+            });
 
     private static EveStreamReconnectPolicy ZeroDelayReconnectPolicy() =>
         new()
