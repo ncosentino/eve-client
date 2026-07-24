@@ -206,6 +206,20 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task Constructor_RejectsNonPositiveStreamEventLimit()
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+
+        await Assert.That(() => new EveClient(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                MaxStreamEventBytes = 0,
+            })).Throws<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
     public async Task EveClientException_UsesStructuredErrorAndPreservesHeaders()
     {
         EveClientException exception = new(

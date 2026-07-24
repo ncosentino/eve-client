@@ -10,6 +10,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Added
 
 - Request-aware dynamic headers through `RequestHeadersProvider` and `EveRequestKind`.
+- An opt-in `MaxStreamEventBytes` limit for individual NDJSON events.
 
 ## [0.1.0-alpha.1] - 2026-07-23
 

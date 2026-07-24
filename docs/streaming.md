@@ -45,3 +45,19 @@ await foreach (EveStreamEvent streamEvent in
 
 Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.
+
+## Bound individual events
+
+The upstream TypeScript client does not limit NDJSON event size. Preserve that
+behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:
+
+```csharp
+EveClientOptions options = new("https://agent.example.com")
+{
+    MaxStreamEventBytes = 1_048_576,
+};
+```
+
+The limit applies to one raw NDJSON line before trimming, excluding its line ending.
+An oversized event throws `EveProtocolException` without including the rejected
+payload, and the deterministic protocol failure is not retried.

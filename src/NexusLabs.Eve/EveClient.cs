@@ -41,6 +41,14 @@ public sealed class EveClient
                 "Delivery retry delay cannot be negative.");
         }
 
+        if (options.MaxStreamEventBytes is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                options.MaxStreamEventBytes,
+                "The maximum stream event size must be greater than zero.");
+        }
+
         ArgumentNullException.ThrowIfNull(options.TimeProvider);
         _transport = transport;
         _options = options;
@@ -216,6 +224,8 @@ public sealed class EveClient
     internal int DeliveryRetryAttempts => _options.DeliveryRetryAttempts;
 
     internal TimeSpan DeliveryRetryDelay => _options.DeliveryRetryDelay;
+
+    internal int? MaxStreamEventBytes => _options.MaxStreamEventBytes;
 
     internal TimeProvider TimeProvider => _options.TimeProvider;
 

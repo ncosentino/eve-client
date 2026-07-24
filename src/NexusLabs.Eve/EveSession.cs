@@ -329,6 +329,7 @@ public sealed class EveSession
                 startIndex,
                 request.Headers,
                 request.StreamReconnectPolicy,
+                _client.MaxStreamEventBytes,
                 linkedSource.Token))
             {
                 events.Add(streamEvent);
@@ -366,6 +367,7 @@ public sealed class EveSession
                 startIndex,
                 null,
                 reconnectPolicy,
+                _client.MaxStreamEventBytes,
                 cancellationToken))
             {
                 events.Add(streamEvent);
