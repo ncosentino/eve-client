@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-07-24
+
 ### Added
 
 - Request-aware dynamic headers through `RequestHeadersProvider` and `EveRequestKind`.
@@ -29,5 +31,6 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.1...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.2...HEAD
+[0.1.0-alpha.2]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/ncosentino/eve-client/releases/tag/v0.1.0-alpha.1
