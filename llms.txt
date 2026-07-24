@@ -1,0 +1,26 @@
+# NexusLabs.Eve
+
+> A C# client for the Vercel eve HTTP API.
+
+Author: Nick Cosentino (https://www.devleader.ca).
+
+- [Home](https://www.devleader.ca/projects/eve-client/) -- Use Vercel eve agents from .NET with durable sessions, streaming, cancellation, and structured output.
+- [Getting Started](https://www.devleader.ca/projects/eve-client/getting-started/) -- Install NexusLabs.Eve, create a client, and send the first turn to an eve agent.
+- [Authentication](https://www.devleader.ca/projects/eve-client/authentication/) -- Configure bearer, HTTP Basic, Vercel OIDC, and dynamic request headers.
+- [Sessions](https://www.devleader.ca/projects/eve-client/sessions/) -- Persist and resume eve continuation tokens, session IDs, and stream cursors.
+- [Streaming](https://www.devleader.ca/projects/eve-client/streaming/) -- Consume live eve events and configure automatic cursor-based reconnection.
+- [Attachments and Input](https://www.devleader.ca/projects/eve-client/attachments-and-input/) -- Send files and answer human-input requests emitted by an eve agent.
+- [Structured Output](https://www.devleader.ca/projects/eve-client/structured-output/) -- Request JSON Schema output and deserialize result.completed with source-generated metadata.
+- [Errors](https://www.devleader.ca/projects/eve-client/errors/) -- Distinguish HTTP failures, malformed protocol responses, and terminal eve session failures.
+- [Compatibility](https://www.devleader.ca/projects/eve-client/compatibility/) -- Understand supported eve versions, stream protocol compatibility, and preview-version policy.
+
+## API Reference
+
+- [Overview](https://www.devleader.ca/projects/eve-client/api/) -- Browse development, stable, and versioned NexusLabs.Eve API documentation.
+- [Development](https://www.devleader.ca/projects/eve-client/api/dev/) -- A C# client for the Vercel eve HTTP API.
+- [Stable](https://www.devleader.ca/projects/eve-client/api/stable/) -- Browse the latest stable NexusLabs.Eve API reference.
+
+## Operations
+
+- [Building](https://www.devleader.ca/projects/eve-client/building/) -- Build, test, package, and validate NexusLabs.Eve from source.
+- [Releasing](https://www.devleader.ca/projects/eve-client/releasing/) -- Prepare and publish a trusted NexusLabs.Eve release.
