@@ -1156,6 +1156,8 @@ routes, so exhaustive switches should include a default arm.</p>
 <li>Per-turn headers.</li>
 <li>Authentication headers.</li>
 </ol>
+<p>Content-specific headers are applied only to requests with content. They are
+omitted from health, info, stream, and other bodiless requests.</p>
 <p>Configure credential-bearing transports not to follow cross-origin redirects.</p>
 
 
