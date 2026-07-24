@@ -37,6 +37,10 @@ and structured-output support without using the TypeScript SDK.
 - Preview event and inspection payloads retain raw `JsonElement` values so unknown
   upstream fields and event types remain available.
 - The compatibility baseline is Vercel eve 0.27.3, stream protocol version 19.
+- `test/fixtures/eve-agent` is a pinned, deterministic real Eve server used by the
+  compatibility probe under `tests/NexusLabs.Eve.CompatibilityProbe`.
+- `version.json` is the only release-version source; package versions come from NBGV.
+- MkDocs publishes development, stable, and immutable versioned API documentation.
 
 ## Conventions
 
@@ -46,6 +50,24 @@ and structured-output support without using the TypeScript SDK.
 - Preserve TypeScript client semantics for routes, session state, header precedence,
   human-input delivery retries, turn boundaries, and stream reconnection.
 - Add a contract test for every externally observable protocol change.
+- Never hard-code a package version in a project file or publish with a long-lived
+  NuGet API key.
+
+## Validation
+
+```shell
+dotnet tool restore
+dotnet restore
+dotnet format --no-restore --verify-no-changes
+dotnet build --configuration Release --no-restore
+dotnet test --configuration Release --no-build
+npm ci --prefix test/fixtures/eve-agent
+npm run test:client --prefix test/fixtures/eve-agent
+pwsh scripts/generate-api-docs.ps1 -OutputDirectory docs/api/dev
+python -m mkdocs build --strict
+dotnet pack src/NexusLabs.Eve/NexusLabs.Eve.csproj --configuration Release --output artifacts/packages
+pwsh scripts/validate-packages.ps1
+```
 
 Stack-specific conventions and the exact build/test/lint commands are provided as
 path-scoped instructions under `.github/instructions/` and load automatically for the

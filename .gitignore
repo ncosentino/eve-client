@@ -38,6 +38,17 @@ logs/
 # Test results
 TestResults/
 
+# Eve compatibility fixture
+node_modules/
+.eve/
+.output/
+.nitro/
+
+# Generated API documentation
+docs/api/dev/
+docs/api/v*/
+docs/api/stable/NexusLabs.Eve/
+
 # #if (IncludeDocsSite)
 # MkDocs documentation site build output
 site/

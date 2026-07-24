@@ -15,29 +15,45 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
 jobs:
-  build-and-test:
+  build-test-pack:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v6
-
-      - name: NuGet cache
-        uses: actions/cache@v5
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: test/fixtures/eve-agent/package-lock.json
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Install Eve fixture
+        run: npm ci --prefix test/fixtures/eve-agent
+
       - name: Restore
         run: dotnet restore
+
+      - name: Verify formatting
+        run: dotnet format --no-restore --verify-no-changes
 
       - name: Build
         run: dotnet build --no-restore --configuration Release
@@ -45,11 +61,29 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
 
+      - name: Test against Eve 0.27.3
+        env:
+          EVE_PROBE_NO_BUILD: 1
+        run: npm run test:client --prefix test/fixtures/eve-agent
+
       - name: Pack
-        run: dotnet pack --no-build --configuration Release --output ./artifacts
+        run: >-
+          dotnet pack
+          src/NexusLabs.Eve/NexusLabs.Eve.csproj
+          --no-build
+          --configuration Release
+          --output artifacts/packages
+
+      - name: Validate packages
+        shell: pwsh
+        run: ./scripts/validate-packages.ps1
+
+      - name: Build package consumer
+        shell: pwsh
+        run: ./scripts/test-package-consumer.ps1
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
-          path: ./artifacts/*.nupkg
+          path: artifacts/packages/*

@@ -1,0 +1,95 @@
+site_name: NexusLabs.Eve
+site_url: https://ncosentino.github.io/eve-client/
+site_description: A C# client for the Vercel eve HTTP API.
+site_author: Nick Cosentino
+repo_url: https://github.com/ncosentino/eve-client
+repo_name: ncosentino/eve-client
+strict: true
+
+copyright: >
+  &copy; Nick Cosentino
+  <br>
+  <a href="https://www.devleader.ca">Dev Leader</a>
+  &middot;
+  <a href="https://www.brandghost.ai">BrandGhost</a>
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.suggest
+    - toc.integrate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Authentication: authentication.md
+  - Sessions: sessions.md
+  - Streaming: streaming.md
+  - Attachments and Input: attachments-and-input.md
+  - Structured Output: structured-output.md
+  - Errors: errors.md
+  - Compatibility: compatibility.md
+  - API Reference:
+      - Overview: api/index.md
+      - Development: api/dev/index.md
+      - Stable: api/stable/index.md
+  - Operations:
+      - Building: building.md
+      - Releasing: releasing.md
+
+plugins:
+  - search
+
+hooks:
+  - docs/hooks/schema.py
+  - docs/hooks/llms_txt.py
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 4
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      name: NexusLabs.Eve on GitHub
+      link: https://github.com/ncosentino/eve-client
+    - icon: material/web
+      name: Dev Leader
+      link: https://www.devleader.ca
+    - icon: material/ghost
+      name: BrandGhost
+      link: https://www.brandghost.ai
+
+docs_dir: docs

@@ -5,6 +5,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
     <TargetFramework>net10.0</TargetFramework>
+    <Authors>Nexus Software Labs</Authors>
+    <Company>Nexus Software Labs</Company>
+    <Product>NexusLabs.Eve</Product>
+    <Copyright>Copyright (c) Nexus Software Labs $([System.DateTime]::Now.Year)</Copyright>
+    <PackageProjectUrl>https://github.com/ncosentino/eve-client</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ncosentino/eve-client.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <!-- Package metadata — update these for your library -->
@@ -17,10 +25,11 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
     <PackageReference Include="NexusLabs.Framework.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Roslynator.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />

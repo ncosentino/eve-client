@@ -3,8 +3,7 @@
   <PropertyGroup>
     <Description>A C# client for the Vercel eve HTTP API.</Description>
     <PackageId>NexusLabs.Eve</PackageId>
-    <Version>0.1.0</Version>
-    <Authors>Nexus Labs</Authors>
+    <PackageTitle>NexusLabs.Eve</PackageTitle>
     <PackageTags>vercel;eve;ai;agents;http-client</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>

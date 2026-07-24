@@ -1,0 +1,352 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  verify-main-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Wait for successful same-commit main CI
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            if (context.ref.startsWith('refs/tags/') === false) {
+              core.setFailed('Run the release workflow from a version tag.');
+              return;
+            }
+
+            const deadline = Date.now() + (40 * 60 * 1000);
+            while (Date.now() < deadline) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci.yml',
+                branch: 'main',
+                event: 'push',
+                per_page: 100
+              });
+              const run = data.workflow_runs
+                .filter(candidate =>
+                  candidate.head_sha === context.sha &&
+                  candidate.head_branch === 'main')
+                .sort((left, right) =>
+                  new Date(right.created_at) - new Date(left.created_at))[0];
+
+              if (run?.status === 'completed') {
+                if (run.conclusion !== 'success') {
+                  core.setFailed(`Main CI did not succeed: ${run.html_url}`);
+                }
+                return;
+              }
+
+              core.info(`Waiting for main CI on ${context.sha}.`);
+              await new Promise(resolve => setTimeout(resolve, 15000));
+            }
+
+            core.setFailed(`Timed out waiting for main CI on ${context.sha}.`);
+
+  publish:
+    needs: verify-main-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: test/fixtures/eve-agent/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Restore tools and dependencies
+        run: |
+          dotnet tool restore
+          dotnet restore
+          npm ci --prefix test/fixtures/eve-agent
+          pip install -r requirements-docs.txt
+
+      - name: Validate release version
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '${TAG}' is not a supported semantic version tag."
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          NBGV_SEMVER="$(dotnet nbgv get-version -v SemVer2)"
+          PACKAGE_VERSION="$(dotnet nbgv get-version -v NuGetPackageVersion)"
+          if [[ "${NBGV_SEMVER}" != "${VERSION}" ]]; then
+            echo "::error::Tag '${VERSION}' does not match NBGV '${NBGV_SEMVER}'."
+            exit 1
+          fi
+
+          if ! grep -Fq "## [${VERSION}]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '${VERSION}' release section."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "package-version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: >-
+          dotnet build
+          --configuration Release
+          --no-restore
+          -p:PublicRelease=true
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Test against Eve 0.27.3
+        env:
+          EVE_PROBE_NO_BUILD: 1
+        run: npm run test:client --prefix test/fixtures/eve-agent
+
+      - name: Pack
+        run: >-
+          dotnet pack
+          src/NexusLabs.Eve/NexusLabs.Eve.csproj
+          --configuration Release
+          --no-build
+          -p:PublicRelease=true
+          --output artifacts/packages
+
+      - name: Validate packages
+        shell: pwsh
+        run: >-
+          ./scripts/validate-packages.ps1
+          -ExpectedVersion '${{ steps.version.outputs.package-version }}'
+
+      - name: Build package consumer
+        shell: pwsh
+        run: >-
+          ./scripts/test-package-consumer.ps1
+          -ExpectedVersion '${{ steps.version.outputs.package-version }}'
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: eve-packages-${{ steps.version.outputs.version }}
+          path: artifacts/packages/*
+
+      - name: Validate release documentation
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          python -m unittest discover -s scripts/tests -p "test_*.py"
+          ./scripts/generate-api-docs.ps1 -OutputDirectory docs/api/dev
+          ./scripts/generate-api-docs.ps1 -OutputDirectory "docs/api/v$version"
+          ./scripts/generate-api-docs.ps1 -OutputDirectory docs/api/stable -PreserveRootIndex
+          python -m mkdocs build --strict
+
+      - name: Authenticate to NuGet.org
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ncosentino
+
+      - name: Push to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: >-
+          dotnet nuget push "artifacts/packages/*.nupkg"
+          --api-key "$NUGET_API_KEY"
+          --source https://api.nuget.org/v3/index.json
+          --symbol-api-key "$NUGET_API_KEY"
+          --symbol-source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Push to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          dotnet nuget push "artifacts/packages/*.nupkg"
+          --api-key "$GITHUB_TOKEN"
+          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          --skip-duplicate
+
+      - name: Extract release notes
+        id: release-notes
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          NOTES="$(awk -v version="${VERSION}" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" version "]")) {
+                found=1
+                next
+              }
+            }
+            found && /^\[[^]]+\]: / { exit }
+            found { print }
+          ' CHANGELOG.md)"
+
+          if [ -z "${NOTES}" ]; then
+            echo "::error::Could not extract release notes for ${VERSION}."
+            exit 1
+          fi
+
+          {
+            echo "notes<<CHANGELOG_EOF"
+            echo "${NOTES}"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.release-notes.outputs.notes }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+
+  documentation:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install documentation dependencies
+        run: pip install -r requirements-docs.txt
+
+      - name: Restore and build
+        run: |
+          dotnet tool restore
+          dotnet restore
+          dotnet build --configuration Release --no-restore -p:PublicRelease=true
+
+      - name: Generate API documentation
+        shell: pwsh
+        run: |
+          $version = '${{ needs.publish.outputs.version }}'
+          python -m unittest discover -s scripts/tests -p "test_*.py"
+          ./scripts/generate-api-docs.ps1 -OutputDirectory docs/api/dev
+          ./scripts/generate-api-docs.ps1 -OutputDirectory "docs/api/v$version"
+          ./scripts/generate-api-docs.ps1 -OutputDirectory docs/api/stable -PreserveRootIndex
+
+      - name: Build documentation
+        run: python -m mkdocs build --strict
+
+      - name: Checkout published documentation
+        uses: actions/checkout@v6
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: existing-site
+
+      - name: Merge release documentation
+        run: >-
+          python scripts/merge_docs_site.py
+          --incoming site
+          --existing existing-site
+          --output merged-site
+          --mode release
+          --version "${GITHUB_REF_NAME#v}"
+
+      - name: Persist merged documentation
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: merged-site
+          keep_files: false
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: merged-site
+
+  deploy-documentation:
+    needs: documentation
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

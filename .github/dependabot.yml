@@ -15,3 +15,23 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/test/fixtures/eve-agent"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      eve-fixture-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "eve"
+      - dependency-name: "ai"
+      - dependency-name: "just-bash"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

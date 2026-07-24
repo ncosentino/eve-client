@@ -11,4 +11,7 @@
   <Folder Name="/src/Tests/">
     <Project Path="src/NexusLabs.Eve.Tests/NexusLabs.Eve.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NexusLabs.Eve.CompatibilityProbe/NexusLabs.Eve.CompatibilityProbe.csproj" />
+  </Folder>
 </Solution>

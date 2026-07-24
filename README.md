@@ -1,5 +1,9 @@
 # NexusLabs.Eve
 
+[![CI](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml/badge.svg)](https://github.com/ncosentino/eve-client/actions/workflows/ci.yml)
+[![Documentation](https://github.com/ncosentino/eve-client/actions/workflows/docs.yml/badge.svg)](https://ncosentino.github.io/eve-client/)
+[![NuGet](https://img.shields.io/nuget/vpre/NexusLabs.Eve.svg)](https://www.nuget.org/packages/NexusLabs.Eve)
+
 <!-- genesis:description:start -->
 A C# client for the Vercel eve HTTP API.
 <!-- genesis:description:end -->
@@ -28,6 +32,9 @@ dotnet add package NexusLabs.Eve
 The package has no runtime dependencies outside .NET. Supply a caller-managed
 `HttpMessageInvoker`; an `HttpClient` created by `IHttpClientFactory` can be passed
 directly because it derives from `HttpMessageInvoker`.
+
+Full documentation is published at
+[ncosentino.github.io/eve-client](https://ncosentino.github.io/eve-client/).
 
 ## Quick start
 
@@ -207,9 +214,13 @@ inspection fields change.
 
 <!-- genesis:build-test:start -->
 ```shell
+dotnet tool restore
 dotnet build
 dotnet test
+npm ci --prefix test/fixtures/eve-agent
+npm run test:client --prefix test/fixtures/eve-agent
 dotnet pack --no-build
+pwsh scripts/validate-packages.ps1
 ```
 <!-- genesis:build-test:end -->
 
@@ -234,6 +245,8 @@ src/
 ## Contributing
 
 See `.github/instructions/` for coding conventions enforced by Copilot.
+See [RELEASING.md](./RELEASING.md) for versioning, trusted publishing, and
+release gates.
 
 ## License
 
