@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>A C# client for the Vercel eve HTTP API.</Description>
+    <PackageId>NexusLabs.Eve</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Nexus Labs</Authors>
+    <PackageTags>vercel;eve;ai;agents;http-client</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

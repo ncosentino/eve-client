@@ -1,0 +1,45 @@
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider
+.idea/
+
+# Rider/VS Code
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Generated Genesis instructions
+.github/instructions/genesis/
+.claude/rules/generated/genesis/
+
+# Test results
+TestResults/
+
+# #if (IncludeDocsSite)
+# MkDocs documentation site build output
+site/
+__pycache__/
+# #endif

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/NexusLabs.Eve/NexusLabs.Eve.csproj" />
+  </Folder>
+  <Folder Name="/src/Tests/">
+    <Project Path="src/NexusLabs.Eve.Tests/NexusLabs.Eve.Tests.csproj" />
+  </Folder>
+</Solution>
