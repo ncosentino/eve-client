@@ -61,7 +61,7 @@ try {
         $repository = (gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
         $runs = gh api `
             -H "Accept: application/vnd.github+json" `
-            "/repos/$repository/actions/workflows/ci.yml/runs?branch=main&event=push&per_page=100"
+            "/repos/$repository/actions/workflows/ci.yml/runs?branch=main&per_page=100"
         if ($LASTEXITCODE -ne 0) {
             throw "Could not query the CI workflow."
         }
@@ -69,6 +69,7 @@ try {
         $successfulRun = ($runs | ConvertFrom-Json).workflow_runs |
             Where-Object {
                 $_.head_sha -ceq $head -and
+                $_.event -in @("push", "workflow_dispatch") -and
                 $_.status -ceq "completed" -and
                 $_.conclusion -ceq "success"
             } |
