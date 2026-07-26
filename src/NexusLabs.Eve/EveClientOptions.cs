@@ -30,6 +30,8 @@ public sealed record EveClientOptions
 
     /// <summary>
     /// Gets the authentication provider invoked before every request and stream reconnect.
+    /// Its headers override every other client-level header but are overridden by explicit
+    /// per-request headers.
     /// </summary>
     public IEveAuthentication? Authentication { get; init; }
 
@@ -52,7 +54,9 @@ public sealed record EveClientOptions
     /// <summary>
     /// Gets an optional dynamic header provider that receives the request operation before
     /// every request.
-    /// Values override <see cref="HeadersProvider"/> but not per-request or authentication headers.
+    /// This provider stays client-level: values override <see cref="HeadersProvider"/> but not
+    /// <see cref="Authentication"/> headers, and per-request headers override every client-level
+    /// value.
     /// </summary>
     public Func<
         EveHttpRequestContext,

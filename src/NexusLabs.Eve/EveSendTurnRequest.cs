@@ -29,7 +29,8 @@ public sealed record EveSendTurnRequest
 
     /// <summary>
     /// Gets headers that apply to this POST and its stream reconnects.
-    /// These values override client headers but not authentication headers.
+    /// These values override every client-level header, including headers produced by the
+    /// configured <see cref="IEveAuthentication"/>.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Headers { get; init; }
 

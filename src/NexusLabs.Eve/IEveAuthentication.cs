@@ -9,7 +9,10 @@ public interface IEveAuthentication
     /// Resolves headers immediately before an HTTP request is sent.
     /// </summary>
     /// <param name="cancellationToken">Cancels credential resolution.</param>
-    /// <returns>Authentication headers whose values override other configured headers.</returns>
+    /// <returns>
+    /// Authentication headers whose values override client-level headers but are themselves
+    /// overridden by explicit per-request headers.
+    /// </returns>
     ValueTask<IReadOnlyDictionary<string, string>> GetHeadersAsync(
         CancellationToken cancellationToken);
 }

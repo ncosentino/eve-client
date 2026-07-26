@@ -335,8 +335,8 @@ public sealed class EveClient
         AddHeaders(resolved, _options.Headers);
         AddHeaders(resolved, await dynamicHeadersTask);
         AddHeaders(resolved, await requestHeadersTask);
-        AddHeaders(resolved, perRequestHeaders);
         AddHeaders(resolved, await authenticationTask);
+        AddHeaders(resolved, perRequestHeaders);
         return resolved;
     }
 

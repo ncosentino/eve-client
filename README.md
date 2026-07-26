@@ -99,7 +99,9 @@ EveClientOptions options = new("https://agent.example.com")
 ```
 
 Built-in providers cover bearer, Basic, and Vercel OIDC authentication. Authentication
-headers take precedence over client-wide and per-turn headers.
+headers take precedence over client-wide headers, and explicit per-request headers
+(`EveSendTurnRequest.Headers` and raw `SendRawAsync` headers) take precedence over
+authentication headers.
 
 Use `RequestHeadersProvider` to select dynamic headers by `EveRequestKind`, such as
 limiting a bootstrap credential to `CreateSession` while continuing to resolve normal

@@ -17,6 +17,15 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - The compatibility reference moved to eve `0.27.6` (message-stream protocol `19`).
 - Accepted session IDs and continuation tokens are persisted in `EveSession.State`
   as soon as `SendAsync` returns, before the response stream is consumed.
+- **Breaking:** Per-request headers now override configured authentication headers, matching
+  `eve@0.27.6`. Header precedence is now static client headers, `HeadersProvider`,
+  `RequestHeadersProvider`, `Authentication`, then per-request headers. `EveSendTurnRequest.Headers`
+  and raw `SendRawAsync` request and content headers can therefore replace configured
+  authentication values, including `Authorization`, on the turn POST and every stream reconnect.
+  `RequestHeadersProvider` remains client-level and is still overridden by authentication.
+  Overriding `Authorization` does not remove `x-vercel-trusted-oidc-idp-token` from
+  `EveVercelOidcAuthentication`. Audit per-turn and raw headers for names owned by the configured
+  `IEveAuthentication` before upgrading; see `docs/authentication.md` for migration guidance.
 
 ## [0.1.0-alpha.2] - 2026-07-24
 
