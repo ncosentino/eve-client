@@ -24,7 +24,7 @@ part of the .NET API.
 
 ## Compatibility
 
-The initial release targets eve `0.27.3`, message-stream protocol version `19`.
+The initial release targets eve `0.27.6`, message-stream protocol version `19`.
 The client has also completed an end-to-end session against a real eve `0.24.6`
 application using the same protocol version.
 

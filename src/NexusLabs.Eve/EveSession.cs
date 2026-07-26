@@ -69,7 +69,10 @@ public sealed class EveSession
             initialState,
             body,
             cancellationToken);
-        MarkAcceptedIfCurrent(initialState, acceptedTurn.SessionId);
+        MarkAcceptedIfCurrent(
+            initialState,
+            acceptedTurn.SessionId,
+            acceptedTurn.ContinuationToken);
 
         return new EveMessageResponse(
             acceptedTurn.ContinuationToken,
@@ -166,6 +169,65 @@ public sealed class EveSession
                 "The eve cancel route returned invalid JSON.",
                 exception);
         }
+    }
+
+    /// <summary>
+    /// Terminally retires the durable session that owns this handle's continuation token.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="CancelAsync(CancellationToken)"/>, which only requests cancellation of
+    /// the active turn, reset releases the durable session so the next send starts a fresh
+    /// conversation. Resetting a session that never started is a successful local no-op that
+    /// issues no HTTP request. After a successful reset the local state is empty.
+    /// </remarks>
+    /// <param name="cancellationToken">Cancels the reset request.</param>
+    /// <returns>The successful reset disposition.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The session has an identifier but no continuation token, so its outstanding event stream
+    /// must be consumed before resetting.
+    /// </exception>
+    /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
+    /// <exception cref="EveProtocolException">The body was not a recognized reset payload.</exception>
+    public async Task<EveResetOutcome> ResetAsync(CancellationToken cancellationToken)
+    {
+        EveSessionState state = State;
+        string? continuationToken = state.ContinuationToken;
+        if (continuationToken is null)
+        {
+            if (state.SessionId is not null)
+            {
+                throw new InvalidOperationException(
+                    "The eve session has no continuation token. " +
+                    "Consume its event stream before resetting.");
+            }
+
+            SetState(new EveSessionState());
+            return new EveResetOutcome(EveResetStatus.NoActiveSession, null);
+        }
+
+        byte[] body = EveRequestWriter.WriteReset(continuationToken);
+        using ByteArrayContent content = new(body);
+        content.Headers.ContentType = new("application/json");
+        using HttpRequestMessage request = await _client.CreateRequestAsync(
+            HttpMethod.Post,
+            EveRequestKind.ResetSession,
+            EveRoutes.ResetSession,
+            null,
+            content,
+            cancellationToken);
+        using HttpResponseMessage response = await _client.SendTransportAsync(
+            request,
+            false,
+            cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw await EveClient.CreateClientExceptionAsync(response, cancellationToken);
+        }
+
+        string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        EveResetOutcome outcome = ParseResetOutcome(responseBody, state.SessionId);
+        ResetStateIfCurrent(state);
+        return outcome;
     }
 
     /// <summary>
@@ -392,7 +454,10 @@ public sealed class EveSession
         }
     }
 
-    private void MarkAcceptedIfCurrent(EveSessionState expected, string sessionId)
+    private void MarkAcceptedIfCurrent(
+        EveSessionState expected,
+        string sessionId,
+        string? continuationToken)
     {
         lock (_stateGate)
         {
@@ -403,8 +468,79 @@ public sealed class EveSession
 
             _state = expected with
             {
+                ContinuationToken = continuationToken ?? expected.ContinuationToken,
                 SessionId = sessionId,
             };
+        }
+    }
+
+    private static EveResetOutcome ParseResetOutcome(string body, string? currentSessionId)
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(body);
+            JsonElement root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("ok", out JsonElement ok)
+                || ok.ValueKind != JsonValueKind.True
+                || !root.TryGetProperty("status", out JsonElement status)
+                || status.ValueKind != JsonValueKind.String)
+            {
+                throw new EveProtocolException(
+                    "The eve reset route returned an invalid response.");
+            }
+
+            switch (status.GetString())
+            {
+                case "no_active_session":
+                    return new EveResetOutcome(EveResetStatus.NoActiveSession, null);
+                case "reset":
+                    if (!root.TryGetProperty(
+                            "previousSessionId",
+                            out JsonElement previousSessionId)
+                        || previousSessionId.ValueKind != JsonValueKind.String
+                        || string.IsNullOrEmpty(previousSessionId.GetString()))
+                    {
+                        throw new EveProtocolException(
+                            "The eve reset route returned an invalid response.");
+                    }
+
+                    if (currentSessionId is not null
+                        && !string.Equals(
+                            previousSessionId.GetString(),
+                            currentSessionId,
+                            StringComparison.Ordinal))
+                    {
+                        throw new EveProtocolException(
+                            "The eve reset route returned an invalid response.");
+                    }
+
+                    return new EveResetOutcome(
+                        EveResetStatus.Reset,
+                        previousSessionId.GetString());
+                default:
+                    throw new EveProtocolException(
+                        "The eve reset route returned an unknown status.");
+            }
+        }
+        catch (JsonException exception)
+        {
+            throw new EveProtocolException(
+                "The eve reset route returned invalid JSON.",
+                exception);
+        }
+    }
+
+    private void ResetStateIfCurrent(EveSessionState expected)
+    {
+        lock (_stateGate)
+        {
+            if (!ReferenceEquals(_state, expected))
+            {
+                return;
+            }
+
+            _state = new EveSessionState();
         }
     }
 

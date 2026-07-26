@@ -80,6 +80,19 @@ internal static class EveRequestWriter
         return buffer.WrittenSpan.ToArray();
     }
 
+    internal static byte[] WriteReset(string continuationToken)
+    {
+        ArrayBufferWriter<byte> buffer = new();
+        using (Utf8JsonWriter writer = new(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("continuationToken", continuationToken);
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
+
     private static void ValidateTurn(EveSendTurnRequest request, string? continuationToken)
     {
         ArgumentNullException.ThrowIfNull(request);

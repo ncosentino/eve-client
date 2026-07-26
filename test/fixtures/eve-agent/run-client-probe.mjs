@@ -79,7 +79,7 @@ try {
   if (code !== 0) {
     throw new Error(`The C# compatibility probe exited with code ${code}.`);
   }
-  console.log("Eve 0.27.3 compatibility probe passed.");
+  console.log("Eve 0.27.6 compatibility probe passed.");
 } finally {
   await stopProcess(server);
 }

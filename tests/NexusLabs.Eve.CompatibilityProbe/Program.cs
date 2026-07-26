@@ -81,6 +81,45 @@ if (!cancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
         $"Observed: {string.Join(", ", cancellationEvents)}.");
 }
 
+EveSession resetSession = client.CreateSession();
+EveMessageResponse resetResponse = await resetSession.SendAsync(
+    "Return the deterministic compatibility response.",
+    timeout.Token);
+string resetSessionId = resetResponse.SessionId;
+if (resetSession.State.ContinuationToken is null)
+{
+    throw new InvalidOperationException(
+        "The accepted turn did not record a continuation token before stream consumption.");
+}
+
+EveTurnOutcome resetOutcome = await resetResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(resetOutcome, "reset turn");
+
+EveResetOutcome reset = await resetSession.ResetAsync(timeout.Token);
+if (reset.Status != EveResetStatus.Reset
+    || !string.Equals(reset.PreviousSessionId, resetSessionId, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        $"The Eve fixture did not retire the session: status={reset.Status}, " +
+        $"previousSessionId={reset.PreviousSessionId}, expected={resetSessionId}.");
+}
+
+if (resetSession.State != new EveSessionState())
+{
+    throw new InvalidOperationException("Reset did not clear the local session state.");
+}
+
+EveMessageResponse afterResetResponse = await resetSession.SendAsync(
+    "Return the deterministic compatibility response.",
+    timeout.Token);
+if (string.Equals(afterResetResponse.SessionId, resetSessionId, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException("Reset did not create a new remote session.");
+}
+
+EveTurnOutcome afterResetOutcome = await afterResetResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(afterResetOutcome, "post-reset turn");
+
 return 0;
 
 static void RequireSuccessfulResponse(EveTurnOutcome outcome, string operation)

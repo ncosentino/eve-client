@@ -61,7 +61,7 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
 
-      - name: Test against Eve 0.27.3
+      - name: Test against Eve 0.27.6
         env:
           EVE_PROBE_NO_BUILD: 1
         run: npm run test:client --prefix test/fixtures/eve-agent

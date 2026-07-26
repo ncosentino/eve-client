@@ -7,6 +7,17 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `EveSession.ResetAsync` for terminally retiring a durable session, with
+  `EveResetStatus`, `EveResetOutcome`, and `EveRequestKind.ResetSession`.
+
+### Changed
+
+- The compatibility reference moved to eve `0.27.6` (message-stream protocol `19`).
+- Accepted session IDs and continuation tokens are persisted in `EveSession.State`
+  as soon as `SendAsync` returns, before the response stream is consumed.
+
 ## [0.1.0-alpha.2] - 2026-07-24
 
 ### Added
