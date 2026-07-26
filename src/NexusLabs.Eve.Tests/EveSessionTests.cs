@@ -6,6 +6,8 @@ namespace NexusLabs.Eve.Tests;
 
 public sealed class EveSessionTests
 {
+    private const string PerTurnAuthorization = "Token end-user";
+
     [Test]
     public async Task SendAsync_AggregatesTurnAndAdvancesWaitingSession(
         CancellationToken cancellationToken)
@@ -269,6 +271,132 @@ public sealed class EveSessionTests
         await Assert.That(handler.Calls[4].Headers["x-turn"]).IsEqualTo("first");
         await Assert.That(handler.Calls[5].Headers.ContainsKey("x-turn")).IsFalse();
     }
+
+    [Test]
+    public async Task PerTurnAuthorization_OverridesAuthenticationOnPostAndStreamReconnect(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["authorization"] = "client-static",
+                },
+                Authentication = new EveBearerAuthentication("deployment-token"),
+            });
+
+        EveMessageResponse response = await client.CreateSession().SendAsync(
+            new EveSendTurnRequest
+            {
+                Message = EveMessageContent.FromText("Forward the caller identity"),
+                Headers = new Dictionary<string, string>
+                {
+                    ["Authorization"] = PerTurnAuthorization,
+                },
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken);
+        await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(handler.Calls.Count).IsEqualTo(3);
+        foreach (RecordedHttpCall call in handler.Calls)
+        {
+            IReadOnlyList<string> authorizationValues = call.RequestHeaderValues["authorization"];
+            await Assert.That(authorizationValues.Count).IsEqualTo(1);
+            await Assert.That(authorizationValues[0]).IsEqualTo(PerTurnAuthorization);
+        }
+    }
+
+    [Test]
+    public async Task VercelOidc_KeepsTrustedIdpTokenWhenPerTurnAuthorizationWins(
+        CancellationToken cancellationToken)
+    {
+        const string oidcToken = "oidc-token";
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Authentication = new EveVercelOidcAuthentication(oidcToken),
+            });
+
+        EveMessageResponse response = await client.CreateSession().SendAsync(
+            new EveSendTurnRequest
+            {
+                Message = EveMessageContent.FromText("Forward the caller identity"),
+                Headers = new Dictionary<string, string>
+                {
+                    ["authorization"] = PerTurnAuthorization,
+                },
+            },
+            cancellationToken);
+        await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        foreach (RecordedHttpCall call in handler.Calls)
+        {
+            IReadOnlyList<string> authorizationValues = call.RequestHeaderValues["authorization"];
+            await Assert.That(authorizationValues.Count).IsEqualTo(1);
+            await Assert.That(authorizationValues[0]).IsEqualTo(PerTurnAuthorization);
+            await Assert.That(call.Headers[EveProtocol.VercelTrustedOidcTokenHeaderName])
+                .IsEqualTo(oidcToken);
+        }
+    }
+
+    [Test]
+    public async Task ClientLevelHeaderLayers_RemainBelowAuthentication(
+        CancellationToken cancellationToken)
+    {
+        EveBearerAuthentication authentication = new("deployment-token");
+        IReadOnlyDictionary<string, string> expectedHeaders =
+            await authentication.GetHeadersAsync(cancellationToken);
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["authorization"] = "client-static",
+                },
+                HeadersProvider = static _ =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["authorization"] = "client-dynamic",
+                        }),
+                RequestHeadersProvider = static (_, _) =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["authorization"] = "request-aware",
+                        }),
+                Authentication = authentication,
+            });
+
+        await client.CreateSession().SendAsync("Authenticate", cancellationToken);
+
+        RecordedHttpCall call = handler.Calls[0];
+        IReadOnlyList<string> authorizationValues = call.RequestHeaderValues["authorization"];
+        await Assert.That(authorizationValues.Count).IsEqualTo(1);
+        await Assert.That(authorizationValues[0]).IsEqualTo(expectedHeaders["authorization"]);
+    }
+
 
     [Test]
     public async Task CompletedSession_ResetsByDefault(CancellationToken cancellationToken)
