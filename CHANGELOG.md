@@ -11,12 +11,17 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - `EveSession.ResetAsync` for terminally retiring a durable session, with
   `EveResetStatus`, `EveResetOutcome`, and `EveRequestKind.ResetSession`.
+- Explicit protected-header override channels for turns and raw requests, gated by
+  `EveClientOptions.AllowedProtectedHeaderOverrides`.
 
 ### Changed
 
 - The compatibility reference moved to eve `0.27.6` (message-stream protocol `19`).
 - Accepted session IDs and continuation tokens are persisted in `EveSession.State`
   as soon as `SendAsync` returns, before the response stream is consumed.
+- Non-protected per-request headers now override client-level values, matching eve `0.27.6`.
+  Authentication-owned and explicitly protected headers remain authoritative by default and
+  require an allowlisted, dedicated per-call override.
 
 ## [0.1.0-alpha.2] - 2026-07-24
 

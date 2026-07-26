@@ -37,7 +37,8 @@ public enum EveRequestKind
     CancelTurn,
 
     /// <summary>
-    /// A caller-defined request sent through <see cref="EveClient.SendRawAsync"/>.
+    /// A caller-defined request sent through
+    /// <see cref="EveClient.SendRawAsync(HttpRequestMessage, CancellationToken)"/>.
     /// </summary>
     Raw,
 

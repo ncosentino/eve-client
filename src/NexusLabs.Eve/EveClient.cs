@@ -10,7 +10,9 @@ namespace NexusLabs.Eve;
 /// </summary>
 public sealed class EveClient
 {
+    private readonly HashSet<string> _allowedProtectedHeaderOverrides;
     private readonly EveClientOptions _options;
+    private readonly HashSet<string> _protectedHeaderNames;
     private readonly HttpMessageInvoker _transport;
 
     /// <summary>
@@ -51,6 +53,12 @@ public sealed class EveClient
         }
 
         ArgumentNullException.ThrowIfNull(options.TimeProvider);
+        _protectedHeaderNames = CreateHeaderNameSet(
+            options.ProtectedHeaderNames,
+            nameof(options.ProtectedHeaderNames));
+        _allowedProtectedHeaderOverrides = CreateHeaderNameSet(
+            options.AllowedProtectedHeaderOverrides,
+            nameof(options.AllowedProtectedHeaderOverrides));
         _transport = transport;
         _options = options;
     }
@@ -152,6 +160,24 @@ public sealed class EveClient
     /// </returns>
     public async Task<HttpResponseMessage> SendRawAsync(
         HttpRequestMessage request,
+        CancellationToken cancellationToken) =>
+        await SendRawAsync(request, null, cancellationToken);
+
+    /// <summary>
+    /// Sends a caller-owned request against a relative path on this eve target.
+    /// Client headers and authentication are applied before sending.
+    /// </summary>
+    /// <param name="request">
+    /// The request to send. Its URI must be relative. The request remains owned by the caller.
+    /// </param>
+    /// <param name="options">Optional explicit protected-header overrides.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>
+    /// The raw response. The caller must dispose it. Non-successful statuses are returned unchanged.
+    /// </returns>
+    public async Task<HttpResponseMessage> SendRawAsync(
+        HttpRequestMessage request,
+        EveRawRequestOptions? options,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -177,6 +203,7 @@ public sealed class EveClient
         IReadOnlyDictionary<string, string> headers = await ResolveHeadersAsync(
             requestContext,
             perRequestHeaders,
+            options?.ProtectedHeaderOverrides,
             cancellationToken);
         ApplyHeaders(request, headers);
         return await SendTransportAsync(request, true, cancellationToken);
@@ -242,7 +269,8 @@ public sealed class EveClient
         IReadOnlyDictionary<string, string>? perRequestHeaders,
         HttpContent? content,
         CancellationToken cancellationToken,
-        IReadOnlyDictionary<string, string>? query = null)
+        IReadOnlyDictionary<string, string>? query = null,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides = null)
     {
         HttpRequestMessage request = new(method, EveUrlBuilder.Create(_options.Host, route, query))
         {
@@ -255,6 +283,7 @@ public sealed class EveClient
             IReadOnlyDictionary<string, string> headers = await ResolveHeadersAsync(
                 requestContext,
                 perRequestHeaders,
+                protectedHeaderOverrides,
                 cancellationToken);
             ApplyHeaders(request, headers);
             return request;
@@ -311,6 +340,7 @@ public sealed class EveClient
     private async Task<IReadOnlyDictionary<string, string>> ResolveHeadersAsync(
         EveHttpRequestContext requestContext,
         IReadOnlyDictionary<string, string>? perRequestHeaders,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         CancellationToken cancellationToken)
     {
         Task<IReadOnlyDictionary<string, string>> dynamicHeadersTask =
@@ -330,14 +360,47 @@ public sealed class EveClient
                 : _options.Authentication.GetHeadersAsync(cancellationToken).AsTask();
 
         await Task.WhenAll(dynamicHeadersTask, requestHeadersTask, authenticationTask);
+        IReadOnlyDictionary<string, string> authenticationHeaders = await authenticationTask;
+        HashSet<string> protectedHeaderNames = new(
+            _protectedHeaderNames,
+            StringComparer.OrdinalIgnoreCase);
+        AddHeaderNames(
+            protectedHeaderNames,
+            _options.Authentication?.AuthenticationHeaderNames);
+        AddHeaderNames(protectedHeaderNames, authenticationHeaders.Keys);
 
         Dictionary<string, string> resolved = new(StringComparer.OrdinalIgnoreCase);
         AddHeaders(resolved, _options.Headers);
         AddHeaders(resolved, await dynamicHeadersTask);
         AddHeaders(resolved, await requestHeadersTask);
-        AddHeaders(resolved, perRequestHeaders);
-        AddHeaders(resolved, await authenticationTask);
+        AddHeaders(resolved, authenticationHeaders);
+        AddUnprotectedHeaders(resolved, perRequestHeaders, protectedHeaderNames);
+        AddProtectedHeaderOverrides(
+            resolved,
+            protectedHeaderOverrides,
+            protectedHeaderNames);
         return resolved;
+    }
+
+    private static void AddHeaderNames(
+        ISet<string> target,
+        IEnumerable<string>? source)
+    {
+        if (source is null)
+        {
+            return;
+        }
+
+        foreach (string name in source)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new InvalidOperationException(
+                    "A protected HTTP header name cannot be empty.");
+            }
+
+            target.Add(name);
+        }
     }
 
     private static void AddHeaders(
@@ -353,6 +416,73 @@ public sealed class EveClient
         {
             target[name] = value;
         }
+    }
+
+    private void AddProtectedHeaderOverrides(
+        IDictionary<string, string> target,
+        IReadOnlyDictionary<string, string>? source,
+        IReadOnlySet<string> protectedHeaderNames)
+    {
+        if (source is null)
+        {
+            return;
+        }
+
+        foreach ((string name, string value) in source)
+        {
+            if (!protectedHeaderNames.Contains(name))
+            {
+                throw new InvalidOperationException(
+                    $"The HTTP header '{name}' is not protected and cannot use the protected "
+                    + "override channel.");
+            }
+
+            if (!_allowedProtectedHeaderOverrides.Contains(name))
+            {
+                throw new InvalidOperationException(
+                    $"The protected HTTP header '{name}' is not allowed to be overridden.");
+            }
+
+            target[name] = value;
+        }
+    }
+
+    private static void AddUnprotectedHeaders(
+        IDictionary<string, string> target,
+        IReadOnlyDictionary<string, string>? source,
+        IReadOnlySet<string> protectedHeaderNames)
+    {
+        if (source is null)
+        {
+            return;
+        }
+
+        foreach ((string name, string value) in source)
+        {
+            if (!protectedHeaderNames.Contains(name))
+            {
+                target[name] = value;
+            }
+        }
+    }
+
+    private static HashSet<string> CreateHeaderNameSet(
+        IEnumerable<string>? names,
+        string parameterName)
+    {
+        HashSet<string> result = new(StringComparer.OrdinalIgnoreCase);
+        if (names is null)
+        {
+            return result;
+        }
+
+        foreach (string name in names)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(name, parameterName);
+            result.Add(name);
+        }
+
+        return result;
     }
 
     private static void AddHttpHeaders(

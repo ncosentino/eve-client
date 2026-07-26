@@ -19,5 +19,9 @@ model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, cooperative cancellation, and session reset
 through the C# client.
 
+Upstream eve 0.27.6 lets generic per-request headers replace authentication.
+NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
+for protected headers so existing generic header bags cannot silently replace credentials.
+
 Unknown event types remain available through `EveStreamEvent.Type` and `Data`
 instead of causing deserialization failure.

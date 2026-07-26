@@ -98,8 +98,10 @@ EveClientOptions options = new("https://agent.example.com")
 };
 ```
 
-Built-in providers cover bearer, Basic, and Vercel OIDC authentication. Authentication
-headers take precedence over client-wide and per-turn headers.
+Built-in providers cover bearer, Basic, and Vercel OIDC authentication. Generic
+per-request headers override non-protected client-wide values, while authentication-owned
+headers remain protected by default. Replacing a credential requires both a client allowlist
+and the dedicated protected-header override property on the individual turn or raw request.
 
 Use `RequestHeadersProvider` to select dynamic headers by `EveRequestKind`, such as
 limiting a bootstrap credential to `CreateSession` while continuing to resolve normal
