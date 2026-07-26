@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSession/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveResetStatus/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>EveSession - NexusLabs.Eve</title>
+        <title>EveResetStatus - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="EveSession – NexusLabs.Eve" />
+  <meta property="og:title" content="EveResetStatus – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSession/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveResetStatus/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EveSession – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveResetStatus – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EveSession
+              EveResetStatus
             
           </span>
         </div>
@@ -1011,137 +1011,20 @@
   
 
 
-  <h1>EveSession</h1>
+  <h1>EveResetStatus</h1>
 
 <h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
-<h2 id="evesession-class">EveSession Class<a class="headerlink" href="#evesession-class" title="Permanent link">&para;</a></h2>
-<p>Tracks one eve conversation's continuation token, session identifier, and stream cursor.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EveSession</span>
+<h2 id="everesetstatus-enum">EveResetStatus Enum<a class="headerlink" href="#everesetstatus-enum" title="Permanent link">&para;</a></h2>
+<p>Describes the successful outcome of an eve session-reset request.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="n">EveResetStatus</span>
 </code></pre></div>
-<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveSession</p>
-<h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveSession.State'></a></p>
-<h2 id="evesessionstate-property">EveSession.State Property<a class="headerlink" href="#evesessionstate-property" title="Permanent link">&para;</a></h2>
-<p>Gets the current serializable session cursor.
-Consume a response stream before persisting a fully advanced cursor.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionState</span><span class="w"> </span><span class="n">State</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
-<p><a href="../EveSessionState/" title="NexusLabs.Eve.EveSessionState">EveSessionState</a></p>
-<h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveSession.CancelAsync(string,System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessioncancelasyncstring-cancellationtoken-method">EveSession.CancelAsync(string, CancellationToken) Method<a class="headerlink" href="#evesessioncancelasyncstring-cancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Requests cooperative cancellation of the active turn with an optional turn guard.
-Continue consuming the turn stream to observe its terminal boundary.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveCancellationOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">CancelAsync</span><span class="p">(</span><span class="kt">string?</span><span class="w"> </span><span class="n">turnId</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.CancelAsync(string,System.Threading.CancellationToken).turnId'></a></p>
-<p><code>turnId</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p>An optional guard that limits cancellation to the observed turn identifier.</p>
-<p><a name='NexusLabs.Eve.EveSession.CancelAsync(string,System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels the cancellation request.</p>
-<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveCancellationOutcome/" title="NexusLabs.Eve.EveCancellationOutcome">EveCancellationOutcome</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
-The successful cancellation disposition.</p>
-<p><a name='NexusLabs.Eve.EveSession.CancelAsync(System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessioncancelasynccancellationtoken-method">EveSession.CancelAsync(CancellationToken) Method<a class="headerlink" href="#evesessioncancelasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Requests cooperative cancellation of the active turn.
-Continue consuming the turn stream to observe its terminal boundary.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveCancellationOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">CancelAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.CancelAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels the cancellation request.</p>
-<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveCancellationOutcome/" title="NexusLabs.Eve.EveCancellationOutcome">EveCancellationOutcome</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
-The successful cancellation disposition.</p>
-<p><a name='NexusLabs.Eve.EveSession.ResetAsync(System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessionresetasynccancellationtoken-method">EveSession.ResetAsync(CancellationToken) Method<a class="headerlink" href="#evesessionresetasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Terminally retires the durable session that owns this handle's continuation token.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveResetOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ResetAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.ResetAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels the reset request.</p>
-<h4 id="returns_2">Returns<a class="headerlink" href="#returns_2" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveResetOutcome/" title="NexusLabs.Eve.EveResetOutcome">EveResetOutcome</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
-The successful reset disposition.</p>
-<h4 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception" title="System.InvalidOperationException">System.InvalidOperationException</a><br />
-The session has an identifier but no continuation token, so its outstanding event stream
-must be consumed before resetting.</p>
-<p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
-The server returned a non-successful status.</p>
-<p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
-The body was not a recognized reset payload.</p>
-<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
-<p>Unlike <a href="./#NexusLabs.Eve.EveSession.CancelAsync(System.Threading.CancellationToken)" title="NexusLabs.Eve.EveSession.CancelAsync(System.Threading.CancellationToken)">CancelAsync(CancellationToken)</a>, which only requests cancellation of
-the active turn, reset releases the durable session so the next send starts a fresh
-conversation. Resetting a session that never started is a successful local no-op that
-issues no HTTP request. After a successful reset the local state is empty.</p>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveSendTurnRequest,System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessionsendasyncevesendturnrequest-cancellationtoken-method">EveSession.SendAsync(EveSendTurnRequest, CancellationToken) Method<a class="headerlink" href="#evesessionsendasyncevesendturnrequest-cancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Sends a full user turn, including attachments, input responses, context, or output schema.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveMessageResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendAsync</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSendTurnRequest</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_3">Parameters<a class="headerlink" href="#parameters_3" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveSendTurnRequest,System.Threading.CancellationToken).request'></a></p>
-<p><code>request</code> <a href="../EveSendTurnRequest/" title="NexusLabs.Eve.EveSendTurnRequest">EveSendTurnRequest</a></p>
-<p>The turn payload.</p>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveSendTurnRequest,System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels the POST and subsequent response stream.</p>
-<h4 id="returns_3">Returns<a class="headerlink" href="#returns_3" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveMessageResponse/" title="NexusLabs.Eve.EveMessageResponse">EveMessageResponse</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
-Accepted turn metadata and its single-use event stream.</p>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(string,System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessionsendasyncstring-cancellationtoken-method">EveSession.SendAsync(string, CancellationToken) Method<a class="headerlink" href="#evesessionsendasyncstring-cancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Sends a plain-text user turn.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveMessageResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendAsync</span><span class="p">(</span><span class="kt">string</span><span class="w"> </span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_4">Parameters<a class="headerlink" href="#parameters_4" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(string,System.Threading.CancellationToken).message'></a></p>
-<p><code>message</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p>The user message.</p>
-<p><a name='NexusLabs.Eve.EveSession.SendAsync(string,System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels the POST and subsequent response stream.</p>
-<h4 id="returns_4">Returns<a class="headerlink" href="#returns_4" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveMessageResponse/" title="NexusLabs.Eve.EveMessageResponse">EveMessageResponse</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
-Accepted turn metadata and its single-use event stream.</p>
-<p><a name='NexusLabs.Eve.EveSession.StreamAsync(NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessionstreamasyncevestreamoptions-cancellationtoken-method">EveSession.StreamAsync(EveStreamOptions, CancellationToken) Method<a class="headerlink" href="#evesessionstreamasyncevestreamoptions-cancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Attaches to the existing session stream from the stored or overridden cursor.
-Unlike a sent-turn response, this stream remains boundary-blind.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IAsyncEnumerable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.StreamAsync(NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).options'></a></p>
-<p><code>options</code> <a href="../EveStreamOptions/" title="NexusLabs.Eve.EveStreamOptions">EveStreamOptions</a></p>
-<p>Optional cursor and reconnect overrides.</p>
-<p><a name='NexusLabs.Eve.EveSession.StreamAsync(NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Stops local stream consumption.</p>
-<h4 id="returns_5">Returns<a class="headerlink" href="#returns_5" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
-The durable session event stream.</p>
-<p><a name='NexusLabs.Eve.EveSession.StreamAsync(System.Threading.CancellationToken)'></a></p>
-<h2 id="evesessionstreamasynccancellationtoken-method">EveSession.StreamAsync(CancellationToken) Method<a class="headerlink" href="#evesessionstreamasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Attaches to the existing session stream from the stored or overridden cursor.
-Unlike a sent-turn response, this stream remains boundary-blind.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IAsyncEnumerable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_6">Parameters<a class="headerlink" href="#parameters_6" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveSession.StreamAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Stops local stream consumption.</p>
-<h4 id="returns_6">Returns<a class="headerlink" href="#returns_6" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
-The durable session event stream.</p>
+<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveResetStatus.Reset'></a></p>
+<p><code>Reset</code> 0</p>
+<p>The durable session that owned the continuation token was retired.</p>
+<p><a name='NexusLabs.Eve.EveResetStatus.NoActiveSession'></a></p>
+<p><code>NoActiveSession</code> 1</p>
+<p>No durable session owned the continuation token, so nothing was retired.</p>
 
 
 

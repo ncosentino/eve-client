@@ -662,6 +662,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reset-a-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reset a session
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#terminal-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1122,6 +1133,32 @@
 <p>When only a continuation token was persisted:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">resumed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">(</span><span class="n">continuationToken</span><span class="p">);</span>
 </code></pre></div>
+<h2 id="reset-a-session">Reset a session<a class="headerlink" href="#reset-a-session" title="Permanent link">&para;</a></h2>
+<p><code>ResetAsync</code> terminally retires the durable session that owns the current
+continuation token, so the next send starts a fresh conversation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">EveResetOutcome</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ResetAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reset</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveResetStatus</span><span class="p">.</span><span class="n">Reset</span><span class="p">)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">{</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">SaveAsync</span><span class="p">(</span><span class="n">session</span><span class="p">.</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>The accepted continuation token is recorded as soon as <code>SendAsync</code> returns,
+  so reset can run before the response stream is consumed.</li>
+<li>A session that has an ID but no continuation token still has an outstanding
+  response stream. Consume it before resetting; otherwise <code>ResetAsync</code> throws
+  <code>InvalidOperationException</code>.</li>
+<li>A session that never started returns <code>EveResetStatus.NoActiveSession</code> and
+  issues no HTTP request.</li>
+<li>A successful reset clears the local state. Persist the empty state and
+  discard any previously cached cursor.</li>
+<li>The route requires eve <code>0.27.4</code> or newer. Older deployments answer with
+  HTTP 404, surfaced as <code>EveClientException</code>.</li>
+</ul>
+<p><code>ResetAsync</code> is not an alias for <code>CancelAsync</code>. <code>CancelAsync</code> only requests
+cooperative cancellation of the active turn and keeps the conversation
+resumable; <code>ResetAsync</code> retires the conversation itself.</p>
 <h2 id="terminal-behavior">Terminal behavior<a class="headerlink" href="#terminal-behavior" title="Permanent link">&para;</a></h2>
 <p><code>session.waiting</code> preserves the conversation for another turn. By default,
 <code>session.completed</code> and <code>session.failed</code> reset the local cursor. Set
