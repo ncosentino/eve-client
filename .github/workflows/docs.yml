@@ -8,9 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: pages
@@ -23,6 +21,7 @@ env:
 
 jobs:
   build:
+    name: Build documentation
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -65,8 +64,39 @@ jobs:
       - name: Build documentation
         run: python -m mkdocs build --strict
 
-      - name: Checkout published documentation
+      - name: Upload documentation site
         if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-site
+          path: site
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Download documentation site
+        uses: actions/download-artifact@v5
+        with:
+          name: documentation-site
+          path: site
+
+      - name: Checkout published documentation
         uses: actions/checkout@v6
         continue-on-error: true
         with:
@@ -74,7 +104,6 @@ jobs:
           path: existing-site
 
       - name: Merge development documentation
-        if: github.event_name != 'pull_request'
         run: >-
           python scripts/merge_docs_site.py
           --incoming site
@@ -83,7 +112,6 @@ jobs:
           --mode main
 
       - name: Persist merged documentation
-        if: github.event_name != 'pull_request'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -91,19 +119,20 @@ jobs:
           keep_files: false
 
       - name: Configure GitHub Pages
-        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: merged-site
 
   deploy:
     if: github.event_name != 'pull_request'
-    needs: build
+    needs: publish
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
