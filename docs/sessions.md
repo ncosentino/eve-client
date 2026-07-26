@@ -38,6 +38,36 @@ When only a continuation token was persisted:
 EveSession resumed = client.CreateSession(continuationToken);
 ```
 
+## Reset a session
+
+`ResetAsync` terminally retires the durable session that owns the current
+continuation token, so the next send starts a fresh conversation:
+
+```csharp
+EveResetOutcome reset = await session.ResetAsync(cancellationToken);
+
+if (reset.Status == EveResetStatus.Reset)
+{
+    await SaveAsync(session.State, cancellationToken);
+}
+```
+
+- The accepted continuation token is recorded as soon as `SendAsync` returns,
+  so reset can run before the response stream is consumed.
+- A session that has an ID but no continuation token still has an outstanding
+  response stream. Consume it before resetting; otherwise `ResetAsync` throws
+  `InvalidOperationException`.
+- A session that never started returns `EveResetStatus.NoActiveSession` and
+  issues no HTTP request.
+- A successful reset clears the local state. Persist the empty state and
+  discard any previously cached cursor.
+- The route requires eve `0.27.4` or newer. Older deployments answer with
+  HTTP 404, surfaced as `EveClientException`.
+
+`ResetAsync` is not an alias for `CancelAsync`. `CancelAsync` only requests
+cooperative cancellation of the active turn and keeps the conversation
+resumable; `ResetAsync` retires the conversation itself.
+
 ## Terminal behavior
 
 `session.waiting` preserves the conversation for another turn. By default,

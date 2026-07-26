@@ -40,4 +40,9 @@ public enum EveRequestKind
     /// A caller-defined request sent through <see cref="EveClient.SendRawAsync"/>.
     /// </summary>
     Raw,
+
+    /// <summary>
+    /// A request that terminally retires the session owning a continuation token.
+    /// </summary>
+    ResetSession,
 }
