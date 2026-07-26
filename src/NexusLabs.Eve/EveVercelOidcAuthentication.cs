@@ -7,7 +7,15 @@ namespace NexusLabs.Eve;
 /// </summary>
 public sealed class EveVercelOidcAuthentication : IEveAuthentication
 {
+    private static readonly string[] AuthenticationHeaders =
+    [
+        "authorization",
+        EveProtocol.VercelTrustedOidcTokenHeaderName,
+    ];
     private readonly Func<CancellationToken, ValueTask<string>> _tokenProvider;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> AuthenticationHeaderNames => AuthenticationHeaders;
 
     /// <summary>
     /// Initializes Vercel OIDC authentication with a static token.

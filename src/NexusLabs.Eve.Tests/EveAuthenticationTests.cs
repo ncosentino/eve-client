@@ -5,6 +5,23 @@ namespace NexusLabs.Eve.Tests;
 public sealed class EveAuthenticationTests
 {
     [Test]
+    public async Task BuiltInProviders_DeclareOwnedHeaderNames()
+    {
+        EveBearerAuthentication bearer = new("token");
+        EveBasicAuthentication basic = new("agent", "password");
+        EveVercelOidcAuthentication oidc = new("oidc-token");
+
+        await Assert.That(bearer.AuthenticationHeaderNames.Count).IsEqualTo(1);
+        await Assert.That(bearer.AuthenticationHeaderNames.Contains("authorization")).IsTrue();
+        await Assert.That(basic.AuthenticationHeaderNames.Count).IsEqualTo(1);
+        await Assert.That(basic.AuthenticationHeaderNames.Contains("authorization")).IsTrue();
+        await Assert.That(oidc.AuthenticationHeaderNames.Count).IsEqualTo(2);
+        await Assert.That(oidc.AuthenticationHeaderNames.Contains("authorization")).IsTrue();
+        await Assert.That(oidc.AuthenticationHeaderNames.Contains(
+            EveProtocol.VercelTrustedOidcTokenHeaderName)).IsTrue();
+    }
+
+    [Test]
     public async Task VercelOidc_EmitsBearerAndTrustedTokenHeaders(
         CancellationToken cancellationToken)
     {

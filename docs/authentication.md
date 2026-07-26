@@ -55,61 +55,102 @@ RequestHeadersProvider = (context, cancellationToken) =>
                 ["x-session-bootstrap"] = encryptedBootstrapCredential,
             }
             : new Dictionary<string, string>());
+
+ProtectedHeaderNames = ["x-session-bootstrap"];
 ```
 
 Both dynamic providers are resolved before every applicable HTTP call, including
 stream reconnects. `EveRequestKind` may gain members as the upstream client adds
 routes, so exhaustive switches should include a default arm.
 
-Header precedence is:
+Header resolution is:
 
 1. Static client headers.
 2. Dynamic client headers.
 3. Request-aware dynamic headers.
 4. Authentication headers.
-5. Per-request headers.
+5. Generic per-request headers for names that are not protected.
+6. Explicit protected-header overrides allowed by client policy.
 
 Per-request headers are `EveSendTurnRequest.Headers` and the caller-owned request and
 content headers of an `HttpRequestMessage` passed to `EveClient.SendRawAsync`. They
-replace same-named client-level values case-insensitively, including `Authorization`.
-This mirrors `eve@0.27.6`, where per-request headers win over client-level headers.
+replace same-named non-protected client-level values case-insensitively.
+
+Every name declared by `IEveAuthentication.AuthenticationHeaderNames`, every header
+emitted by the authentication provider, and every name in
+`EveClientOptions.ProtectedHeaderNames` is protected. Generic per-request values with
+those names are ignored.
 
 `RequestHeadersProvider` remains client-level. A same-named value returned there is
-still overridden by the configured `IEveAuthentication`; move an intentional override
-to the explicit per-turn or raw request header layer.
+still overridden by the configured `IEveAuthentication`. Credentials supplied through
+that provider should also be listed in `ProtectedHeaderNames`.
 
-## Forwarding an application identity
+## Explicitly forwarding an application identity
 
 ```csharp
+EveClientOptions options = new("https://agent.example.com")
+{
+    Authentication = new EveVercelOidcAuthentication(GetDeploymentTokenAsync),
+    AllowedProtectedHeaderOverrides = ["authorization"],
+};
+
 EveSendTurnRequest request = new()
 {
     Message = EveMessageContent.FromText("Summarize my invoices."),
-    Headers = new Dictionary<string, string>
+    ProtectedHeaderOverrides = new Dictionary<string, string>
     {
-        ["authorization"] = endUserAuthorizationHeader,
+        ["authorization"] = audienceRestrictedForwardedIdentityToken,
     },
 };
 ```
 
-The per-turn value is used for the turn POST and for every stream connection and
-reconnect of that turn. When `EveVercelOidcAuthentication` is configured, overriding
-`Authorization` does not remove `x-vercel-trusted-oidc-idp-token`; that header is still
-supplied by the provider unless the caller overrides that exact header too.
+Both conditions are required: the client must allow the header name, and the individual
+turn must use `ProtectedHeaderOverrides`. `EveSendTurnRequest.Headers` can never replace
+a protected credential.
 
-## Migrating from authentication-wins precedence
+The override is used for the turn POST and every stream connection and reconnect of that
+turn. It does not flow to `CancelAsync`, `ResetAsync`, or a separate `StreamAsync`
+attachment. It also does not leak into later turns.
 
-Releases before this change let the configured `IEveAuthentication` override per-request
-headers. Before upgrading:
+When `EveVercelOidcAuthentication` is configured, overriding `Authorization` does not
+remove `x-vercel-trusted-oidc-idp-token`. That deployment credential remains protected
+unless its exact name is independently allowlisted and explicitly overridden.
 
-1. Search every `EveSendTurnRequest.Headers`, raw `HttpRequestMessage` header, and raw
-   content header for `Authorization` or any authentication-owned header.
-2. Remove those same-named per-request headers when the configured authentication must
-   remain authoritative. They are no longer ignored.
-3. Keep intentional application-user identity in `EveSendTurnRequest.Headers["authorization"]`.
-4. Keep deployment authentication configured normally when using Vercel OIDC.
-5. Move intentional authentication overrides out of `RequestHeadersProvider`.
-6. Audit proxy and tenant-routing headers for same-named collisions and add integration
-   tests asserting the intended winner.
+Do not forward a bearer token minted for an unrelated API audience. Prefer a distinct,
+short-lived token intended for the eve agent, and require the agent to validate that
+forwarded identity independently. A protected-header override is not itself an
+authorization boundary.
+
+## Raw request overrides
+
+```csharp
+using HttpResponseMessage response = await client.SendRawAsync(
+    request,
+    new EveRawRequestOptions
+    {
+        ProtectedHeaderOverrides = new Dictionary<string, string>
+        {
+            ["authorization"] = audienceRestrictedForwardedIdentityToken,
+        },
+    },
+    cancellationToken);
+```
+
+Headers placed on `HttpContent.Headers` are always generic. They cannot replace protected
+credentials, even when that name is allowlisted.
+
+## Migration
+
+Existing consumers keep authentication-authoritative behavior by default. To opt into the
+eve 0.27.6 identity-forwarding use case:
+
+1. Identify the exact protected header that must be replaceable.
+2. Add only that name to `AllowedProtectedHeaderOverrides`.
+3. Move the trusted value from `EveSendTurnRequest.Headers` or raw request headers into the
+   dedicated `ProtectedHeaderOverrides` property.
+4. Never copy an inbound request-header collection into the protected override dictionary.
+5. List credentials supplied outside `IEveAuthentication` in `ProtectedHeaderNames`.
+6. Add integration tests for POST, stream reconnect, later-turn, and cancellation behavior.
 
 Content-specific headers are applied only to requests with content. They are
 omitted from health, info, stream, and other bodiless requests.

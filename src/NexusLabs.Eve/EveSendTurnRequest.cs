@@ -29,10 +29,18 @@ public sealed record EveSendTurnRequest
 
     /// <summary>
     /// Gets headers that apply to this POST and its stream reconnects.
-    /// These values override every client-level header, including headers produced by the
-    /// configured <see cref="IEveAuthentication"/>.
+    /// These values override non-protected client-level headers but cannot replace
+    /// authentication-owned or otherwise protected headers.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Headers { get; init; }
+
+    /// <summary>
+    /// Gets explicit overrides for protected headers on this POST and its stream reconnects.
+    /// Every name must also appear in
+    /// <see cref="EveClientOptions.AllowedProtectedHeaderOverrides"/>.
+    /// Never populate this collection directly from untrusted inbound headers.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? ProtectedHeaderOverrides { get; init; }
 
     /// <summary>
     /// Gets the reconnect policy for this turn's event stream.

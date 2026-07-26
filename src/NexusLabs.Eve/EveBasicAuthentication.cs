@@ -7,8 +7,12 @@ namespace NexusLabs.Eve;
 /// </summary>
 public sealed class EveBasicAuthentication : IEveAuthentication
 {
+    private static readonly string[] AuthenticationHeaders = ["authorization"];
     private readonly Func<CancellationToken, ValueTask<string>> _passwordProvider;
     private readonly string _username;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> AuthenticationHeaderNames => AuthenticationHeaders;
 
     /// <summary>
     /// Initializes Basic authentication with a static password.

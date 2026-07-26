@@ -23,6 +23,7 @@ internal static class EveStreamFollower
         string sessionId,
         int initialStartIndex,
         IReadOnlyDictionary<string, string>? headers,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         EveStreamReconnectPolicy? configuredPolicy,
         int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -41,6 +42,7 @@ internal static class EveStreamFollower
                 sessionId,
                 startIndex,
                 headers,
+                protectedHeaderOverrides,
                 policy,
                 maximumEventBytes,
                 cancellationToken).GetAsyncEnumerator(cancellationToken);
@@ -98,6 +100,7 @@ internal static class EveStreamFollower
         string sessionId,
         int startIndex,
         IReadOnlyDictionary<string, string>? headers,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
         int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -107,6 +110,7 @@ internal static class EveStreamFollower
             sessionId,
             startIndex,
             headers,
+            protectedHeaderOverrides,
             policy,
             cancellationToken);
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -148,6 +152,7 @@ internal static class EveStreamFollower
         string sessionId,
         int startIndex,
         IReadOnlyDictionary<string, string>? headers,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
         CancellationToken cancellationToken)
     {
@@ -171,7 +176,8 @@ internal static class EveStreamFollower
                 headers,
                 null,
                 cancellationToken,
-                query);
+                query,
+                protectedHeaderOverrides);
 
             HttpResponseMessage response;
             try

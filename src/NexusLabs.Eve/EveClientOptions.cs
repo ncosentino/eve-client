@@ -30,10 +30,24 @@ public sealed record EveClientOptions
 
     /// <summary>
     /// Gets the authentication provider invoked before every request and stream reconnect.
-    /// Its headers override every other client-level header but are overridden by explicit
-    /// per-request headers.
+    /// Its owned headers are protected from generic per-request values.
     /// </summary>
     public IEveAuthentication? Authentication { get; init; }
+
+    /// <summary>
+    /// Gets additional header names that generic per-request values cannot replace.
+    /// Use this for credentials supplied through <see cref="Headers"/>,
+    /// <see cref="HeadersProvider"/>, or <see cref="RequestHeadersProvider"/>.
+    /// </summary>
+    public IReadOnlyCollection<string>? ProtectedHeaderNames { get; init; }
+
+    /// <summary>
+    /// Gets protected header names that may be replaced through a dedicated per-call override.
+    /// A name must be listed here and supplied through
+    /// <see cref="EveSendTurnRequest.ProtectedHeaderOverrides"/> or
+    /// <see cref="EveRawRequestOptions.ProtectedHeaderOverrides"/>.
+    /// </summary>
+    public IReadOnlyCollection<string>? AllowedProtectedHeaderOverrides { get; init; }
 
     /// <summary>
     /// Gets static headers included on every request.
@@ -55,8 +69,7 @@ public sealed record EveClientOptions
     /// Gets an optional dynamic header provider that receives the request operation before
     /// every request.
     /// This provider stays client-level: values override <see cref="HeadersProvider"/> but not
-    /// <see cref="Authentication"/> headers, and per-request headers override every client-level
-    /// value.
+    /// protected headers.
     /// </summary>
     public Func<
         EveHttpRequestContext,

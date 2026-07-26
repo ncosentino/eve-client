@@ -7,7 +7,11 @@ namespace NexusLabs.Eve;
 /// </summary>
 public sealed class EveBearerAuthentication : IEveAuthentication
 {
+    private static readonly string[] AuthenticationHeaders = ["authorization"];
     private readonly Func<CancellationToken, ValueTask<string>> _tokenProvider;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> AuthenticationHeaderNames => AuthenticationHeaders;
 
     /// <summary>
     /// Initializes bearer authentication with a static token.

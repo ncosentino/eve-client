@@ -290,7 +290,8 @@ public sealed class EveSession
                 route,
                 request.Headers,
                 content,
-                cancellationToken);
+                cancellationToken,
+                protectedHeaderOverrides: request.ProtectedHeaderOverrides);
             using HttpResponseMessage response = await _client.SendTransportAsync(
                 httpRequest,
                 false,
@@ -390,6 +391,7 @@ public sealed class EveSession
                 acceptedTurn.SessionId,
                 startIndex,
                 request.Headers,
+                request.ProtectedHeaderOverrides,
                 request.StreamReconnectPolicy,
                 _client.MaxStreamEventBytes,
                 linkedSource.Token))
@@ -427,6 +429,7 @@ public sealed class EveSession
                 _client,
                 initialState.SessionId!,
                 startIndex,
+                null,
                 null,
                 reconnectPolicy,
                 _client.MaxStreamEventBytes,

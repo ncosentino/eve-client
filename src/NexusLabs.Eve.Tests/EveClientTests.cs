@@ -93,10 +93,13 @@ public sealed class EveClientTests
     }
 
     [Test]
-    public async Task SendRawAsync_UsesRequestHeadersAfterAuthentication(
+    public async Task SendRawAsync_ProtectsAuthenticationFromGenericHeadersByDefault(
         CancellationToken cancellationToken)
     {
         const string rawAuthorization = "Token raw-override";
+        EveBearerAuthentication authentication = new("fresh");
+        IReadOnlyDictionary<string, string> expectedHeaders =
+            await authentication.GetHeadersAsync(cancellationToken);
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
@@ -116,7 +119,7 @@ public sealed class EveClientTests
                         {
                             ["authorization"] = "request-aware",
                         }),
-                Authentication = new EveBearerAuthentication("fresh"),
+                Authentication = authentication,
             });
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
         request.Headers.TryAddWithoutValidation("x-scope", "request");
@@ -130,7 +133,169 @@ public sealed class EveClientTests
         await Assert.That(handler.Calls[0].Headers["x-scope"]).IsEqualTo("request");
         await Assert.That(handler.Calls[0].RequestHeaderValues["authorization"].Count)
             .IsEqualTo(1);
+        await Assert.That(handler.Calls[0].Headers["authorization"])
+            .IsEqualTo(expectedHeaders["authorization"]);
+    }
+
+    [Test]
+    public async Task SendRawAsync_AllowsExplicitProtectedHeaderOverride(
+        CancellationToken cancellationToken)
+    {
+        const string rawAuthorization = "Token raw-override";
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Authentication = new EveBearerAuthentication("fresh"),
+                AllowedProtectedHeaderOverrides = ["authorization"],
+            });
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("authorization", "Token generic-value");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            new EveRawRequestOptions
+            {
+                ProtectedHeaderOverrides = new Dictionary<string, string>
+                {
+                    ["AUTHORIZATION"] = rawAuthorization,
+                },
+            },
+            cancellationToken);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+        await Assert.That(handler.Calls[0].RequestHeaderValues["authorization"].Count)
+            .IsEqualTo(1);
         await Assert.That(handler.Calls[0].Headers["authorization"]).IsEqualTo(rawAuthorization);
+    }
+
+    [Test]
+    public async Task SendRawAsync_ContentHeadersCannotOverrideAuthentication(
+        CancellationToken cancellationToken)
+    {
+        EveBearerAuthentication authentication = new("fresh");
+        IReadOnlyDictionary<string, string> expectedHeaders =
+            await authentication.GetHeadersAsync(cancellationToken);
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Authentication = authentication,
+                AllowedProtectedHeaderOverrides = ["authorization"],
+            });
+        using HttpRequestMessage request = new(
+            HttpMethod.Post,
+            new Uri("/custom", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        request.Content.Headers.TryAddWithoutValidation(
+            "authorization",
+            "Token content-value");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            cancellationToken);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+        await Assert.That(handler.Calls[0].RequestHeaderValues["authorization"].Count)
+            .IsEqualTo(1);
+        await Assert.That(handler.Calls[0].Headers["authorization"])
+            .IsEqualTo(expectedHeaders["authorization"]);
+        await Assert.That(handler.Calls[0].ContentHeaders.ContainsKey("authorization")).IsFalse();
+    }
+
+    [Test]
+    public async Task SendRawAsync_ProtectsDeclaredHeadersWhenAuthenticationEmitsNothing(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                Authentication = new EveBearerAuthentication(
+                    static _ => ValueTask.FromResult(string.Empty)),
+            });
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("authorization", "Token generic-value");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            cancellationToken);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+        await Assert.That(handler.Calls[0].Headers.ContainsKey("authorization")).IsFalse();
+    }
+
+    [Test]
+    public async Task SendRawAsync_ProtectsConfiguredClientHeaderNames(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(new HttpResponseMessage(
+            HttpStatusCode.NoContent)));
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                RequestHeadersProvider = static (_, _) =>
+                    ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                        new Dictionary<string, string>
+                        {
+                            ["x-session-bootstrap"] = "client-credential",
+                        }),
+                ProtectedHeaderNames = ["x-session-bootstrap"],
+            });
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("x-session-bootstrap", "generic-value");
+
+        using HttpResponseMessage response = await client.SendRawAsync(
+            request,
+            cancellationToken);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+        await Assert.That(handler.Calls[0].Headers["x-session-bootstrap"])
+            .IsEqualTo("client-credential");
+    }
+
+    [Test]
+    public async Task SendRawAsync_RejectsOverrideForUnprotectedHeader(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                AllowedProtectedHeaderOverrides = ["x-client"],
+            });
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/custom", UriKind.Relative));
+
+        await Assert.That(async () => await client.SendRawAsync(
+            request,
+            new EveRawRequestOptions
+            {
+                ProtectedHeaderOverrides = new Dictionary<string, string>
+                {
+                    ["x-client"] = "override",
+                },
+            },
+            cancellationToken)).Throws<InvalidOperationException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
     }
 
     [Test]
