@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveBearerAuthentication/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveRawRequestOptions/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>EveBearerAuthentication - NexusLabs.Eve</title>
+        <title>EveRawRequestOptions - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="EveBearerAuthentication – NexusLabs.Eve" />
+  <meta property="og:title" content="EveRawRequestOptions – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveBearerAuthentication/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveRawRequestOptions/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EveBearerAuthentication – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveRawRequestOptions – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EveBearerAuthentication
+              EveRawRequestOptions
             
           </span>
         </div>
@@ -1011,61 +1011,27 @@
   
 
 
-  <h1>EveBearerAuthentication</h1>
+  <h1>EveRawRequestOptions</h1>
 
 <h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
-<h2 id="evebearerauthentication-class">EveBearerAuthentication Class<a class="headerlink" href="#evebearerauthentication-class" title="Permanent link">&para;</a></h2>
-<p>Supplies a bearer token for eve requests.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EveBearerAuthentication</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">IEveAuthentication</span>
+<h2 id="everawrequestoptions-class">EveRawRequestOptions Class<a class="headerlink" href="#everawrequestoptions-class" title="Permanent link">&para;</a></h2>
+<p>Configures one caller-owned request sent through
+<a href="../EveClient/#NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,NexusLabs.Eve.EveRawRequestOptions,System.Threading.CancellationToken)" title="NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage, NexusLabs.Eve.EveRawRequestOptions, System.Threading.CancellationToken)">SendRawAsync(HttpRequestMessage, EveRawRequestOptions, CancellationToken)</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">record</span><span class="w"> </span><span class="n">EveRawRequestOptions</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">IEquatable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveRawRequestOptions</span><span class="o">&gt;</span>
 </code></pre></div>
-<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveBearerAuthentication</p>
-<p>Implements <a href="../IEveAuthentication/" title="NexusLabs.Eve.IEveAuthentication">IEveAuthentication</a></p>
-<h3 id="constructors">Constructors<a class="headerlink" href="#constructors" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.EveBearerAuthentication(string)'></a></p>
-<h2 id="evebearerauthenticationstring-constructor">EveBearerAuthentication(string) Constructor<a class="headerlink" href="#evebearerauthenticationstring-constructor" title="Permanent link">&para;</a></h2>
-<p>Initializes bearer authentication with a static token.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="nf">EveBearerAuthentication</span><span class="p">(</span><span class="kt">string</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.EveBearerAuthentication(string).token'></a></p>
-<p><code>token</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p>The bearer token.</p>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.EveBearerAuthentication(System.Func_System.Threading.CancellationToken,System.Threading.Tasks.ValueTask_string__)'></a></p>
-<h2 id="evebearerauthenticationfunccancellationtokenvaluetaskstring-constructor">EveBearerAuthentication(Func\&lt;CancellationToken,ValueTask\&lt;string&gt;&gt;) Constructor<a class="headerlink" href="#evebearerauthenticationfunccancellationtokenvaluetaskstring-constructor" title="Permanent link">&para;</a></h2>
-<p>Initializes bearer authentication with a per-request token provider.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="nf">EveBearerAuthentication</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Func</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="p">,</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">tokenProvider</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.EveBearerAuthentication(System.Func_System.Threading.CancellationToken,System.Threading.Tasks.ValueTask_string__).tokenProvider'></a></p>
-<p><code>tokenProvider</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.func-2" title="System.Func`2">System.Func&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.func-2" title="System.Func`2">,</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1" title="System.Threading.Tasks.ValueTask`1">System.Threading.Tasks.ValueTask&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1" title="System.Threading.Tasks.ValueTask`1">&gt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.func-2" title="System.Func`2">&gt;</a></p>
-<p>The provider invoked before each request.</p>
+<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveRawRequestOptions</p>
+<p>Implements <a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">System.IEquatable&lt;</a><a href="./" title="NexusLabs.Eve.EveRawRequestOptions">EveRawRequestOptions</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">&gt;</a></p>
 <h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.AuthenticationHeaderNames'></a></p>
-<h2 id="evebearerauthenticationauthenticationheadernames-property">EveBearerAuthentication.AuthenticationHeaderNames Property<a class="headerlink" href="#evebearerauthenticationauthenticationheadernames-property" title="Permanent link">&para;</a></h2>
-<p>Gets header names owned by this provider even when no value is emitted for a request.
-Implementations should declare every credential header so generic per-request headers
-cannot replace credentials when token resolution returns an empty result.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyCollection</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">AuthenticationHeaderNames</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<p><a name='NexusLabs.Eve.EveRawRequestOptions.ProtectedHeaderOverrides'></a></p>
+<h2 id="everawrequestoptionsprotectedheaderoverrides-property">EveRawRequestOptions.ProtectedHeaderOverrides Property<a class="headerlink" href="#everawrequestoptionsprotectedheaderoverrides-property" title="Permanent link">&para;</a></h2>
+<p>Gets explicit overrides for protected headers.
+Every name must also appear in
+<a href="../EveClientOptions/#NexusLabs.Eve.EveClientOptions.AllowedProtectedHeaderOverrides" title="NexusLabs.Eve.EveClientOptions.AllowedProtectedHeaderOverrides">AllowedProtectedHeaderOverrides</a>.
+Never populate this collection directly from untrusted inbound headers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyDictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="kt">string</span><span class="o">&gt;?</span><span class="w"> </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Implements <a href="../IEveAuthentication/#NexusLabs.Eve.IEveAuthentication.AuthenticationHeaderNames" title="NexusLabs.Eve.IEveAuthentication.AuthenticationHeaderNames">AuthenticationHeaderNames</a></p>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlycollection-1" title="System.Collections.Generic.IReadOnlyCollection`1">System.Collections.Generic.IReadOnlyCollection&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlycollection-1" title="System.Collections.Generic.IReadOnlyCollection`1">&gt;</a></p>
-<h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.GetHeadersAsync(System.Threading.CancellationToken)'></a></p>
-<h2 id="evebearerauthenticationgetheadersasynccancellationtoken-method">EveBearerAuthentication.GetHeadersAsync(CancellationToken) Method<a class="headerlink" href="#evebearerauthenticationgetheadersasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
-<p>Resolves headers immediately before an HTTP request is sent.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyDictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="kt">string</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">GetHeadersAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveBearerAuthentication.GetHeadersAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
-<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
-<p>Cancels credential resolution.</p>
-<p>Implements <a href="../IEveAuthentication/#NexusLabs.Eve.IEveAuthentication.GetHeadersAsync(System.Threading.CancellationToken)" title="NexusLabs.Eve.IEveAuthentication.GetHeadersAsync(System.Threading.CancellationToken)">GetHeadersAsync(CancellationToken)</a></p>
-<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1" title="System.Threading.Tasks.ValueTask`1">System.Threading.Tasks.ValueTask&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">System.Collections.Generic.IReadOnlyDictionary&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">,</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">&gt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1" title="System.Threading.Tasks.ValueTask`1">&gt;</a><br />
-Authentication headers whose values override client-level and generic per-request headers.
-A protected value can be replaced only through an explicitly allowed protected-header
-override.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">System.Collections.Generic.IReadOnlyDictionary&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">,</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">&gt;</a></p>
 
 
 

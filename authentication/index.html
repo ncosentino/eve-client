@@ -656,6 +656,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#explicitly-forwarding-an-application-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicitly forwarding an application identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#raw-request-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw request overrides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1144,17 +1177,85 @@ be limited to session creation without relying on provider invocation order:</p>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">                </span><span class="na">[&quot;x-session-bootstrap&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">encryptedBootstrapCredential</span><span class="p">,</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">            </span><span class="p">}</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">            </span><span class="p">:</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span><span class="p">());</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">ProtectedHeaderNames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;x-session-bootstrap&quot;</span><span class="p">];</span>
 </code></pre></div>
 <p>Both dynamic providers are resolved before every applicable HTTP call, including
 stream reconnects. <code>EveRequestKind</code> may gain members as the upstream client adds
 routes, so exhaustive switches should include a default arm.</p>
-<p>Header precedence is:</p>
+<p>Header resolution is:</p>
 <ol>
 <li>Static client headers.</li>
 <li>Dynamic client headers.</li>
 <li>Request-aware dynamic headers.</li>
-<li>Per-turn headers.</li>
 <li>Authentication headers.</li>
+<li>Generic per-request headers for names that are not protected.</li>
+<li>Explicit protected-header overrides allowed by client policy.</li>
+</ol>
+<p>Per-request headers are <code>EveSendTurnRequest.Headers</code> and the caller-owned request and
+content headers of an <code>HttpRequestMessage</code> passed to <code>EveClient.SendRawAsync</code>. They
+replace same-named non-protected client-level values case-insensitively.</p>
+<p>Every name declared by <code>IEveAuthentication.AuthenticationHeaderNames</code>, every header
+emitted by the authentication provider, and every name in
+<code>EveClientOptions.ProtectedHeaderNames</code> is protected. Generic per-request values with
+those names are ignored.</p>
+<p><code>RequestHeadersProvider</code> remains client-level. A same-named value returned there is
+still overridden by the configured <code>IEveAuthentication</code>. Credentials supplied through
+that provider should also be listed in <code>ProtectedHeaderNames</code>.</p>
+<h2 id="explicitly-forwarding-an-application-identity">Explicitly forwarding an application identity<a class="headerlink" href="#explicitly-forwarding-an-application-identity" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="n">Authentication</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">EveVercelOidcAuthentication</span><span class="p">(</span><span class="n">GetDeploymentTokenAsync</span><span class="p">),</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="n">AllowedProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;authorization&quot;</span><span class="p">],</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">};</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">EveSendTurnRequest</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">()</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">{</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">&quot;Summarize my invoices.&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="na">[&quot;authorization&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audienceRestrictedForwardedIdentityToken</span><span class="p">,</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="p">};</span>
+</code></pre></div>
+<p>Both conditions are required: the client must allow the header name, and the individual
+turn must use <code>ProtectedHeaderOverrides</code>. <code>EveSendTurnRequest.Headers</code> can never replace
+a protected credential.</p>
+<p>The override is used for the turn POST and every stream connection and reconnect of that
+turn. It does not flow to <code>CancelAsync</code>, <code>ResetAsync</code>, or a separate <code>StreamAsync</code>
+attachment. It also does not leak into later turns.</p>
+<p>When <code>EveVercelOidcAuthentication</code> is configured, overriding <code>Authorization</code> does not
+remove <code>x-vercel-trusted-oidc-idp-token</code>. That deployment credential remains protected
+unless its exact name is independently allowlisted and explicitly overridden.</p>
+<p>Do not forward a bearer token minted for an unrelated API audience. Prefer a distinct,
+short-lived token intended for the eve agent, and require the agent to validate that
+forwarded identity independently. A protected-header override is not itself an
+authorization boundary.</p>
+<h2 id="raw-request-overrides">Raw request overrides<a class="headerlink" href="#raw-request-overrides" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">using</span><span class="w"> </span><span class="nn">HttpResponseMessage</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">SendRawAsync</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="n">request</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveRawRequestOptions</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">        </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">            </span><span class="na">[&quot;authorization&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audienceRestrictedForwardedIdentityToken</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
+</code></pre></div>
+<p>Headers placed on <code>HttpContent.Headers</code> are always generic. They cannot replace protected
+credentials, even when that name is allowlisted.</p>
+<h2 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">&para;</a></h2>
+<p>Existing consumers keep authentication-authoritative behavior by default. To opt into the
+eve 0.27.6 identity-forwarding use case:</p>
+<ol>
+<li>Identify the exact protected header that must be replaceable.</li>
+<li>Add only that name to <code>AllowedProtectedHeaderOverrides</code>.</li>
+<li>Move the trusted value from <code>EveSendTurnRequest.Headers</code> or raw request headers into the
+   dedicated <code>ProtectedHeaderOverrides</code> property.</li>
+<li>Never copy an inbound request-header collection into the protected override dictionary.</li>
+<li>List credentials supplied outside <code>IEveAuthentication</code> in <code>ProtectedHeaderNames</code>.</li>
+<li>Add integration tests for POST, stream reconnect, later-turn, and cancellation behavior.</li>
 </ol>
 <p>Content-specific headers are applied only to requests with content. They are
 omitted from health, info, stream, and other bodiless requests.</p>
