@@ -13,6 +13,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `EveResetStatus`, `EveResetOutcome`, and `EveRequestKind.ResetSession`.
 - Explicit protected-header override channels for turns and raw requests, gated by
   `EveClientOptions.AllowedProtectedHeaderOverrides`.
+- `EveStreamOptions.Follow` for bounded catch-up reads that stop at the durable stream tail
+  observed when the stream opens, using the `includeTailIndex=1` query parameter and the
+  `x-eve-stream-tail-index` response header.
 
 ### Changed
 

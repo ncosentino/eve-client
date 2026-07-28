@@ -1,4 +1,7 @@
-﻿using NexusLabs.Eve;
+﻿using System.Globalization;
+
+using NexusLabs.Eve;
+using NexusLabs.Eve.CompatibilityProbe;
 
 if (args.Length != 1 || !Uri.TryCreate(args[0], UriKind.Absolute, out Uri? baseUri))
 {
@@ -10,7 +13,8 @@ using SocketsHttpHandler handler = new()
 {
     AllowAutoRedirect = false,
 };
-using HttpClient transport = new(handler);
+using StreamRequestRecorder streamRecorder = new(handler);
+using HttpClient transport = new(streamRecorder);
 EveClient client = new(transport, new EveClientOptions(baseUri.ToString()));
 
 EveHealthStatus health = await client.GetHealthAsync(timeout.Token);
@@ -79,6 +83,104 @@ if (!cancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
     throw new InvalidOperationException(
         "The cancelled turn did not settle with turn.cancelled and session.waiting. " +
         $"Observed: {string.Join(", ", cancellationEvents)}.");
+}
+
+EveSession catchUpSession = client.CreateSession();
+EveMessageResponse catchUpResponse = await catchUpSession.SendAsync(
+    "Return the deterministic compatibility response.",
+    timeout.Token);
+EveTurnOutcome catchUpOutcome = await catchUpResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(catchUpOutcome, "catch-up turn");
+
+int recordedBeforeCatchUp = streamRecorder.StreamRequests.Count;
+List<EveStreamEvent> catchUpEvents = [];
+EveProtocolException? catchUpFailure = null;
+
+try
+{
+    await foreach (EveStreamEvent streamEvent in catchUpSession.StreamAsync(
+        new EveStreamOptions
+        {
+            Follow = false,
+            StartIndex = 0,
+        },
+        timeout.Token))
+    {
+        catchUpEvents.Add(streamEvent);
+    }
+}
+catch (EveProtocolException exception)
+{
+    catchUpFailure = exception;
+}
+
+RecordedStreamRequest[] catchUpRequests = streamRecorder.StreamRequests
+    .Skip(recordedBeforeCatchUp)
+    .ToArray();
+if (catchUpRequests.Length == 0)
+{
+    throw new InvalidOperationException("The bounded catch-up read did not open a stream.");
+}
+
+if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The first bounded catch-up request did not ask for the durable tail index: " +
+        $"{catchUpRequests[0].Uri}.");
+}
+
+foreach (RecordedStreamRequest reconnect in catchUpRequests.Skip(1))
+{
+    if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException(
+            $"A bounded catch-up reconnect requested the durable tail again: {reconnect.Uri}.");
+    }
+}
+
+string? observedTailIndex = catchUpRequests[0].TailIndex;
+if (observedTailIndex is null)
+{
+    // eve 0.27.6, the pinned compatibility baseline, does not report the durable tail index.
+    if (catchUpFailure is null)
+    {
+        throw new InvalidOperationException(
+            "The Eve fixture omitted x-eve-stream-tail-index, but the bounded read did not fail.");
+    }
+}
+else
+{
+    if (catchUpFailure is not null)
+    {
+        throw new InvalidOperationException(
+            $"The Eve fixture reported tail index '{observedTailIndex}', " +
+            $"but the bounded read failed: {catchUpFailure.Message}");
+    }
+
+    if (!int.TryParse(
+            observedTailIndex,
+            NumberStyles.AllowLeadingSign,
+            CultureInfo.InvariantCulture,
+            out int tailIndex)
+        || tailIndex < 0)
+    {
+        throw new InvalidOperationException(
+            $"The Eve fixture reported an invalid tail index: '{observedTailIndex}'.");
+    }
+
+    if (catchUpEvents.Count != tailIndex + 1)
+    {
+        throw new InvalidOperationException(
+            $"The bounded catch-up read returned {catchUpEvents.Count} events " +
+            $"for tail index {tailIndex}.");
+    }
+
+    if (catchUpSession.State.StreamIndex != catchUpEvents.Count)
+    {
+        throw new InvalidOperationException(
+            "The bounded catch-up read did not advance the session cursor: " +
+            $"{catchUpSession.State.StreamIndex} of {catchUpEvents.Count} events.");
+    }
 }
 
 EveSession resetSession = client.CreateSession();
