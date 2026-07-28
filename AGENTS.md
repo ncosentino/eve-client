@@ -111,22 +111,6 @@ pull request:
 4. When protected native auto-merge is configured, arm it only for a ready pull request after this
    assessment.
 
-## Commit Workflow
-
-Before every `git commit`, complete this procedure:
-
-1. **Build and test.** Run the build and tests for this project's stack(s) and record the exact output — pass/fail/skip and warning/error counts. The exact commands (and any stack-specific caveats) live in the path-scoped instructions under `.github/instructions/`.
-2. **Self-assess.** Write an honest one-line note for each — HIGH: omitted behavior, implementation gaps, test results; MEDIUM: tech debt, missing coverage, weak assertions; LOW: assumptions.
-3. **Share and gate.** Share the self-assessment with the user. Fix any HIGH issue before committing; for any MEDIUM issue, stop and get the user's acknowledgment before proceeding.
-4. **Commit.** The pre-commit hook blocks the first attempt by design. Acknowledge and commit:
-
-   ```sh
-   GENESIS_PRECOMMIT_ACK=true git commit -m "type: description"
-   ```
-
-   On Windows (PowerShell): set `$env:GENESIS_PRECOMMIT_ACK = "true"`, then run `git commit`.
-5. **Share evidence.** After the commit succeeds, report exact test counts, what they verified, build warning/error counts, and files changed. Do not say "all tests pass" — show the numbers.
-
 ## Out of Scope
 
 - Reimplementing the eve agent runtime, filesystem authoring framework, or CLI.
