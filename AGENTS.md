@@ -74,6 +74,43 @@ path-scoped instructions under `.github/instructions/` and load automatically fo
 files they match (for example, C# error-handling rules on `*.cs`, the npm quality gate on
 `package.json` / `*.ts`). Consult them when working in a given stack.
 
+## Pull Request Delivery
+
+- Local commits are unrestricted checkpoints. The initial default branch may be created only
+  when bootstrapping a truly empty remote; after that, push only feature branches and deliver
+  through pull requests.
+- Run targeted checks while iterating. This repository currently uses GitHub-hosted runners;
+  any future self-hosted route must force public fork pull requests onto an allow-listed hosted
+  runner before repository variables, matrices, or job outputs can influence runner selection.
+- Branch-dispatched validation is appropriate before a pull request only when pushing the branch
+  itself is safe. Do not expose private or internal details through a public branch.
+- "Open a PR" and "publish a PR" mean ready for review. "Open a draft PR" and "open a PR so I can
+  review" mean draft. Agent-initiated pull requests default to draft unless the user explicitly
+  requests ready delivery.
+- Genesis drafts run the `preflight` subset and publish `Draft CI`. Moving a pull request to ready
+  starts fresh full validation and publishes the required `CI` check.
+- When `GENESIS_REVIEW_POLICY=copilot-one-approval`, a ready Copilot-authored pull request requires
+  one OWNER, MEMBER, or COLLABORATOR approval on its current SHA. A later Copilot push invalidates
+  the prior approval.
+- In public repositories, external fork workflows require explicit maintainer approval before
+  execution. Treat approval as permission to run the complete proposed workflow, including any
+  runner selection made by the pull request.
+- Native merges use GitHub's branch auto-delete setting. The inactive private workflow-run fallback
+  may be installed only for a private repository whose plan cannot enforce branch protection.
+
+Before opening a ready pull request, publishing a draft, or pushing more commits to an already-ready
+pull request:
+
+1. Confirm the pull request title follows conventional commit semantics; squash merging uses it as
+   the default-branch commit subject.
+2. Record validation evidence and assess HIGH: omitted behavior, implementation gaps, and
+   failing/missing tests; MEDIUM: technical debt, missing coverage, and weak assertions; LOW:
+   assumptions.
+3. Fix every HIGH issue or keep/return the pull request to draft. Disclose MEDIUM and LOW findings
+   in the pull request body.
+4. When protected native auto-merge is configured, arm it only for a ready pull request after this
+   assessment.
+
 ## Commit Workflow
 
 Before every `git commit`, complete this procedure:
