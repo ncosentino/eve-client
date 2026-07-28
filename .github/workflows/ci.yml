@@ -3,10 +3,17 @@ name: CI
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      validation_scope:
+        description: Validation scope for this branch dispatch
+        required: false
+        default: full
+        type: choice
+        options: [full, subset]
 
 permissions:
   contents: read
@@ -21,7 +28,73 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
+  validation-plan:
+    name: Validation plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+
+    steps:
+      - name: Resolve validation scope
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          IS_DRAFT: ${{ github.event.pull_request.draft || false }}
+          REQUESTED_SCOPE: ${{ inputs.validation_scope || '' }}
+          DRAFT_MODE: ${{ vars.CI_DRAFT_MODE || 'subset' }}
+        shell: bash
+        run: |
+          scope=full
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            scope="$REQUESTED_SCOPE"
+          elif [ "$EVENT_NAME" = "pull_request" ] && [ "$IS_DRAFT" = "true" ]; then
+            scope="$DRAFT_MODE"
+          fi
+
+          case "$scope" in
+            full|subset|ready-only) ;;
+            *)
+              echo "::error::Unsupported validation scope '$scope'."
+              exit 1
+              ;;
+          esac
+
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
+  preflight:
+    name: Preflight
+    needs: validation-plan
+    if: needs.validation-plan.outputs.scope != 'ready-only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Verify formatting
+        run: dotnet format --no-restore --verify-no-changes
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
   build-test-pack:
+    needs: [validation-plan, preflight]
+    if: needs.validation-plan.outputs.scope == 'full' && needs.preflight.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -87,3 +160,49 @@ jobs:
         with:
           name: nuget-packages
           path: artifacts/packages/*
+
+  ci:
+    name: ${{ needs.validation-plan.outputs.scope == 'full' && 'CI' || 'Draft CI' }}
+    needs: [validation-plan, preflight, build-test-pack]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check validation results
+        env:
+          SCOPE: ${{ needs.validation-plan.outputs.scope }}
+          PLAN_RESULT: ${{ needs.validation-plan.result }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
+          FULL_RESULT: ${{ needs.build-test-pack.result }}
+        shell: bash
+        run: |
+          if [ "$PLAN_RESULT" != "success" ]; then
+            echo "::error::Validation planning did not succeed."
+            exit 1
+          fi
+
+          case "$SCOPE" in
+            full)
+              if [ "$PREFLIGHT_RESULT" != "success" ] || [ "$FULL_RESULT" != "success" ]; then
+                echo "::error::Full validation did not succeed."
+                exit 1
+              fi
+              ;;
+            subset)
+              if [ "$PREFLIGHT_RESULT" != "success" ] || [ "$FULL_RESULT" != "skipped" ]; then
+                echo "::error::Draft subset validation did not complete as expected."
+                exit 1
+              fi
+              ;;
+            ready-only)
+              if [ "$PREFLIGHT_RESULT" != "skipped" ] || [ "$FULL_RESULT" != "skipped" ]; then
+                echo "::error::Ready-only validation fan-out was not suppressed."
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Unexpected validation scope '$SCOPE'."
+              exit 1
+              ;;
+          esac

@@ -1,0 +1,62 @@
+{
+  "$schema": "./genesis-delivery.schema.json",
+  "schemaVersion": 1,
+  "template": "nuget-library",
+  "defaultBranch": "main",
+  "ciWorkflow": "CI",
+  "requiredChecks": [
+    "CI",
+    "PR title",
+    "Review policy",
+    "Build documentation"
+  ],
+  "draftValidation": {
+    "hostedDefault": "subset",
+    "pitcrewDefault": "subset",
+    "subsetJobs": [
+      "preflight"
+    ]
+  },
+  "runnerProfiles": [],
+  "componentWorkflows": [
+    {
+      "source": "repository",
+      "path": ".github/workflows/docs.yml",
+      "roles": [
+        "merge-gate",
+        "post-merge"
+      ],
+      "draftBehavior": "ready-only",
+      "requiredChecks": [
+        "Build documentation"
+      ]
+    },
+    {
+      "source": "repository",
+      "path": ".github/workflows/docs-cloudflare.yml",
+      "roles": [
+        "post-merge"
+      ],
+      "draftBehavior": "not-applicable",
+      "requiredChecks": []
+    },
+    {
+      "source": "repository",
+      "path": ".github/workflows/release.yml",
+      "roles": [
+        "release-deploy"
+      ],
+      "draftBehavior": "not-applicable",
+      "requiredChecks": []
+    }
+  ],
+  "pullRequestTitle": {
+    "pattern": "^(feat|fix|docs|refactor|test|style|build|ci|chore|perf|revert)(\\([a-z0-9][a-z0-9._/-]*\\))?!?: .+$",
+    "maxLength": 72
+  },
+  "squashMerge": {
+    "method": "squash",
+    "title": "PR_TITLE",
+    "message": "PR_BODY"
+  }
+}
