@@ -26,6 +26,19 @@ for protected headers so existing generic header bags cannot silently replace cr
 Unknown event types remain available through `EveStreamEvent.Type` and `Data`
 instead of causing deserialization failure.
 
+## Upstream parity radar
+
+The repo-local `eve-client-upstream-radar` Copilot skill under
+`.github/skills/` compares the declared eve release baseline with current
+`vercel/eve` main. It filters to framework-neutral client and protocol changes,
+checks committed `origin/main` source for an existing equivalent, and can file
+deduplicated, agent-ready issues for confirmed gaps.
+
+The skill resolves this repository from its own location, while generated
+inventories and reports live under the current user's local application-data
+folder. Machine-specific checkout paths and Narnia cadence configuration are
+deliberately not committed.
+
 Bounded catch-up reads (`EveStreamOptions.Follow = false`) depend on the
 `includeTailIndex=1` stream query parameter and the `x-eve-stream-tail-index`
 response header. eve `0.27.6` accepts the query parameter but does not report the
