@@ -1122,13 +1122,26 @@ Unlike a sent-turn response, this stream remains boundary-blind.</p>
 <h4 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveSession.StreamAsync(NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).options'></a></p>
 <p><code>options</code> <a href="../EveStreamOptions/" title="NexusLabs.Eve.EveStreamOptions">EveStreamOptions</a></p>
-<p>Optional cursor and reconnect overrides.</p>
+<p>Optional cursor, bound, and reconnect overrides.</p>
 <p><a name='NexusLabs.Eve.EveSession.StreamAsync(NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Stops local stream consumption.</p>
 <h4 id="returns_5">Returns<a class="headerlink" href="#returns_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
 The durable session event stream.</p>
+<h4 id="exceptions_1">Exceptions<a class="headerlink" href="#exceptions_1" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception" title="System.InvalidOperationException">System.InvalidOperationException</a><br />
+The session has no identifier because no message has been sent yet.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception" title="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</a><br />
+A bounded read was requested with a negative effective start cursor, which cannot be
+bounded because its absolute position is unknown.</p>
+<p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
+A bounded read did not receive a valid durable tail index from the server.</p>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>The stream follows live events by default. Set
+<a href="../EveStreamOptions/#NexusLabs.Eve.EveStreamOptions.Follow" title="NexusLabs.Eve.EveStreamOptions.Follow">Follow</a> to <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool">false</a> for a bounded catch-up
+read that completes once the cursor passes the durable tail observed when the stream
+opened. The stored cursor advances past every consumed event in both modes.</p>
 <p><a name='NexusLabs.Eve.EveSession.StreamAsync(System.Threading.CancellationToken)'></a></p>
 <h2 id="evesessionstreamasynccancellationtoken-method">EveSession.StreamAsync(CancellationToken) Method<a class="headerlink" href="#evesessionstreamasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Attaches to the existing session stream from the stored or overridden cursor.

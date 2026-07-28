@@ -1066,6 +1066,13 @@ NexusLabs.Eve requires an explicit client allowlist and dedicated per-call overr
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
 <p>Unknown event types remain available through <code>EveStreamEvent.Type</code> and <code>Data</code>
 instead of causing deserialization failure.</p>
+<p>Bounded catch-up reads (<code>EveStreamOptions.Follow = false</code>) depend on the
+<code>includeTailIndex=1</code> stream query parameter and the <code>x-eve-stream-tail-index</code>
+response header. eve <code>0.27.6</code> accepts the query parameter but does not report the
+header, so bounded reads against that baseline fail with <code>EveProtocolException</code>
+instead of silently degrading to a live follow. The compatibility probe asserts
+both halves of that contract and switches to verifying a real bounded read once
+the pinned server reports the header.</p>
 
 
 
