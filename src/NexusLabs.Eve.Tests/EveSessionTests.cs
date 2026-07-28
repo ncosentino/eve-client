@@ -1010,6 +1010,36 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task BoundedStream_ReturnsImmediatelyForAnEmptyDurableStream(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(BoundedStreamResponse("-1")));
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(0);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
     public async Task BoundedStream_RejectsMissingTailIndexHeader(
         CancellationToken cancellationToken)
     {

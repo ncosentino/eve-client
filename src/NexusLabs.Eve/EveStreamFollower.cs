@@ -300,6 +300,8 @@ internal static class EveStreamFollower
             lastHeaders ?? ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
     }
 
+    // A negative tail index is valid upstream and reports an empty durable stream,
+    // so a nonnegative cursor immediately passes the bound instead of failing.
     private static int ReadTailIndex(HttpResponseMessage response)
     {
         if (!response.Headers.TryGetValues(TailIndexHeader, out IEnumerable<string>? values))
