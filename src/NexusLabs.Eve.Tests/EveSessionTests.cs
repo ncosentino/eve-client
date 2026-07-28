@@ -893,6 +893,261 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task BoundedStream_StopsAtDurableTailAndAdvancesCursor(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(BoundedStreamResponse(
+            "1",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"First.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Second.","sequence":2,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Beyond.","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""")));
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(2);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+        await Assert.That(session.State).IsEqualTo(initialState with
+        {
+            StreamIndex = 2,
+        });
+    }
+
+    [Test]
+    public async Task BoundedStream_KeepsFirstTailAcrossReconnects(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(BoundedStreamResponse(
+            "2",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"First.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Second.","sequence":2,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Third.","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""")));
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+                ReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(3);
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+        await Assert.That(handler.Calls[1].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+        await Assert.That(session.State).IsEqualTo(initialState with
+        {
+            StreamIndex = 3,
+        });
+    }
+
+    [Test]
+    public async Task BoundedStream_ReturnsImmediatelyWhenCursorIsPastTail(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(BoundedStreamResponse(
+            "3",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Stale.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}""")));
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+            StreamIndex = 5,
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(0);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=5&includeTailIndex=1");
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task BoundedStream_ReturnsImmediatelyForAnEmptyDurableStream(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(BoundedStreamResponse("-1")));
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(0);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task BoundedStream_RejectsMissingTailIndexHeader(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:latest","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession(new EveSessionState
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        });
+
+        await Assert.That(async () => await CollectAsync(session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken),
+            cancellationToken)).Throws<EveProtocolException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments("latest")]
+    [Arguments("1.5")]
+    [Arguments(" 4")]
+    [Arguments("9007199254740991")]
+    public async Task BoundedStream_RejectsInvalidTailIndexHeader(
+        string tailIndex,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(BoundedStreamResponse(
+            tailIndex,
+            """{"type":"session.waiting","data":{"continuationToken":"eve:latest","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession(new EveSessionState
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        });
+
+        await Assert.That(async () => await CollectAsync(session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+            },
+            cancellationToken),
+            cancellationToken)).Throws<EveProtocolException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task BoundedStream_RejectsNegativeStartCursor(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).CreateSession(new EveSessionState
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        });
+
+        await Assert.That(() => session.StreamAsync(
+            new EveStreamOptions
+            {
+                Follow = false,
+                StartIndex = -1,
+            },
+            cancellationToken)).Throws<ArgumentOutOfRangeException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task LiveStream_DoesNotRequestTheDurableTailIndex(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:latest","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession(new EveSessionState
+        {
+            ContinuationToken = "eve:current",
+            SessionId = "session_1",
+        });
+        List<EveStreamEvent> events = [];
+
+        await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+            new EveStreamOptions
+            {
+                ReconnectPolicy = EveStreamReconnectPolicy.Disabled,
+            },
+            cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        await Assert.That(events.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream");
+    }
+
+    [Test]
     public async Task InputResponse_RetriesSessionPropagationFailure(
         CancellationToken cancellationToken)
     {
@@ -1259,4 +1514,26 @@ public sealed class EveSessionTests
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
+
+    private static HttpResponseMessage BoundedStreamResponse(
+        string tailIndex,
+        params string[] events)
+    {
+        HttpResponseMessage response = StreamResponse(events);
+        response.Headers.TryAddWithoutValidation("x-eve-stream-tail-index", tailIndex);
+        return response;
+    }
+
+    private static async Task<IReadOnlyList<EveStreamEvent>> CollectAsync(
+        IAsyncEnumerable<EveStreamEvent> stream,
+        CancellationToken cancellationToken)
+    {
+        List<EveStreamEvent> events = [];
+        await foreach (EveStreamEvent streamEvent in stream.WithCancellation(cancellationToken))
+        {
+            events.Add(streamEvent);
+        }
+
+        return events;
+    }
 }

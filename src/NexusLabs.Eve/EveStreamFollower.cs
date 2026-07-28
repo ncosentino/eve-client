@@ -7,6 +7,8 @@ namespace NexusLabs.Eve;
 
 internal static class EveStreamFollower
 {
+    private const string TailIndexHeader = "x-eve-stream-tail-index";
+
     private static readonly HttpStatusCode[] DefaultRetryableStatusCodes =
     [
         HttpStatusCode.NotFound,
@@ -22,6 +24,7 @@ internal static class EveStreamFollower
         EveClient client,
         string sessionId,
         int initialStartIndex,
+        bool follow,
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         EveStreamReconnectPolicy? configuredPolicy,
@@ -33,42 +36,71 @@ internal static class EveStreamFollower
         TimeSpan reconnectDelay = policy.Idle.BaseDelay;
         int idleReconnects = 0;
         bool initialConnection = true;
+        int? tailIndex = null;
 
         while (true)
         {
             bool deliveredEvent = false;
-            await using IAsyncEnumerator<EveStreamEvent> connection = ReadConnectionAsync(
+            HttpResponseMessage? response = await OpenStreamOrNullAsync(
                 client,
                 sessionId,
                 startIndex,
+                !follow && tailIndex is null,
                 headers,
                 protectedHeaderOverrides,
                 policy,
-                maximumEventBytes,
-                cancellationToken).GetAsyncEnumerator(cancellationToken);
-            while (true)
+                cancellationToken);
+            if (response is null)
             {
-                bool hasEvent;
-                try
+                yield break;
+            }
+
+            using (response)
+            {
+                if (!follow && tailIndex is null)
                 {
-                    hasEvent = await connection.MoveNextAsync();
+                    tailIndex = ReadTailIndex(response);
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+
+                if (tailIndex is int openBound && startIndex > openBound)
                 {
                     yield break;
                 }
 
-                if (!hasEvent)
+                await using IAsyncEnumerator<EveStreamEvent> connection = ReadConnectionAsync(
+                    response,
+                    maximumEventBytes,
+                    cancellationToken).GetAsyncEnumerator(cancellationToken);
+                while (true)
                 {
-                    break;
-                }
+                    bool hasEvent;
+                    try
+                    {
+                        hasEvent = await connection.MoveNextAsync();
+                    }
+                    catch (OperationCanceledException)
+                        when (cancellationToken.IsCancellationRequested)
+                    {
+                        yield break;
+                    }
 
-                EveStreamEvent streamEvent = connection.Current;
-                startIndex++;
-                deliveredEvent = true;
-                reconnectDelay = policy.Idle.BaseDelay;
-                idleReconnects = 0;
-                yield return streamEvent;
+                    if (!hasEvent)
+                    {
+                        break;
+                    }
+
+                    EveStreamEvent streamEvent = connection.Current;
+                    startIndex++;
+                    deliveredEvent = true;
+                    reconnectDelay = policy.Idle.BaseDelay;
+                    idleReconnects = 0;
+                    yield return streamEvent;
+
+                    if (tailIndex is int bound && startIndex > bound)
+                    {
+                        yield break;
+                    }
+                }
             }
 
             if (cancellationToken.IsCancellationRequested
@@ -96,23 +128,10 @@ internal static class EveStreamFollower
     }
 
     private static async IAsyncEnumerable<EveStreamEvent> ReadConnectionAsync(
-        EveClient client,
-        string sessionId,
-        int startIndex,
-        IReadOnlyDictionary<string, string>? headers,
-        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
-        ResolvedReconnectPolicy policy,
+        HttpResponseMessage response,
         int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using HttpResponseMessage response = await OpenStreamAsync(
-            client,
-            sessionId,
-            startIndex,
-            headers,
-            protectedHeaderOverrides,
-            policy,
-            cancellationToken);
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using EveNdjsonLineReader reader = new(stream, maximumEventBytes);
 
@@ -147,10 +166,46 @@ internal static class EveStreamFollower
         }
     }
 
+    private static async Task<HttpResponseMessage?> OpenStreamOrNullAsync(
+        EveClient client,
+        string sessionId,
+        int startIndex,
+        bool requestTailIndex,
+        IReadOnlyDictionary<string, string>? headers,
+        IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
+        ResolvedReconnectPolicy policy,
+        CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
+        try
+        {
+#pragma warning disable IDISP011 // Ownership transfers to the stream follower.
+            return await OpenStreamAsync(
+                client,
+                sessionId,
+                startIndex,
+                requestTailIndex,
+                headers,
+                protectedHeaderOverrides,
+                policy,
+                cancellationToken);
+#pragma warning restore IDISP011
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
     private static async Task<HttpResponseMessage> OpenStreamAsync(
         EveClient client,
         string sessionId,
         int startIndex,
+        bool requestTailIndex,
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
@@ -160,15 +215,23 @@ internal static class EveStreamFollower
         string? lastBody = null;
         IReadOnlyDictionary<string, IReadOnlyList<string>>? lastHeaders = null;
         TimeSpan retryDelay = policy.Open.BaseDelay;
+        Dictionary<string, string> queryParameters = [];
+        if (startIndex != 0)
+        {
+            queryParameters["startIndex"] = startIndex.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (requestTailIndex)
+        {
+            queryParameters["includeTailIndex"] = "1";
+        }
+
+        IReadOnlyDictionary<string, string>? query = queryParameters.Count == 0
+            ? null
+            : queryParameters;
 
         for (int attempt = 0; attempt < policy.Open.MaxAttempts; attempt++)
         {
-            IReadOnlyDictionary<string, string>? query = startIndex == 0
-                ? null
-                : new Dictionary<string, string>
-                {
-                    ["startIndex"] = startIndex.ToString(CultureInfo.InvariantCulture),
-                };
             using HttpRequestMessage request = await client.CreateRequestAsync(
                 HttpMethod.Get,
                 EveRequestKind.StreamSession,
@@ -235,6 +298,57 @@ internal static class EveStreamFollower
             lastStatusCode ?? 0,
             lastBody ?? "Failed to open the eve message stream.",
             lastHeaders ?? ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+    }
+
+    // A negative tail index is valid upstream and reports an empty durable stream,
+    // so a nonnegative cursor immediately passes the bound instead of failing.
+    private static int ReadTailIndex(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues(TailIndexHeader, out IEnumerable<string>? values))
+        {
+            throw new EveProtocolException(
+                $"A bounded eve stream requires the {TailIndexHeader} response header. " +
+                "The agent may be running an older eve version.");
+        }
+
+        string? raw = values.FirstOrDefault();
+        if (!IsIntegerLiteral(raw))
+        {
+            throw new EveProtocolException(
+                $"The {TailIndexHeader} response header was not an integer: '{raw}'.");
+        }
+
+        if (!int.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int tailIndex))
+        {
+            throw new EveProtocolException(
+                $"The {TailIndexHeader} response header was out of range: '{raw}'.");
+        }
+
+        return tailIndex;
+    }
+
+    private static bool IsIntegerLiteral(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        int start = value[0] == '-' ? 1 : 0;
+        if (start == value.Length)
+        {
+            return false;
+        }
+
+        for (int index = start; index < value.Length; index++)
+        {
+            if (!char.IsAsciiDigit(value[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static ResolvedReconnectPolicy ResolvePolicy(

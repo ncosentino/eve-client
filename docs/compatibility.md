@@ -25,3 +25,11 @@ for protected headers so existing generic header bags cannot silently replace cr
 
 Unknown event types remain available through `EveStreamEvent.Type` and `Data`
 instead of causing deserialization failure.
+
+Bounded catch-up reads (`EveStreamOptions.Follow = false`) depend on the
+`includeTailIndex=1` stream query parameter and the `x-eve-stream-tail-index`
+response header. eve `0.27.6` accepts the query parameter but does not report the
+header, so bounded reads against that baseline fail with `EveProtocolException`
+instead of silently degrading to a live follow. The compatibility probe asserts
+both halves of that contract and switches to verifying a real bounded read once
+the pinned server reports the header.

@@ -243,9 +243,25 @@ public sealed class EveSession
     /// Attaches to the existing session stream from the stored or overridden cursor.
     /// Unlike a sent-turn response, this stream remains boundary-blind.
     /// </summary>
-    /// <param name="options">Optional cursor and reconnect overrides.</param>
+    /// <remarks>
+    /// The stream follows live events by default. Set
+    /// <see cref="EveStreamOptions.Follow"/> to <see langword="false"/> for a bounded catch-up
+    /// read that completes once the cursor passes the durable tail observed when the stream
+    /// opened. The stored cursor advances past every consumed event in both modes.
+    /// </remarks>
+    /// <param name="options">Optional cursor, bound, and reconnect overrides.</param>
     /// <param name="cancellationToken">Stops local stream consumption.</param>
     /// <returns>The durable session event stream.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The session has no identifier because no message has been sent yet.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// A bounded read was requested with a negative effective start cursor, which cannot be
+    /// bounded because its absolute position is unknown.
+    /// </exception>
+    /// <exception cref="EveProtocolException">
+    /// A bounded read did not receive a valid durable tail index from the server.
+    /// </exception>
     public IAsyncEnumerable<EveStreamEvent> StreamAsync(
         EveStreamOptions? options,
         CancellationToken cancellationToken)
@@ -258,9 +274,20 @@ public sealed class EveSession
         }
 
         int startIndex = options?.StartIndex ?? initialState.StreamIndex;
+        bool follow = options?.Follow ?? true;
+        if (!follow && startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                startIndex,
+                "A bounded eve stream requires a nonnegative start cursor. " +
+                "A tail-relative cursor cannot be bounded.");
+        }
+
         return StreamAndAdvanceAsync(
             initialState,
             startIndex,
+            follow,
             options?.ReconnectPolicy,
             cancellationToken);
     }
@@ -390,6 +417,7 @@ public sealed class EveSession
                 _client,
                 acceptedTurn.SessionId,
                 startIndex,
+                true,
                 request.Headers,
                 request.ProtectedHeaderOverrides,
                 request.StreamReconnectPolicy,
@@ -418,6 +446,7 @@ public sealed class EveSession
     private async IAsyncEnumerable<EveStreamEvent> StreamAndAdvanceAsync(
         EveSessionState initialState,
         int startIndex,
+        bool follow,
         EveStreamReconnectPolicy? reconnectPolicy,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -429,6 +458,7 @@ public sealed class EveSession
                 _client,
                 initialState.SessionId!,
                 startIndex,
+                follow,
                 null,
                 null,
                 reconnectPolicy,

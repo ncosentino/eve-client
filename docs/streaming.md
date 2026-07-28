@@ -46,6 +46,36 @@ await foreach (EveStreamEvent streamEvent in
 Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.
 
+## Bounded catch-up reads
+
+Set `Follow = false` to read everything recorded through the durable tail
+observed when the stream opens, then stop instead of waiting for future events:
+
+```csharp
+await foreach (EveStreamEvent streamEvent in session.StreamAsync(
+    new EveStreamOptions
+    {
+        Follow = false,
+    },
+    cancellationToken))
+{
+    // Process only the backlog, then regain control.
+}
+```
+
+The first bounded request sends `includeTailIndex=1` and the server answers with
+the `x-eve-stream-tail-index` response header. That first tail is an immutable
+upper bound: reconnects resume from the advancing cursor without requesting or
+rebasing the tail, and the stream completes as soon as the cursor passes the
+bound, including immediately when the stored cursor is already past it. The
+stored cursor advances past every consumed event.
+
+Bounded reads require a nonnegative effective start cursor, so combining
+`Follow = false` with a tail-relative `StartIndex` throws
+`ArgumentOutOfRangeException`. A server that omits the tail header, or reports a
+malformed or out-of-range value, throws `EveProtocolException`; eve `0.27.6`
+does not report the header yet.
+
 ## Bound individual events
 
 The upstream TypeScript client does not limit NDJSON event size. Preserve that
