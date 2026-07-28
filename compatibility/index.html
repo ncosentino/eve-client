@@ -724,6 +724,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -740,6 +758,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#upstream-parity-radar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upstream parity radar
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1066,6 +1114,16 @@ NexusLabs.Eve requires an explicit client allowlist and dedicated per-call overr
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
 <p>Unknown event types remain available through <code>EveStreamEvent.Type</code> and <code>Data</code>
 instead of causing deserialization failure.</p>
+<h2 id="upstream-parity-radar">Upstream parity radar<a class="headerlink" href="#upstream-parity-radar" title="Permanent link">&para;</a></h2>
+<p>The repo-local <code>eve-client-upstream-radar</code> Copilot skill under
+<code>.github/skills/</code> compares the declared eve release baseline with current
+<code>vercel/eve</code> main. It filters to framework-neutral client and protocol changes,
+checks committed <code>origin/main</code> source for an existing equivalent, and can file
+deduplicated, agent-ready issues for confirmed gaps.</p>
+<p>The skill resolves this repository from its own location, while generated
+inventories and reports live under the current user's local application-data
+folder. Machine-specific checkout paths and Narnia cadence configuration are
+deliberately not committed.</p>
 <p>Bounded catch-up reads (<code>EveStreamOptions.Follow = false</code>) depend on the
 <code>includeTailIndex=1</code> stream query parameter and the <code>x-eve-stream-tail-index</code>
 response header. eve <code>0.27.6</code> accepts the query parameter but does not report the
