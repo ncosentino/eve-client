@@ -796,6 +796,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#input-request-kinds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input request kinds
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1149,6 +1160,15 @@ header, so bounded reads against that baseline fail with <code>EveProtocolExcept
 instead of silently degrading to a live follow. The compatibility probe asserts
 both halves of that contract and switches to verifying a real bounded read once
 the pinned server reports the header.</p>
+<h2 id="input-request-kinds">Input request kinds<a class="headerlink" href="#input-request-kinds" title="Permanent link">&para;</a></h2>
+<p>eve stamps each human-input request with a framework-owned <code>kind</code> of <code>question</code>,
+<code>tool-approval</code>, or <code>session-limit</code>. <code>EveInputRequest.Kind</code> projects it and
+<code>EveInputRequest.RawKind</code> preserves the wire value, so an unmodelled future kind
+stays inspectable instead of being misclassified from its option shape.</p>
+<p>eve <code>0.27.6</code> predates the discriminator and omits it, which reports
+<code>EveInputRequestKind.Unknown</code> with a <code>null</code> raw value. The compatibility probe
+drives a real approval-gated tool against the pinned fixture and asserts that
+behavior end to end.</p>
 
 
 

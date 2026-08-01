@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequest/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequestKind/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>EveInputRequest - NexusLabs.Eve</title>
+        <title>EveInputRequestKind - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="EveInputRequest – NexusLabs.Eve" />
+  <meta property="og:title" content="EveInputRequestKind – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequest/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequestKind/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EveInputRequest – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveInputRequestKind – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EveInputRequest
+              EveInputRequestKind
             
           </span>
         </div>
@@ -1011,80 +1011,37 @@
   
 
 
-  <h1>EveInputRequest</h1>
+  <h1>EveInputRequestKind</h1>
 
 <h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
-<h2 id="eveinputrequest-class">EveInputRequest Class<a class="headerlink" href="#eveinputrequest-class" title="Permanent link">&para;</a></h2>
-<p>Describes a question or approval that must be answered before an eve turn can continue.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">record</span><span class="w"> </span><span class="n">EveInputRequest</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">IEquatable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequest</span><span class="o">&gt;</span>
+<h2 id="eveinputrequestkind-enum">EveInputRequestKind Enum<a class="headerlink" href="#eveinputrequestkind-enum" title="Permanent link">&para;</a></h2>
+<p>Identifies the framework-owned source of an eve human-input request.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="n">EveInputRequestKind</span>
 </code></pre></div>
-<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveInputRequest</p>
-<p>Implements <a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">System.IEquatable&lt;</a><a href="./" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">&gt;</a></p>
-<h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveInputRequest.Action'></a></p>
-<h2 id="eveinputrequestaction-property">EveInputRequest.Action Property<a class="headerlink" href="#eveinputrequestaction-property" title="Permanent link">&para;</a></h2>
-<p>Gets the raw action request associated with this input request.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="w"> </span><span class="n">Action</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a></p>
-<p><a name='NexusLabs.Eve.EveInputRequest.AllowFreeform'></a></p>
-<h2 id="eveinputrequestallowfreeform-property">EveInputRequest.AllowFreeform Property<a class="headerlink" href="#eveinputrequestallowfreeform-property" title="Permanent link">&para;</a></h2>
-<p>Gets whether a free-form answer is accepted.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">AllowFreeform</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.boolean" title="System.Boolean">System.Boolean</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
-<p><a name='NexusLabs.Eve.EveInputRequest.Display'></a></p>
-<h2 id="eveinputrequestdisplay-property">EveInputRequest.Display Property<a class="headerlink" href="#eveinputrequestdisplay-property" title="Permanent link">&para;</a></h2>
-<p>Gets the optional rendering hint, such as <code>confirmation</code>, <code>select</code>, or <code>text</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Display</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p><a name='NexusLabs.Eve.EveInputRequest.Kind'></a></p>
-<h2 id="eveinputrequestkind-property">EveInputRequest.Kind Property<a class="headerlink" href="#eveinputrequestkind-property" title="Permanent link">&para;</a></h2>
-<p>Gets the framework-owned request source used to route, render, and answer this request.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequestKind</span><span class="w"> </span><span class="n">Kind</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
-<p><a href="../EveInputRequestKind/" title="NexusLabs.Eve.EveInputRequestKind">EveInputRequestKind</a></p>
+<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveInputRequestKind.Unknown'></a></p>
+<p><code>Unknown</code> 0</p>
+<p>The server did not send a recognized discriminator.</p>
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
-<p>Prefer this discriminator over inferring intent from <a href="./#NexusLabs.Eve.EveInputRequest.Display" title="NexusLabs.Eve.EveInputRequest.Display">Display</a>,
-<a href="./#NexusLabs.Eve.EveInputRequest.Options" title="NexusLabs.Eve.EveInputRequest.Options">Options</a>, or the tool name in <a href="./#NexusLabs.Eve.EveInputRequest.Action" title="NexusLabs.Eve.EveInputRequest.Action">Action</a>. It reports
-<a href="../EveInputRequestKind/#NexusLabs.Eve.EveInputRequestKind.Unknown" title="NexusLabs.Eve.EveInputRequestKind.Unknown">Unknown</a> when the server sends no discriminator or one this
-package does not model; <a href="./#NexusLabs.Eve.EveInputRequest.RawKind" title="NexusLabs.Eve.EveInputRequest.RawKind">RawKind</a> then carries the wire value.</p>
-<p><a name='NexusLabs.Eve.EveInputRequest.Options'></a></p>
-<h2 id="eveinputrequestoptions-property">EveInputRequest.Options Property<a class="headerlink" href="#eveinputrequestoptions-property" title="Permanent link">&para;</a></h2>
-<p>Gets the selectable answer options.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputOption</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Options</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputOption/" title="NexusLabs.Eve.EveInputOption">EveInputOption</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<p><a name='NexusLabs.Eve.EveInputRequest.Prompt'></a></p>
-<h2 id="eveinputrequestprompt-property">EveInputRequest.Prompt Property<a class="headerlink" href="#eveinputrequestprompt-property" title="Permanent link">&para;</a></h2>
-<p>Gets the prompt to present to the user.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">Prompt</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p><a name='NexusLabs.Eve.EveInputRequest.RawKind'></a></p>
-<h2 id="eveinputrequestrawkind-property">EveInputRequest.RawKind Property<a class="headerlink" href="#eveinputrequestrawkind-property" title="Permanent link">&para;</a></h2>
-<p>Gets the discriminator exactly as the server sent it, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when it sent none.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">RawKind</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p>This covers both an eve version that predates the discriminator and a future value this
+package does not model. Read <a href="../EveInputRequest/#NexusLabs.Eve.EveInputRequest.RawKind" title="NexusLabs.Eve.EveInputRequest.RawKind">RawKind</a> to tell them apart:
+it is <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when the server sent nothing and carries the wire value
+otherwise.</p>
+<p><a name='NexusLabs.Eve.EveInputRequestKind.Question'></a></p>
+<p><code>Question</code> 1</p>
+<p>The agent asked the user a question.</p>
+<p><a name='NexusLabs.Eve.EveInputRequestKind.ToolApproval'></a></p>
+<p><code>ToolApproval</code> 2</p>
+<p>The agent needs approval before running a tool.</p>
+<p><a name='NexusLabs.Eve.EveInputRequestKind.SessionLimit'></a></p>
+<p><code>SessionLimit</code> 3</p>
+<p>The session reached a configured limit and needs a decision before continuing.</p>
 <h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
-<p>eve versions before the discriminator was introduced omit it entirely, so a
-<a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> value is a legacy server rather than an unrecognized kind.</p>
-<p><a name='NexusLabs.Eve.EveInputRequest.RequestId'></a></p>
-<h2 id="eveinputrequestrequestid-property">EveInputRequest.RequestId Property<a class="headerlink" href="#eveinputrequestrequestid-property" title="Permanent link">&para;</a></h2>
-<p>Gets the stable request identifier.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">RequestId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_7">Property Value<a class="headerlink" href="#property-value_7" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p>Options such as <code>continue</code> and <code>stop</code> belong to this kind. They are not an
+approve/deny tool prompt even when they arrive with a confirmation display hint.</p>
+<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
+<p>eve stamps this discriminator on every input request so consumers can route, render, and answer
+a request without inferring its purpose from option shapes, display hints, or tool names.</p>
 
 
 

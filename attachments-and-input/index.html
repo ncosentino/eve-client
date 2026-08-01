@@ -715,6 +715,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#classify-a-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classify a request
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1115,6 +1126,51 @@
 </code></pre></div>
 <p>Input responses are retried for the short propagation window where an accepted
 durable session is not yet visible to the delivery route.</p>
+<h2 id="classify-a-request">Classify a request<a class="headerlink" href="#classify-a-request" title="Permanent link">&para;</a></h2>
+<p>eve stamps every input request with a framework-owned discriminator, projected as
+<code>EveInputRequest.Kind</code>. Route on it instead of inferring intent from <code>Display</code>,
+<code>Options</code>, or the tool name inside <code>Action</code>: a session-limit prompt can arrive
+with a confirmation hint, two options, and a tool name, yet it is not an
+approve/deny tool prompt.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kt">string</span><span class="w"> </span><span class="n">answer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="k">switch</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">EveInputRequestKind</span><span class="p">.</span><span class="n">ToolApproval</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;approve&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">EveInputRequestKind</span><span class="p">.</span><span class="n">SessionLimit</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;continue&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="n">EveInputRequestKind</span><span class="p">.</span><span class="n">Question</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ChooseAnswer</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">NotSupportedException</span><span class="p">(</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="s">$&quot;Unhandled eve input request kind &#39;{request.RawKind}&#39;.&quot;</span><span class="p">),</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">};</span>
+</code></pre></div>
+<p><code>Kind</code> reports <code>EveInputRequestKind.Unknown</code> in two cases, and <code>RawKind</code>
+distinguishes them:</p>
+<table>
+<thead>
+<tr>
+<th><code>Kind</code></th>
+<th><code>RawKind</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Question</code>, <code>ToolApproval</code>, <code>SessionLimit</code></td>
+<td>matching wire value</td>
+<td>A modelled request kind</td>
+</tr>
+<tr>
+<td><code>Unknown</code></td>
+<td>the wire value</td>
+<td>A newer eve emitted a kind this package does not model</td>
+</tr>
+<tr>
+<td><code>Unknown</code></td>
+<td><code>null</code></td>
+<td>The server predates the discriminator, such as eve <code>0.27.6</code></td>
+</tr>
+</tbody>
+</table>
+<p>A <code>kind</code> that is present but not a string is a malformed request and throws
+<code>EveProtocolException</code> rather than being reported as a legacy server.</p>
 
 
 
