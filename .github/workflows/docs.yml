@@ -11,9 +11,15 @@ on:
 permissions:
   contents: read
 
+# Pull request runs never publish, so they get an isolated per-pull-request group.
+# A single shared "pages" group would let each newly queued run cancel the previous
+# pending one, leaving the required "Build documentation" check permanently unreported.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: >-
+    ${{ github.event_name == 'pull_request'
+    && format('docs-pr-{0}', github.event.pull_request.number)
+    || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
