@@ -61,6 +61,7 @@ dotnet restore
 dotnet format --no-restore --verify-no-changes
 dotnet build --configuration Release --no-restore
 dotnet test --configuration Release --no-build
+pwsh -Command "Invoke-Pester -Path .github/skills/eve-client-upstream-radar/scripts"
 npm ci --prefix test/fixtures/eve-agent
 npm run test:client --prefix test/fixtures/eve-agent
 pwsh scripts/generate-api-docs.ps1 -OutputDirectory docs/api/dev

@@ -75,6 +75,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test upstream radar scripts
+        shell: pwsh
+        run: |
+          $module = Get-Module -ListAvailable -Name Pester |
+            Where-Object { $_.Version.Major -eq 5 } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+          if ($null -eq $module) {
+            Write-Error (
+              'Pester 5.x is required to test the upstream radar scripts. ' +
+              'The runner image no longer preinstalls it.')
+            exit 1
+          }
+
+          Write-Host "Using Pester $($module.Version)."
+          Import-Module $module.Path -Force
+          # Run.Exit makes a failing suite set a nonzero exit code; Invoke-Pester
+          # otherwise reports failures without failing the step.
+          $configuration = New-PesterConfiguration
+          $configuration.Run.Path = '.github/skills/eve-client-upstream-radar/scripts'
+          $configuration.Run.Exit = $true
+          $configuration.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $configuration
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
