@@ -6,37 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Understand supported eve versions, stream protocol compatibility, and preview-version policy.">
+        <meta name="description" content="A C# client for the Vercel eve HTTP API.">
       
       
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/compatibility/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEventDeduplicator/">
       
       
-        <link rel="prev" href="../errors/">
-      
-      
-        <link rel="next" href="../api/">
       
       
         
       
       
-      <link rel="icon" href="../assets/eve-favicon.png">
+      <link rel="icon" href="../../../../assets/eve-favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Compatibility - NexusLabs.Eve</title>
+        <title>EveStreamEventDeduplicator - NexusLabs.Eve</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -64,13 +60,13 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Compatibility – NexusLabs.Eve" />
-  <meta property="og:description" content="Understand supported eve versions, stream protocol compatibility, and preview-version policy." />
+  <meta property="og:title" content="EveStreamEventDeduplicator – NexusLabs.Eve" />
+  <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/compatibility/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEventDeduplicator/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Compatibility – NexusLabs.Eve" />
-  <meta name="twitter:description" content="Understand supported eve versions, stream protocol compatibility, and preview-version policy." />
+  <meta name="twitter:title" content="EveStreamEventDeduplicator – NexusLabs.Eve" />
+  <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
 
@@ -93,7 +89,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#compatibility" class="md-skip">
+        <a href="#nexuslabseve" class="md-skip">
           Skip to content
         </a>
       
@@ -107,9 +103,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="NexusLabs.Eve" class="md-header__button md-logo" aria-label="NexusLabs.Eve" data-md-component="logo">
+    <a href="../../../.." title="NexusLabs.Eve" class="md-header__button md-logo" aria-label="NexusLabs.Eve" data-md-component="logo">
       
-  <img src="../assets/eve-icon.png" alt="logo">
+  <img src="../../../../assets/eve-icon.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -126,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Compatibility
+              EveStreamEventDeduplicator
             
           </span>
         </div>
@@ -239,7 +235,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../../../.." class="md-tabs__link">
         
   
   
@@ -258,7 +254,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../getting-started/" class="md-tabs__link">
+      <a href="../../../../getting-started/" class="md-tabs__link">
         
   
   
@@ -277,7 +273,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../authentication/" class="md-tabs__link">
+      <a href="../../../../authentication/" class="md-tabs__link">
         
   
   
@@ -296,7 +292,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../sessions/" class="md-tabs__link">
+      <a href="../../../../sessions/" class="md-tabs__link">
         
   
   
@@ -315,7 +311,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../streaming/" class="md-tabs__link">
+      <a href="../../../../streaming/" class="md-tabs__link">
         
   
   
@@ -334,7 +330,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../attachments-and-input/" class="md-tabs__link">
+      <a href="../../../../attachments-and-input/" class="md-tabs__link">
         
   
   
@@ -353,7 +349,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../structured-output/" class="md-tabs__link">
+      <a href="../../../../structured-output/" class="md-tabs__link">
         
   
   
@@ -372,7 +368,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../errors/" class="md-tabs__link">
+      <a href="../../../../errors/" class="md-tabs__link">
         
   
   
@@ -389,11 +385,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../../compatibility/" class="md-tabs__link">
         
   
   
@@ -414,7 +408,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/" class="md-tabs__link">
+        <a href="../../../" class="md-tabs__link">
           
   
   
@@ -434,7 +428,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../building/" class="md-tabs__link">
+        <a href="../../../../building/" class="md-tabs__link">
           
   
   
@@ -470,9 +464,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="NexusLabs.Eve" class="md-nav__button md-logo" aria-label="NexusLabs.Eve" data-md-component="logo">
+    <a href="../../../.." title="NexusLabs.Eve" class="md-nav__button md-logo" aria-label="NexusLabs.Eve" data-md-component="logo">
       
-  <img src="../assets/eve-icon.png" alt="logo">
+  <img src="../../../../assets/eve-icon.png" alt="logo">
 
     </a>
     NexusLabs.Eve
@@ -499,7 +493,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -526,7 +520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../../../getting-started/" class="md-nav__link">
         
   
   
@@ -553,7 +547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/" class="md-nav__link">
+      <a href="../../../../authentication/" class="md-nav__link">
         
   
   
@@ -580,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sessions/" class="md-nav__link">
+      <a href="../../../../sessions/" class="md-nav__link">
         
   
   
@@ -607,7 +601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
+      <a href="../../../../streaming/" class="md-nav__link">
         
   
   
@@ -634,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../attachments-and-input/" class="md-nav__link">
+      <a href="../../../../attachments-and-input/" class="md-nav__link">
         
   
   
@@ -661,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../structured-output/" class="md-nav__link">
+      <a href="../../../../structured-output/" class="md-nav__link">
         
   
   
@@ -688,7 +682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../../../errors/" class="md-nav__link">
         
   
   
@@ -712,37 +706,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Compatibility
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../compatibility/" class="md-nav__link">
         
   
   
@@ -758,48 +725,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#stream-event-identity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stream event identity
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#upstream-parity-radar" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upstream parity radar
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -865,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../../" class="md-nav__link">
         
   
   
@@ -893,7 +818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/dev/" class="md-nav__link">
+      <a href="../../" class="md-nav__link">
         
   
   
@@ -921,7 +846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/stable/" class="md-nav__link">
+      <a href="../../../stable/" class="md-nav__link">
         
   
   
@@ -1010,7 +935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../building/" class="md-nav__link">
+      <a href="../../../../building/" class="md-nav__link">
         
   
   
@@ -1038,7 +963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../releasing/" class="md-nav__link">
+      <a href="../../../../releasing/" class="md-nav__link">
         
   
   
@@ -1086,78 +1011,63 @@
   
 
 
-<h1 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h1>
-<table>
-<thead>
-<tr>
-<th>NexusLabs.Eve</th>
-<th style="text-align: right;">Reference eve</th>
-<th style="text-align: right;">Stream protocol</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0.1.x</td>
-<td style="text-align: right;">0.27.6</td>
-<td style="text-align: right;">19</td>
-<td>Primary compatibility target</td>
-</tr>
-<tr>
-<td>0.1.x</td>
-<td style="text-align: right;">0.24.6</td>
-<td style="text-align: right;">19</td>
-<td>End-to-end verified with <code>bg-eve</code></td>
-</tr>
-</tbody>
-</table>
-<p>eve remains preview software. Package upgrades should therefore validate both:</p>
-<ol>
-<li>The public HTTP route and body contracts.</li>
-<li>The durable message-stream protocol version and event shapes.</li>
-</ol>
-<p>The repository contains a pinned eve <code>0.27.6</code> fixture with a deterministic
-model. CI builds the real server and verifies health, info, text turns,
-attachment staging, streaming, cooperative cancellation, and session reset
-through the C# client.</p>
-<p>Upstream eve 0.27.6 lets generic per-request headers replace authentication.
-NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
-for protected headers so existing generic header bags cannot silently replace credentials.</p>
-<p>Unknown event types remain available through <code>EveStreamEvent.Type</code> and <code>Data</code>
-instead of causing deserialization failure.</p>
-<h2 id="stream-event-identity">Stream event identity<a class="headerlink" href="#stream-event-identity" title="Permanent link">&para;</a></h2>
-<p>Stream protocol version 20 stamps every persisted event with a stable
-<code>evt_</code>-prefixed identifier. <code>EveStreamEvent.Metadata.Id</code> projects it when
-present and reports <code>null</code> for events persisted under earlier protocol
-versions, which cannot be deduplicated. eve <code>0.27.6</code> emits protocol version 19,
-so the pinned compatibility probe asserts that durable timestamps still arrive
-while identifiers stay absent.</p>
-<h2 id="upstream-parity-radar">Upstream parity radar<a class="headerlink" href="#upstream-parity-radar" title="Permanent link">&para;</a></h2>
-<p>The repo-local <code>eve-client-upstream-radar</code> Copilot skill under
-<code>.github/skills/</code> compares the declared eve release baseline with current
-<code>vercel/eve</code> main. It filters to framework-neutral client and protocol changes,
-checks committed <code>origin/main</code> source for an existing equivalent, and can file
-deduplicated, agent-ready issues for confirmed gaps.</p>
-<p>The skill resolves this repository from its own location, while generated
-inventories and reports live under the current user's local application-data
-folder. Machine-specific checkout paths and Narnia cadence configuration are
-deliberately not committed.</p>
-<p>Bounded catch-up reads (<code>EveStreamOptions.Follow = false</code>) depend on the
-<code>includeTailIndex=1</code> stream query parameter and the <code>x-eve-stream-tail-index</code>
-response header. eve <code>0.27.6</code> accepts the query parameter but does not report the
-header, so bounded reads against that baseline fail with <code>EveProtocolException</code>
-instead of silently degrading to a live follow. The compatibility probe asserts
-both halves of that contract and switches to verifying a real bounded read once
-the pinned server reports the header.</p>
+  <h1>EveStreamEventDeduplicator</h1>
+
+<h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
+<h2 id="evestreameventdeduplicator-class">EveStreamEventDeduplicator Class<a class="headerlink" href="#evestreameventdeduplicator-class" title="Permanent link">&para;</a></h2>
+<p>Tracks which durable eve stream events have already been consumed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EveStreamEventDeduplicator</span>
+</code></pre></div>
+<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveStreamEventDeduplicator</p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>Deduplication is keyed on <a href="../EveStreamEventMetadata/#NexusLabs.Eve.EveStreamEventMetadata.Id" title="NexusLabs.Eve.EveStreamEventMetadata.Id">Id</a>. It absorbs a reconnect that
+overlaps already-handled events, a rewind to an earlier start index, and a persisted log merged
+with the prefix a live stream replays. A retried step is not a duplicate: it is emitted again
+under a new identifier.</p>
+<p>The remembered set is unbounded because a bounded one cannot survive a rewind past its capacity.
+Callers that retain nothing per event should bound their reads with the session stream cursor
+instead of using this type.</p>
+<p>Instances are not thread-safe and are intended to be consumed by a single stream reader.</p>
+<h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveStreamEventDeduplicator.Count'></a></p>
+<h2 id="evestreameventdeduplicatorcount-property">EveStreamEventDeduplicator.Count Property<a class="headerlink" href="#evestreameventdeduplicatorcount-property" title="Permanent link">&para;</a></h2>
+<p>Gets the number of event identifiers currently remembered.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Count</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a></p>
+<h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent)'></a></p>
+<h2 id="evestreameventdeduplicatoradmitevestreamevent-method">EveStreamEventDeduplicator.Admit(EveStreamEvent) Method<a class="headerlink" href="#evestreameventdeduplicatoradmitevestreamevent-method" title="Permanent link">&para;</a></h2>
+<p>Records <a href="./#NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent).streamEvent" title="NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent).streamEvent">streamEvent</a> and reports whether it should be processed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">Admit</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent).streamEvent'></a></p>
+<p><code>streamEvent</code> <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a></p>
+<p>The stream event to admit.</p>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.boolean" title="System.Boolean">System.Boolean</a><br />
+<a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool">true</a> when the event has not been admitted before, or carries no durable
+            identifier; <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool">false</a> when its identifier was already admitted and the caller
+            should drop it.</p>
+<h4 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentnullexception" title="System.ArgumentNullException">System.ArgumentNullException</a><br />
+<a href="./#NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent).streamEvent" title="NexusLabs.Eve.EveStreamEventDeduplicator.Admit(NexusLabs.Eve.EveStreamEvent).streamEvent">streamEvent</a> is <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a>.</p>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>Events persisted before stream protocol version 20 carry no identifier and are always
+admitted because there is nothing to deduplicate on.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventDeduplicator.Clear()'></a></p>
+<h2 id="evestreameventdeduplicatorclear-method">EveStreamEventDeduplicator.Clear() Method<a class="headerlink" href="#evestreameventdeduplicatorclear-method" title="Permanent link">&para;</a></h2>
+<p>Forgets every remembered identifier so a new session can reuse this instance.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">Clear</span><span class="p">();</span>
+</code></pre></div>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -1236,10 +1146,10 @@ the pinned server reports the header.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.integrate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.integrate"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
