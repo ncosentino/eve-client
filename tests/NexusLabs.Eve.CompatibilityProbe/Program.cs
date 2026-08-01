@@ -184,6 +184,50 @@ else
     }
 }
 
+EveSession approvalSession = client.CreateSession();
+EveMessageResponse approvalResponse = await approvalSession.SendAsync(
+    "REQUEST_APPROVAL",
+    timeout.Token);
+EveTurnOutcome approvalOutcome = await approvalResponse.GetOutcomeAsync(timeout.Token);
+if (approvalOutcome.Status != EveTurnStatus.Waiting)
+{
+    throw new InvalidOperationException(
+        $"The approval turn did not park for human input: status={approvalOutcome.Status}.");
+}
+
+if (approvalOutcome.InputRequests.Count != 1)
+{
+    throw new InvalidOperationException(
+        $"The approval turn emitted {approvalOutcome.InputRequests.Count} input requests.");
+}
+
+EveInputRequest approvalRequest = approvalOutcome.InputRequests[0];
+
+// eve 0.27.6, the pinned compatibility baseline, predates the framework-owned discriminator.
+// A newer fixture stamps 'tool-approval' here, which flips both assertions.
+if (approvalRequest.RawKind is not null
+    || approvalRequest.Kind != EveInputRequestKind.Unknown)
+{
+    throw new InvalidOperationException(
+        $"eve {EveProtocol.ReferenceEveVersion} reported input request kind " +
+        $"'{approvalRequest.RawKind ?? "<absent>"}' projected as {approvalRequest.Kind}.");
+}
+
+if (approvalRequest.Options.Count == 0)
+{
+    throw new InvalidOperationException(
+        "The approval request did not offer any selectable options.");
+}
+
+EveMessageResponse resumedResponse = await approvalSession.SendAsync(
+    new EveSendTurnRequest
+    {
+        InputResponses = [new EveInputResponse(approvalRequest.RequestId, "approve")],
+    },
+    timeout.Token);
+EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(resumedOutcome, "approved tool turn");
+
 EveSession resetSession = client.CreateSession();
 EveMessageResponse resetResponse = await resetSession.SendAsync(
     "Return the deterministic compatibility response.",

@@ -139,6 +139,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             JsonElement request = requests[requestIndex];
             string requestId = RequireString(request, "requestId");
             string prompt = RequireString(request, "prompt");
+            string? rawKind = ReadInputRequestKind(request);
             string? display = OptionalString(request, "display");
             bool? allowFreeform = OptionalBoolean(request, "allowFreeform");
             JsonElement action = request.TryGetProperty("action", out JsonElement actionValue)
@@ -168,12 +169,41 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             inputRequests.Add(new EveInputRequest(
                 requestId,
                 prompt,
+                ResolveInputRequestKind(rawKind),
+                rawKind,
                 display,
                 allowFreeform,
                 options,
                 action));
         }
     }
+
+    // An absent discriminator is an eve version that predates it; a present non-string value is a
+    // malformed request that must not be reported as a legacy server.
+    private static string? ReadInputRequestKind(JsonElement request)
+    {
+        if (!request.TryGetProperty("kind", out JsonElement kind))
+        {
+            return null;
+        }
+
+        if (kind.ValueKind != JsonValueKind.String || kind.GetString() is not string value)
+        {
+            throw new EveProtocolException(
+                "An eve input request kind must be a string.");
+        }
+
+        return value;
+    }
+
+    private static EveInputRequestKind ResolveInputRequestKind(string? rawKind) =>
+        rawKind switch
+        {
+            "question" => EveInputRequestKind.Question,
+            "tool-approval" => EveInputRequestKind.ToolApproval,
+            "session-limit" => EveInputRequestKind.SessionLimit,
+            _ => EveInputRequestKind.Unknown,
+        };
 
     private static string RequireString(JsonElement parent, string propertyName)
     {
