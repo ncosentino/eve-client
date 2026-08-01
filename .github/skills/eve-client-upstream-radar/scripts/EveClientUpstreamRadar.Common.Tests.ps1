@@ -152,4 +152,41 @@ The initial compatibility target is Vercel ``eve`` **0.27.6** at commit
         @(Get-EveRadarTrackedPaths -File $record) |
             Should -Be @('packages/eve/src/client/session.ts')
     }
+
+    It 'orders release tags by numeric version rather than string order' {
+        $ordered = Get-EveRadarOrderedReleaseTags -TagName @(
+            'eve@0.29.4',
+            'eve@0.9.8',
+            'eve@0.28.0',
+            'eve@0.27.13',
+            'eve@0.27.6')
+
+        @($ordered | ForEach-Object { $_.Version }) |
+            Should -Be @('0.9.8', '0.27.6', '0.27.13', '0.28.0', '0.29.4')
+    }
+
+    It 'orders a prerelease before its matching release' {
+        $ordered = Get-EveRadarOrderedReleaseTags -TagName @(
+            'eve@1.0.0',
+            'eve@1.0.0-beta.2')
+
+        @($ordered | ForEach-Object { $_.Version }) |
+            Should -Be @('1.0.0-beta.2', '1.0.0')
+    }
+
+    It 'ignores tags that are not eve semver releases' {
+        $ordered = Get-EveRadarOrderedReleaseTags -TagName @(
+            'eve@0.28.0',
+            'eve@nightly',
+            'other@1.2.3',
+            '',
+            'v0.28.0')
+
+        @($ordered | ForEach-Object { $_.Tag }) | Should -Be @('eve@0.28.0')
+    }
+
+    It 'returns nothing when no release tags are supplied' {
+        @(Get-EveRadarOrderedReleaseTags -TagName @()).Count | Should -Be 0
+        @(Get-EveRadarOrderedReleaseTags).Count | Should -Be 0
+    }
 }

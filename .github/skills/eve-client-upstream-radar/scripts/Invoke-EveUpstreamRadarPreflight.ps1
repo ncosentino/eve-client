@@ -200,6 +200,9 @@ if ($status -ne 'AnalysisRequired') {
     $lines.Add('|---|---:|')
     $lines.Add("| Upstream commits | $($inventory.Delta.CommitCount) |")
     $lines.Add("| Path candidates | $candidateCount |")
+    $lines.Add(
+        '| Path candidates not yet in a published eve release | ' +
+        "$($inventory.Delta.UnreleasedPathCandidateCount) |")
     $lines.Add('| Confirmed gaps | 0 |')
     $lines.Add('| Already present | 0 |')
     $lines.Add(
@@ -217,7 +220,7 @@ if ($status -ne 'AnalysisRequired') {
 
 $preflightPath = Join-Path $runDirectory 'preflight.json'
 $result = [pscustomobject]@{
-    SchemaVersion = 1
+    SchemaVersion = 2
     Status = $status
     RunDirectory = [System.IO.Path]::GetFullPath($runDirectory)
     InventoryPath = [System.IO.Path]::GetFullPath($inventoryPath)
@@ -234,6 +237,7 @@ $result = [pscustomobject]@{
     UpstreamHeadCommit = $inventory.Upstream.HeadCommit
     UpstreamCommitCount = [int] $inventory.Delta.CommitCount
     PathCandidateCount = $candidateCount
+    UnreleasedPathCandidateCount = [int] $inventory.Delta.UnreleasedPathCandidateCount
     SourceCandidateCount = $sourceCandidates.Count
     TrackedCandidateCount = $trackedCandidates.Count
     UntrackedCandidateCount = $untrackedCandidateCount

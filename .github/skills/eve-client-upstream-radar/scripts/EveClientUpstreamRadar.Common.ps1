@@ -87,6 +87,67 @@ function Get-EveRadarPullRequestNumber {
     return [int] $match.Groups['number'].Value
 }
 
+function Get-EveRadarOrderedReleaseTags {
+    <#
+    .SYNOPSIS
+    Orders `eve@<semver>` release tags from oldest to newest published version.
+
+    .DESCRIPTION
+    Parses each tag into its numeric version components plus an optional
+    prerelease identifier, then sorts ascending so the first release containing
+    a commit can be resolved by walking the result in order. Tags that do not
+    match the `eve@<major>.<minor>.<patch>` shape are ignored rather than
+    guessed at.
+    #>
+    [CmdletBinding()]
+    param(
+        [string[]] $TagName
+    )
+
+    if ($null -eq $TagName) {
+        return @()
+    }
+
+    $parsed = foreach ($tag in $TagName) {
+        if ([string]::IsNullOrWhiteSpace($tag)) {
+            continue
+        }
+
+        $trimmed = $tag.Trim()
+        $match = [regex]::Match(
+            $trimmed,
+            '^eve@(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>[0-9A-Za-z.-]+))?$')
+        if (-not $match.Success) {
+            continue
+        }
+
+        $prerelease = if ($match.Groups['prerelease'].Success) {
+            $match.Groups['prerelease'].Value
+        }
+        else {
+            $null
+        }
+
+        [pscustomobject]@{
+            Tag = $trimmed
+            Version = $trimmed.Substring('eve@'.Length)
+            Major = [int] $match.Groups['major'].Value
+            Minor = [int] $match.Groups['minor'].Value
+            Patch = [int] $match.Groups['patch'].Value
+            Prerelease = $prerelease
+        }
+    }
+
+    return @(
+        $parsed |
+            Sort-Object `
+                Major, `
+                Minor, `
+                Patch, `
+                @{ Expression = { $null -ne $_.Prerelease }; Descending = $true }, `
+                Prerelease)
+}
+
 function Get-EveRadarFingerprint {
     <#
     .SYNOPSIS

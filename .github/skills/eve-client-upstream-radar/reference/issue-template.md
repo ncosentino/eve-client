@@ -15,6 +15,7 @@ Use this structure for every newly filed issue.
 
 - **Pull request:** [vercel/eve#<number>](<url>) — `<title>`
 - **Merge commit:** [`<short-sha>`](<commit-url>)
+- **Released in:** eve `<version>` — or `not yet released (upstream main only)`
 - **Compared from:** eve `<baseline-version>` (`<baseline-short-sha>`) to
   upstream main `<head-short-sha>`
 - **Relevant TypeScript files:**
@@ -38,7 +39,9 @@ why raw JSON or an existing abstraction does not already provide parity.>
       idiomatic .NET API or internal behavior.
 - [ ] Contract tests cover the upstream before/after behavior.
 - [ ] The real Eve compatibility probe is updated when the change affects the
-      HTTP route, payload, or stream contract.
+      HTTP route, payload, or stream contract, and the change is present in a
+      published eve release. An unreleased change is covered by contract tests
+      until a release containing it exists.
 - [ ] Public API additions have XML documentation covering intent, parameters,
       return values, exceptions, and constraints.
 - [ ] User-facing compatibility documentation is updated when applicable.

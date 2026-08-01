@@ -63,7 +63,7 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
 2. Verify the target path exists and its configured remote identifies
    `ncosentino/eve-client`.
 3. When `--inventory-path` is supplied, read that file, verify
-   `SchemaVersion=1`, and use its immutable target/upstream commits. Do not
+   `SchemaVersion=2`, and use its immutable target/upstream commits. Do not
    recollect or create a second run directory.
 4. Otherwise run the deterministic preflight:
 
@@ -83,6 +83,9 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
    - Resolves the matching `eve@<version>` tag.
    - Updates a radar-owned partial clone of `vercel/eve`.
    - Enumerates every commit from that baseline through upstream main.
+   - Resolves each commit's `ReleasedInVersion`: the lowest published
+     `eve@<semver>` tag containing it, or `null` when it exists only on
+     upstream main.
    - Marks direct path candidates and provides subsystem hints.
 
 5. If preflight collection fails, stop without creating issues.
@@ -278,6 +281,9 @@ Do not invent priority or status labels that the repository does not use.
 Build the body from `reference/issue-template.md`. It must contain:
 
 - Upstream PR/commit links and relevant TypeScript paths.
+- The published eve release containing the change, taken from the inventory's
+  `ReleasedInVersion`, or an explicit statement that it is on upstream main
+  only. Never guess this by reading version numbers out of changelogs.
 - Original-prose before/after behavior.
 - Concrete .NET parity evidence from committed main.
 - Agent-ready acceptance criteria.
@@ -304,6 +310,7 @@ Write `<run-directory>\eve-client-upstream-radar.md` with:
 
 - Target main commit and declared eve baseline.
 - Upstream main commit and total delta size.
+- How many path candidates are not yet in a published eve release.
 - Every source cluster, classification, parity result, and evidence summary.
 - Dedup matches.
 - Created issue URLs.
