@@ -1141,8 +1141,8 @@ rewind, or a re-read of a finished session — yields the same identifier. A
 retried step is not a replay: it is emitted again under a new identifier.</p>
 <p>Events persisted before protocol version 20 carry no identifier and report
 <code>null</code>, so they cannot be deduplicated. eve <code>0.27.6</code> emits protocol version 19
-and never stamps one.</p>
-<p><code>EveStreamEventDeduplicator</code> encodes that contract, so a caller that resumes a
+and never stamps one.
+<code>EveStreamEventDeduplicator</code> encodes that contract, so a caller that resumes a
 stream can drop events it already processed:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">EveStreamEventDeduplicator</span><span class="w"> </span><span class="n">seen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -1199,7 +1199,7 @@ stored cursor advances past every consumed event.</p>
 <code>Follow = false</code> with a tail-relative <code>StartIndex</code> throws
 <code>ArgumentOutOfRangeException</code>. A server that omits the tail header, or reports a
 malformed or out-of-range value, throws <code>EveProtocolException</code>; eve <code>0.27.6</code>
-does not report the header yet.</p>
+never reported the header, so bounded reads against that release fail.</p>
 <h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
 <p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
 behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>

@@ -1110,9 +1110,15 @@
 <tbody>
 <tr>
 <td>0.1.x</td>
+<td style="text-align: right;">0.29.4</td>
+<td style="text-align: right;">20</td>
+<td>Primary compatibility target</td>
+</tr>
+<tr>
+<td>0.1.x</td>
 <td style="text-align: right;">0.27.6</td>
 <td style="text-align: right;">19</td>
-<td>Primary compatibility target</td>
+<td>Previous baseline; tolerated, not gated by CI</td>
 </tr>
 <tr>
 <td>0.1.x</td>
@@ -1127,11 +1133,15 @@
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.27.6</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.29.4</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
-attachment staging, streaming, cooperative cancellation, and session reset
-through the C# client.</p>
-<p>Upstream eve 0.27.6 lets generic per-request headers replace authentication.
+attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
+approval-gated human input, and session reset through the C# client.</p>
+<p>The client stays readable against protocol 19 servers: durable event
+identifiers and input-request discriminators are both projected as absent
+rather than causing a failure. That path is covered by contract tests, not by
+the pinned fixture.</p>
+<p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
 <p>Unknown event types remain available through <code>EveStreamEvent.Type</code> and <code>Data</code>
@@ -1140,9 +1150,9 @@ instead of causing deserialization failure.</p>
 <p>Stream protocol version 20 stamps every persisted event with a stable
 <code>evt_</code>-prefixed identifier. <code>EveStreamEvent.Metadata.Id</code> projects it when
 present and reports <code>null</code> for events persisted under earlier protocol
-versions, which cannot be deduplicated. eve <code>0.27.6</code> emits protocol version 19,
-so the pinned compatibility probe asserts that durable timestamps still arrive
-while identifiers stay absent.</p>
+versions, which cannot be deduplicated. The compatibility probe asserts that
+the pinned server stamps a well-formed identifier on every event of a turn and
+never repeats one.</p>
 <h2 id="upstream-parity-radar">Upstream parity radar<a class="headerlink" href="#upstream-parity-radar" title="Permanent link">&para;</a></h2>
 <p>The repo-local <code>eve-client-upstream-radar</code> Copilot skill under
 <code>.github/skills/</code> compares the declared eve release baseline with current
@@ -1155,20 +1165,22 @@ folder. Machine-specific checkout paths and Narnia cadence configuration are
 deliberately not committed.</p>
 <p>Bounded catch-up reads (<code>EveStreamOptions.Follow = false</code>) depend on the
 <code>includeTailIndex=1</code> stream query parameter and the <code>x-eve-stream-tail-index</code>
-response header. eve <code>0.27.6</code> accepts the query parameter but does not report the
-header, so bounded reads against that baseline fail with <code>EveProtocolException</code>
-instead of silently degrading to a live follow. The compatibility probe asserts
-both halves of that contract and switches to verifying a real bounded read once
-the pinned server reports the header.</p>
+response header. The pinned server reports the header, so the compatibility
+probe verifies a real bounded read: the first request asks for the tail,
+reconnects never re-request it, and the read stops exactly at the durable bound
+while advancing the stored cursor. A server that omits the header, or reports a
+malformed or out-of-range value, fails with <code>EveProtocolException</code> instead of
+silently degrading to a live follow. eve <code>0.27.6</code> accepted the query parameter
+without reporting the header, so bounded reads against that release fail.</p>
 <h2 id="input-request-kinds">Input request kinds<a class="headerlink" href="#input-request-kinds" title="Permanent link">&para;</a></h2>
 <p>eve stamps each human-input request with a framework-owned <code>kind</code> of <code>question</code>,
 <code>tool-approval</code>, or <code>session-limit</code>. <code>EveInputRequest.Kind</code> projects it and
 <code>EveInputRequest.RawKind</code> preserves the wire value, so an unmodelled future kind
 stays inspectable instead of being misclassified from its option shape.</p>
-<p>eve <code>0.27.6</code> predates the discriminator and omits it, which reports
-<code>EveInputRequestKind.Unknown</code> with a <code>null</code> raw value. The compatibility probe
-drives a real approval-gated tool against the pinned fixture and asserts that
-behavior end to end.</p>
+<p>The compatibility probe drives a real approval-gated tool against the pinned
+fixture, asserts the request arrives as <code>tool-approval</code>, answers it, and
+verifies the turn resumes. A server that predates the discriminator reports
+<code>EveInputRequestKind.Unknown</code> with a <code>null</code> raw value.</p>
 
 
 
