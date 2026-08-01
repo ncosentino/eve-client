@@ -220,7 +220,8 @@ if (-not $SkipUpstreamFetch) {
         '--quiet',
         'origin',
         "+refs/heads/${UpstreamBranch}:$upstreamRef",
-        "+refs/tags/eve@${referenceVersion}:$tagRef"
+        "+refs/tags/eve@${referenceVersion}:$tagRef",
+        '+refs/tags/eve@*:refs/tags/eve@*'
     )
 }
 
@@ -261,6 +262,39 @@ $commitShas = @(
         "$baselineCommit..$upstreamHeadCommit"
     ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 )
+
+# Only releases that already contain the baseline can contain a delta commit.
+# Walking them from oldest to newest and keeping the first claim gives each
+# commit the lowest published version a consumer can install to get it.
+$candidateReleaseTags = @(
+    Invoke-Git -Arguments @(
+        '-C',
+        $CachePath,
+        'tag',
+        '--contains',
+        $baselineCommit,
+        '--list',
+        'eve@*'
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+)
+$releaseVersionByCommit = @{}
+foreach ($release in Get-EveRadarOrderedReleaseTags -TagName $candidateReleaseTags) {
+    $releasedShas = @(
+        Invoke-Git -Arguments @(
+            '-C',
+            $CachePath,
+            'rev-list',
+            "$baselineCommit..refs/tags/$($release.Tag)"
+        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+
+    foreach ($releasedSha in $releasedShas) {
+        $key = $releasedSha.Trim().ToLowerInvariant()
+        if (-not $releaseVersionByCommit.ContainsKey($key)) {
+            $releaseVersionByCommit[$key] = $release.Version
+        }
+    }
+}
 
 $commits = foreach ($sha in $commitShas) {
     $subject = (
@@ -314,9 +348,16 @@ $commits = foreach ($sha in $commitShas) {
             Sort-Object -Unique
     )
     $pullRequestNumber = Get-EveRadarPullRequestNumber -Subject $subject
+    $shaKey = $sha.Trim().ToLowerInvariant()
+    $releasedInVersion = if ($releaseVersionByCommit.ContainsKey($shaKey)) {
+        $releaseVersionByCommit[$shaKey]
+    }
+    else {
+        $null
+    }
 
     [pscustomobject]@{
-        Sha = $sha.Trim().ToLowerInvariant()
+        Sha = $shaKey
         Subject = $subject
         AuthoredAt = $authoredAt
         PullRequestNumber = $pullRequestNumber
@@ -327,6 +368,7 @@ $commits = foreach ($sha in $commitShas) {
             "https://github.com/$UpstreamRepository/pull/$pullRequestNumber"
         }
         CommitUrl = "https://github.com/$UpstreamRepository/commit/$sha"
+        ReleasedInVersion = $releasedInVersion
         CandidateByPath = @($relevantFiles).Count -gt 0
         ScopeHints = $scopeHints
         RelevantPaths = $relevantPaths
@@ -335,7 +377,7 @@ $commits = foreach ($sha in $commitShas) {
 }
 
 $result = [pscustomobject]@{
-    SchemaVersion = 1
+    SchemaVersion = 2
     GeneratedAt = [DateTimeOffset]::UtcNow.ToString('o')
     Target = [pscustomobject]@{
         Repository = $TargetRepository
@@ -355,6 +397,9 @@ $result = [pscustomobject]@{
     Delta = [pscustomobject]@{
         CommitCount = @($commits).Count
         PathCandidateCount = @($commits | Where-Object CandidateByPath).Count
+        UnreleasedPathCandidateCount = @(
+            $commits |
+                Where-Object { $_.CandidateByPath -and $null -eq $_.ReleasedInVersion }).Count
     }
     Commits = @($commits)
 }
