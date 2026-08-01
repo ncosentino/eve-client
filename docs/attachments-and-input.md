@@ -67,7 +67,7 @@ distinguishes them:
 |---|---|---|
 | `Question`, `ToolApproval`, `SessionLimit` | matching wire value | A modelled request kind |
 | `Unknown` | the wire value | A newer eve emitted a kind this package does not model |
-| `Unknown` | `null` | The server predates the discriminator, such as eve `0.27.6` |
+| `Unknown` | `null` | The server predates the discriminator, such as eve `0.27.6` or earlier |
 
 A `kind` that is present but not a string is a malformed request and throws
 `EveProtocolException` rather than being reported as a legacy server.

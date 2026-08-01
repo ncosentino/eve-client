@@ -142,7 +142,7 @@ credentials, even when that name is allowlisted.
 ## Migration
 
 Existing consumers keep authentication-authoritative behavior by default. To opt into the
-eve 0.27.6 identity-forwarding use case:
+upstream eve identity-forwarding use case:
 
 1. Identify the exact protected header that must be replaceable.
 2. Add only that name to `AllowedProtectedHeaderOverrides`.

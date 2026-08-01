@@ -1,12 +1,18 @@
 import { once } from "node:events";
 import { spawn } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const fixtureDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(fixtureDirectory, "..", "..", "..");
 const eveBin = path.join(fixtureDirectory, "node_modules", "eve", "bin", "eve.js");
+const eveVersion = JSON.parse(
+  await readFile(
+    path.join(fixtureDirectory, "node_modules", "eve", "package.json"),
+    "utf8",
+  ),
+).version;
 const probeProject = path.join(
   repositoryRoot,
   "tests",
@@ -79,7 +85,7 @@ try {
   if (code !== 0) {
     throw new Error(`The C# compatibility probe exited with code ${code}.`);
   }
-  console.log("Eve 0.27.6 compatibility probe passed.");
+  console.log(`Eve ${eveVersion} compatibility probe passed.`);
 } finally {
   await stopProcess(server);
 }
