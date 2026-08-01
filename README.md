@@ -20,9 +20,9 @@ health and agent inspection, authentication, durable sessions, human-input respo
 cooperative cancellation, session reset, NDJSON streaming, reconnect-by-index,
 attachments, and structured output.
 
-The initial compatibility target is Vercel `eve` **0.27.6** at commit
-`05f348023d4268c974c225c1189a283ace20b742`, whose message stream protocol is version
-**19**. eve is still a preview, so pin and test compatible versions before upgrading.
+The initial compatibility target is Vercel `eve` **0.29.4** at commit
+`85c1dd7a647a04cc1bd74879ba8d27a3ba0bdd9d`, whose message stream protocol is version
+**20**. eve is still a preview, so pin and test compatible versions before upgrading.
 
 ## Prerequisites
 

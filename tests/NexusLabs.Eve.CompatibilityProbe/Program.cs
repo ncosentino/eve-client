@@ -142,46 +142,41 @@ foreach (RecordedStreamRequest reconnect in catchUpRequests.Skip(1))
 string? observedTailIndex = catchUpRequests[0].TailIndex;
 if (observedTailIndex is null)
 {
-    // eve 0.27.6, the pinned compatibility baseline, does not report the durable tail index.
-    if (catchUpFailure is null)
-    {
-        throw new InvalidOperationException(
-            "The Eve fixture omitted x-eve-stream-tail-index, but the bounded read did not fail.");
-    }
+    throw new InvalidOperationException(
+        $"eve {EveProtocol.ReferenceEveVersion} omitted the x-eve-stream-tail-index response " +
+        "header, so a bounded catch-up read cannot be verified.");
 }
-else
+
+if (catchUpFailure is not null)
 {
-    if (catchUpFailure is not null)
-    {
-        throw new InvalidOperationException(
-            $"The Eve fixture reported tail index '{observedTailIndex}', " +
-            $"but the bounded read failed: {catchUpFailure.Message}");
-    }
+    throw new InvalidOperationException(
+        $"The Eve fixture reported tail index '{observedTailIndex}', " +
+        $"but the bounded read failed: {catchUpFailure.Message}");
+}
 
-    if (!int.TryParse(
-            observedTailIndex,
-            NumberStyles.AllowLeadingSign,
-            CultureInfo.InvariantCulture,
-            out int tailIndex)
-        || tailIndex < 0)
-    {
-        throw new InvalidOperationException(
-            $"The Eve fixture reported an invalid tail index: '{observedTailIndex}'.");
-    }
+if (!int.TryParse(
+        observedTailIndex,
+        NumberStyles.AllowLeadingSign,
+        CultureInfo.InvariantCulture,
+        out int tailIndex)
+    || tailIndex < 0)
+{
+    throw new InvalidOperationException(
+        $"The Eve fixture reported an invalid tail index: '{observedTailIndex}'.");
+}
 
-    if (catchUpEvents.Count != tailIndex + 1)
-    {
-        throw new InvalidOperationException(
-            $"The bounded catch-up read returned {catchUpEvents.Count} events " +
-            $"for tail index {tailIndex}.");
-    }
+if (catchUpEvents.Count != tailIndex + 1)
+{
+    throw new InvalidOperationException(
+        $"The bounded catch-up read returned {catchUpEvents.Count} events " +
+        $"for tail index {tailIndex}.");
+}
 
-    if (catchUpSession.State.StreamIndex != catchUpEvents.Count)
-    {
-        throw new InvalidOperationException(
-            "The bounded catch-up read did not advance the session cursor: " +
-            $"{catchUpSession.State.StreamIndex} of {catchUpEvents.Count} events.");
-    }
+if (catchUpSession.State.StreamIndex != catchUpEvents.Count)
+{
+    throw new InvalidOperationException(
+        "The bounded catch-up read did not advance the session cursor: " +
+        $"{catchUpSession.State.StreamIndex} of {catchUpEvents.Count} events.");
 }
 
 EveSession approvalSession = client.CreateSession();
@@ -203,10 +198,8 @@ if (approvalOutcome.InputRequests.Count != 1)
 
 EveInputRequest approvalRequest = approvalOutcome.InputRequests[0];
 
-// eve 0.27.6, the pinned compatibility baseline, predates the framework-owned discriminator.
-// A newer fixture stamps 'tool-approval' here, which flips both assertions.
-if (approvalRequest.RawKind is not null
-    || approvalRequest.Kind != EveInputRequestKind.Unknown)
+if (approvalRequest.RawKind != "tool-approval"
+    || approvalRequest.Kind != EveInputRequestKind.ToolApproval)
 {
     throw new InvalidOperationException(
         $"eve {EveProtocol.ReferenceEveVersion} reported input request kind " +
@@ -309,15 +302,12 @@ static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation
                 $"The {operation} produced '{streamEvent.Type}' without a durable timestamp.");
         }
 
-        // The pinned eve 0.27.6 baseline emits stream protocol 19 and stamps no event identifier.
-        // Protocol 20 adds one, so this assertion flips to requiring an 'evt_' identifier when the
-        // fixture advances.
-        if (metadata.Id is not null)
+        if (metadata.Id is not string identifier || !IsEventIdentifier(identifier))
         {
             throw new InvalidOperationException(
-                $"The {operation} produced '{streamEvent.Type}' with identifier '{metadata.Id}', " +
-                $"but eve {EveProtocol.ReferenceEveVersion} emits stream protocol " +
-                $"{EveProtocol.MessageStreamVersion}, which stamps none.");
+                $"The {operation} produced '{streamEvent.Type}' with durable identifier " +
+                $"'{metadata.Id ?? "<absent>"}', which is not an eve stream protocol " +
+                $"{EveProtocol.MessageStreamVersion} event id.");
         }
 
         if (deduplicator.Admit(streamEvent))
@@ -326,10 +316,41 @@ static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation
         }
     }
 
-    if (admitted != outcome.Events.Count || deduplicator.Count != 0)
+    if (admitted != outcome.Events.Count)
     {
         throw new InvalidOperationException(
-            $"The {operation} dropped identifier-less events: admitted {admitted} of " +
-            $"{outcome.Events.Count} while remembering {deduplicator.Count} identifiers.");
+            $"The {operation} repeated a durable identifier: admitted {admitted} of " +
+            $"{outcome.Events.Count} events.");
     }
+
+    if (deduplicator.Count != outcome.Events.Count)
+    {
+        throw new InvalidOperationException(
+            $"The {operation} remembered {deduplicator.Count} identifiers for " +
+            $"{outcome.Events.Count} events.");
+    }
+}
+
+// Mirrors the upstream shape check: the 'evt_' prefix followed by a Crockford base32 ULID.
+static bool IsEventIdentifier(string value)
+{
+    const string prefix = "evt_";
+    const int ulidLength = 26;
+    const string crockfordAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+    if (!value.StartsWith(prefix, StringComparison.Ordinal)
+        || value.Length != prefix.Length + ulidLength)
+    {
+        return false;
+    }
+
+    foreach (char character in value.AsSpan(prefix.Length))
+    {
+        if (!crockfordAlphabet.Contains(character, StringComparison.Ordinal))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

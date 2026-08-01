@@ -16,13 +16,25 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `EveStreamOptions.Follow` for bounded catch-up reads that stop at the durable stream tail
   observed when the stream opens, using the `includeTailIndex=1` query parameter and the
   `x-eve-stream-tail-index` response header.
+- `EveStreamEventMetadata.Id` projecting the stable `evt_`-prefixed identifier that
+  message-stream protocol `20` stamps on every persisted event, plus
+  `EveStreamEventDeduplicator` for dropping re-delivered events across reconnects and
+  rewinds. Events persisted under protocol `19` report `null` and are always admitted.
+- `EveInputRequest.Kind` and `EveInputRequest.RawKind`, projecting eve's framework-owned
+  input-request discriminator through the `EveInputRequestKind` enum so `question`,
+  `tool-approval`, and `session-limit` requests are routed by contract instead of by
+  option shape. A server that predates the discriminator reports `Unknown` with a `null`
+  raw value.
 
 ### Changed
 
-- The compatibility reference moved to eve `0.27.6` (message-stream protocol `19`).
+- The compatibility reference moved to eve `0.29.4` (message-stream protocol `20`). The
+  pinned CI fixture runs that release, and the compatibility probe now verifies stamped
+  event identifiers, a real bounded catch-up read against the durable tail header, and an
+  approval-gated human-input pause end to end.
 - Accepted session IDs and continuation tokens are persisted in `EveSession.State`
   as soon as `SendAsync` returns, before the response stream is consumed.
-- Non-protected per-request headers now override client-level values, matching eve `0.27.6`.
+- Non-protected per-request headers now override client-level values, matching upstream eve.
   Authentication-owned and explicitly protected headers remain authoritative by default and
   require an allowlisted, dedicated per-call override.
 

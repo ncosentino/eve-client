@@ -8,12 +8,12 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.27.6";
+    public const string ReferenceEveVersion = "0.29.4";
 
     /// <summary>
     /// Gets the durable message-stream protocol version used by the reference client.
     /// </summary>
-    public const string MessageStreamVersion = "19";
+    public const string MessageStreamVersion = "20";
 
     /// <summary>
     /// Gets the media type returned by eve session streams.

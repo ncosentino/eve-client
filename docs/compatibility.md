@@ -6,7 +6,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| 0.1.x | 0.27.6 | 19 | Primary compatibility target |
+| 0.1.x | 0.29.4 | 20 | Primary compatibility target |
+| 0.1.x | 0.27.6 | 19 | Previous baseline; tolerated, not gated by CI |
 | 0.1.x | 0.24.6 | 19 | End-to-end verified with `bg-eve` |
 
 eve remains preview software. Package upgrades should therefore validate both:
@@ -14,12 +15,17 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.27.6` fixture with a deterministic
+The repository contains a pinned eve `0.29.4` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
-attachment staging, streaming, cooperative cancellation, and session reset
-through the C# client.
+attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
+approval-gated human input, and session reset through the C# client.
 
-Upstream eve 0.27.6 lets generic per-request headers replace authentication.
+The client stays readable against protocol 19 servers: durable event
+identifiers and input-request discriminators are both projected as absent
+rather than causing a failure. That path is covered by contract tests, not by
+the pinned fixture.
+
+Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.
 
@@ -31,9 +37,9 @@ instead of causing deserialization failure.
 Stream protocol version 20 stamps every persisted event with a stable
 `evt_`-prefixed identifier. `EveStreamEvent.Metadata.Id` projects it when
 present and reports `null` for events persisted under earlier protocol
-versions, which cannot be deduplicated. eve `0.27.6` emits protocol version 19,
-so the pinned compatibility probe asserts that durable timestamps still arrive
-while identifiers stay absent.
+versions, which cannot be deduplicated. The compatibility probe asserts that
+the pinned server stamps a well-formed identifier on every event of a turn and
+never repeats one.
 
 ## Upstream parity radar
 
@@ -50,11 +56,13 @@ deliberately not committed.
 
 Bounded catch-up reads (`EveStreamOptions.Follow = false`) depend on the
 `includeTailIndex=1` stream query parameter and the `x-eve-stream-tail-index`
-response header. eve `0.27.6` accepts the query parameter but does not report the
-header, so bounded reads against that baseline fail with `EveProtocolException`
-instead of silently degrading to a live follow. The compatibility probe asserts
-both halves of that contract and switches to verifying a real bounded read once
-the pinned server reports the header.
+response header. The pinned server reports the header, so the compatibility
+probe verifies a real bounded read: the first request asks for the tail,
+reconnects never re-request it, and the read stops exactly at the durable bound
+while advancing the stored cursor. A server that omits the header, or reports a
+malformed or out-of-range value, fails with `EveProtocolException` instead of
+silently degrading to a live follow. eve `0.27.6` accepted the query parameter
+without reporting the header, so bounded reads against that release fail.
 
 ## Input request kinds
 
@@ -63,7 +71,7 @@ eve stamps each human-input request with a framework-owned `kind` of `question`,
 `EveInputRequest.RawKind` preserves the wire value, so an unmodelled future kind
 stays inspectable instead of being misclassified from its option shape.
 
-eve `0.27.6` predates the discriminator and omits it, which reports
-`EveInputRequestKind.Unknown` with a `null` raw value. The compatibility probe
-drives a real approval-gated tool against the pinned fixture and asserts that
-behavior end to end.
+The compatibility probe drives a real approval-gated tool against the pinned
+fixture, asserts the request arrives as `tool-approval`, answers it, and
+verifies the turn resumes. A server that predates the discriminator reports
+`EveInputRequestKind.Unknown` with a `null` raw value.

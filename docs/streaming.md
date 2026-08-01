@@ -32,7 +32,6 @@ retried step is not a replay: it is emitted again under a new identifier.
 Events persisted before protocol version 20 carry no identifier and report
 `null`, so they cannot be deduplicated. eve `0.27.6` emits protocol version 19
 and never stamps one.
-
 `EveStreamEventDeduplicator` encodes that contract, so a caller that resumes a
 stream can drop events it already processed:
 
@@ -108,7 +107,7 @@ Bounded reads require a nonnegative effective start cursor, so combining
 `Follow = false` with a tail-relative `StartIndex` throws
 `ArgumentOutOfRangeException`. A server that omits the tail header, or reports a
 malformed or out-of-range value, throws `EveProtocolException`; eve `0.27.6`
-does not report the header yet.
+never reported the header, so bounded reads against that release fail.
 
 ## Bound individual events
 
