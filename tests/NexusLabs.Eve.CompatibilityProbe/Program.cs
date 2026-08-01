@@ -37,6 +37,7 @@ EveMessageResponse textResponse = await textSession.SendAsync(
     timeout.Token);
 EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
+RequireDurableEventEnvelope(textOutcome, "text turn");
 
 EveSession attachmentSession = client.CreateSession();
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
@@ -242,5 +243,49 @@ static void RequireSuccessfulResponse(EveTurnOutcome outcome, string operation)
     if (outcome.Events.Count == 0)
     {
         throw new InvalidOperationException($"The {operation} did not stream events.");
+    }
+}
+
+static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation)
+{
+    EveStreamEventDeduplicator deduplicator = new();
+    int admitted = 0;
+
+    foreach (EveStreamEvent streamEvent in outcome.Events)
+    {
+        if (streamEvent.Metadata is not EveStreamEventMetadata metadata)
+        {
+            throw new InvalidOperationException(
+                $"The {operation} produced '{streamEvent.Type}' without durable metadata.");
+        }
+
+        if (string.IsNullOrWhiteSpace(metadata.At))
+        {
+            throw new InvalidOperationException(
+                $"The {operation} produced '{streamEvent.Type}' without a durable timestamp.");
+        }
+
+        // The pinned eve 0.27.6 baseline emits stream protocol 19 and stamps no event identifier.
+        // Protocol 20 adds one, so this assertion flips to requiring an 'evt_' identifier when the
+        // fixture advances.
+        if (metadata.Id is not null)
+        {
+            throw new InvalidOperationException(
+                $"The {operation} produced '{streamEvent.Type}' with identifier '{metadata.Id}', " +
+                $"but eve {EveProtocol.ReferenceEveVersion} emits stream protocol " +
+                $"{EveProtocol.MessageStreamVersion}, which stamps none.");
+        }
+
+        if (deduplicator.Admit(streamEvent))
+        {
+            admitted++;
+        }
+    }
+
+    if (admitted != outcome.Events.Count || deduplicator.Count != 0)
+    {
+        throw new InvalidOperationException(
+            $"The {operation} dropped identifier-less events: admitted {admitted} of " +
+            $"{outcome.Events.Count} while remembering {deduplicator.Count} identifiers.");
     }
 }

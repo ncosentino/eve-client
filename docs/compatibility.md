@@ -26,6 +26,15 @@ for protected headers so existing generic header bags cannot silently replace cr
 Unknown event types remain available through `EveStreamEvent.Type` and `Data`
 instead of causing deserialization failure.
 
+## Stream event identity
+
+Stream protocol version 20 stamps every persisted event with a stable
+`evt_`-prefixed identifier. `EveStreamEvent.Metadata.Id` projects it when
+present and reports `null` for events persisted under earlier protocol
+versions, which cannot be deduplicated. eve `0.27.6` emits protocol version 19,
+so the pinned compatibility probe asserts that durable timestamps still arrive
+while identifiers stay absent.
+
 ## Upstream parity radar
 
 The repo-local `eve-client-upstream-radar` Copilot skill under

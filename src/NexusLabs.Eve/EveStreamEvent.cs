@@ -111,7 +111,19 @@ public sealed record EveStreamEvent
         }
 
         string? value = at.GetString();
-        return string.IsNullOrWhiteSpace(value) ? null : new EveStreamEventMetadata(value);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string? id = metadata.TryGetProperty("id", out JsonElement idElement)
+            && idElement.ValueKind == JsonValueKind.String
+                ? idElement.GetString()
+                : null;
+
+        return new EveStreamEventMetadata(
+            value,
+            string.IsNullOrWhiteSpace(id) ? null : id);
     }
 
     private static EveStreamEventKind ResolveKind(string type) =>
