@@ -55,3 +55,15 @@ header, so bounded reads against that baseline fail with `EveProtocolException`
 instead of silently degrading to a live follow. The compatibility probe asserts
 both halves of that contract and switches to verifying a real bounded read once
 the pinned server reports the header.
+
+## Input request kinds
+
+eve stamps each human-input request with a framework-owned `kind` of `question`,
+`tool-approval`, or `session-limit`. `EveInputRequest.Kind` projects it and
+`EveInputRequest.RawKind` preserves the wire value, so an unmodelled future kind
+stays inspectable instead of being misclassified from its option shape.
+
+eve `0.27.6` predates the discriminator and omits it, which reports
+`EveInputRequestKind.Unknown` with a `null` raw value. The compatibility probe
+drives a real approval-gated tool against the pinned fixture and asserts that
+behavior end to end.
