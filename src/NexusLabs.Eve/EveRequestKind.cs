@@ -46,4 +46,10 @@ public enum EveRequestKind
     /// A request that terminally retires the session owning a continuation token.
     /// </summary>
     ResetSession,
+
+    /// <summary>
+    /// A request that queues context compaction for the session owning a continuation
+    /// token without sending model input.
+    /// </summary>
+    CompactSession,
 }
