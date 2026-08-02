@@ -1018,7 +1018,7 @@
 <p>Tracks which durable eve stream events have already been consumed.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EveStreamEventDeduplicator</span>
 </code></pre></div>
-<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> &#129106; EveStreamEventDeduplicator</p>
+<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> → EveStreamEventDeduplicator</p>
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
 <p>Deduplication is keyed on <a href="../EveStreamEventMetadata/#NexusLabs.Eve.EveStreamEventMetadata.Id" title="NexusLabs.Eve.EveStreamEventMetadata.Id">Id</a>. It absorbs a reconnect that
 overlaps already-handled events, a rewind to an earlier start index, and a persisted log merged
