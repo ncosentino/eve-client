@@ -46,4 +46,10 @@ public enum EveRequestKind
     /// A request that terminally retires the session owning a continuation token.
     /// </summary>
     ResetSession,
+
+    /// <summary>
+    /// A request that queues clearing durable model-message history while preserving
+    /// the session identity and non-message resources.
+    /// </summary>
+    ClearSession,
 }

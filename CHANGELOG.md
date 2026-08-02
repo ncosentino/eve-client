@@ -9,6 +9,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
+- `EveSession.ClearAsync` for queueing durable model-message history clearing
+  while preserving the session cursor, with `EveClearStatus`, `EveClearOutcome`,
+  `EveRequestKind.ClearSession`, and `EveStreamEventKind.ContextCleared`. The
+  route is contract-tested against the upstream protocol shape and is not yet
+  part of the pinned eve `0.29.4` compatibility baseline.
 - `EveSession.ResetAsync` for terminally retiring a durable session, with
   `EveResetStatus`, `EveResetOutcome`, and `EveRequestKind.ResetSession`.
 - Explicit protected-header override channels for turns and raw requests, gated by
