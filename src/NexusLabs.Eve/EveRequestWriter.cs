@@ -80,7 +80,7 @@ internal static class EveRequestWriter
         return buffer.WrittenSpan.ToArray();
     }
 
-    internal static byte[] WriteReset(string continuationToken)
+    internal static byte[] WriteContinuationToken(string continuationToken)
     {
         ArrayBufferWriter<byte> buffer = new();
         using (Utf8JsonWriter writer = new(buffer))
