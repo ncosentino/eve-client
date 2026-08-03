@@ -1045,8 +1045,12 @@ Additional members may be added as the upstream client gains routes.</p>
 <p><a name='NexusLabs.Eve.EveRequestKind.ResetSession'></a></p>
 <p><code>ResetSession</code> 7</p>
 <p>A request that terminally retires the session owning a continuation token.</p>
+<p><a name='NexusLabs.Eve.EveRequestKind.ClearSession'></a></p>
+<p><code>ClearSession</code> 8</p>
+<p>A request that queues clearing durable model-message history while preserving
+the session identity and non-message resources.</p>
 <p><a name='NexusLabs.Eve.EveRequestKind.CompactSession'></a></p>
-<p><code>CompactSession</code> 8</p>
+<p><code>CompactSession</code> 9</p>
 <p>A request that queues context compaction for the session owning a continuation
 token without sending model input.</p>
 
