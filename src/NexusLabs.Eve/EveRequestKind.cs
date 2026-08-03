@@ -52,4 +52,10 @@ public enum EveRequestKind
     /// the session identity and non-message resources.
     /// </summary>
     ClearSession,
+
+    /// <summary>
+    /// A request that queues context compaction for the session owning a continuation
+    /// token without sending model input.
+    /// </summary>
+    CompactSession,
 }

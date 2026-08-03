@@ -14,6 +14,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `EveRequestKind.ClearSession`, and `EveStreamEventKind.ContextCleared`. The
   route is contract-tested against the upstream protocol shape and is not yet
   part of the pinned eve `0.29.4` compatibility baseline.
+- `EveSession.CompactAsync` for queueing manual context compaction without model
+  input, with `EveCompactStatus`, `EveCompactOutcome`, and
+  `EveRequestKind.CompactSession`. The operation preserves the local session
+  cursor and tracks unreleased upstream eve main (not part of the `0.29.4`
+  compatibility baseline).
 - `EveSession.ResetAsync` for terminally retiring a durable session, with
   `EveResetStatus`, `EveResetOutcome`, and `EveRequestKind.ResetSession`.
 - Explicit protected-header override channels for turns and raw requests, gated by

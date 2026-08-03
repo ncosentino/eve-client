@@ -194,8 +194,11 @@ public sealed class EveSessionTests
             HttpStatusCode.Accepted,
             """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
         handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
-                    HttpStatusCode.Accepted,
-                    """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
         handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
             HttpStatusCode.OK,
             """{"ok":true,"status":"reset","previousSessionId":"session_1"}""")));
@@ -242,6 +245,7 @@ public sealed class EveSessionTests
             cancellationToken);
         await firstResponse.GetOutcomeAsync(cancellationToken);
         await session.SendAsync("Second", cancellationToken);
+        await session.CompactAsync(cancellationToken);
         await session.CancelAsync(cancellationToken);
         await session.ClearAsync(cancellationToken);
         await session.ResetAsync(cancellationToken);
@@ -251,9 +255,10 @@ public sealed class EveSessionTests
             EveRequestKind.Health,
                     EveRequestKind.Info,
                     EveRequestKind.CreateSession,
-            EveRequestKind.StreamSession,
+                    EveRequestKind.StreamSession,
                     EveRequestKind.StreamSession,
                     EveRequestKind.ContinueSession,
+                    EveRequestKind.CompactSession,
                     EveRequestKind.CancelTurn,
                     EveRequestKind.ClearSession,
                     EveRequestKind.ResetSession,
@@ -1695,9 +1700,244 @@ public sealed class EveSessionTests
         });
     }
 
-    private static async Task AssertAuthenticationHeaderPlacementAsync(
-        IEveAuthentication authentication,
+    [Test]
+    public async Task CompactAsync_WithoutTokenOrSession_IsNoOpWithoutHttpCall(
         CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveCompactOutcome outcome = await session.CompactAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveCompactStatus.NoActiveSession);
+        await Assert.That(outcome.SessionId).IsNull();
+        await Assert.That(session.State).IsEqualTo(new EveSessionState());
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task CompactAsync_WithSessionButNoToken_Throws(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).CreateSession(new EveSessionState
+        {
+            SessionId = "session_1",
+        });
+
+        await Assert.That(async () => await session.CompactAsync(cancellationToken))
+            .Throws<InvalidOperationException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task CompactAsync_QueuesCompactionWithoutClearingState(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+        EveSessionState expectedState = new()
+        {
+            ContinuationToken = "eve:accepted",
+            SessionId = "session_1",
+            StreamIndex = 0,
+        };
+
+        await session.SendAsync("Compact", cancellationToken);
+        EveCompactOutcome outcome = await session.CompactAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveCompactStatus.Accepted);
+        await Assert.That(outcome.SessionId).IsEqualTo("session_1");
+        await Assert.That(session.State).IsEqualTo(expectedState);
+        await Assert.That(handler.Calls[1].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/compact");
+        await Assert.That(handler.Calls[1].Method).IsEqualTo(HttpMethod.Post);
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[1].Body!);
+        await Assert.That(body.RootElement.GetProperty("continuationToken").GetString())
+            .IsEqualTo("eve:accepted");
+    }
+
+    [Test]
+    public async Task CompactAsync_AcceptsNoActiveSessionResponse(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:orphaned",
+            SessionId = "session_1",
+            StreamIndex = 4,
+        };
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"status":"no_active_session"}""")));
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+
+        EveCompactOutcome outcome = await session.CompactAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveCompactStatus.NoActiveSession);
+        await Assert.That(outcome.SessionId).IsNull();
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task CompactAsync_ThrowsClientExceptionForNonSuccessResponse(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:orphaned",
+            SessionId = "session_1",
+            StreamIndex = 2,
+        };
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.NotFound,
+            """{"error":"unknown route"}""")));
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+
+        EveClientException? exception =
+            await Assert.That(async () => await session.CompactAsync(cancellationToken))
+                .Throws<EveClientException>();
+
+        await Assert.That(exception!.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        await Assert.That(exception.ResponseBody).IsEqualTo("""{"error":"unknown route"}""");
+        await Assert.That(exception.ResponseHeaders.ContainsKey("content-type")).IsTrue();
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    [Arguments("not json")]
+    [Arguments("""{"ok":true,"status":"retired"}""")]
+    [Arguments("""{"ok":false,"status":"accepted","sessionId":"session_1"}""")]
+    [Arguments("""{"ok":true,"status":"accepted"}""")]
+    [Arguments("""{"ok":true,"status":"accepted","sessionId":""}""")]
+    public async Task CompactAsync_RejectsInvalidResponses(
+        string responseBody,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:orphaned",
+            SessionId = "session_1",
+        };
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            responseBody)));
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+
+        await Assert.That(async () => await session.CompactAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task CompactAsync_RejectsMismatchedSessionId(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_other","status":"accepted"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        await session.SendAsync("Compact", cancellationToken);
+
+        await Assert.That(async () => await session.CompactAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            ContinuationToken = "eve:accepted",
+            SessionId = "session_1",
+            StreamIndex = 0,
+        });
+    }
+
+    [Test]
+    public async Task CompactAsync_PropagatesCancellation(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken);
+        handler.Enqueue(async (_, requestCancellationToken) =>
+        {
+            await cts.CancelAsync();
+            requestCancellationToken.ThrowIfCancellationRequested();
+            return JsonResponse(
+                HttpStatusCode.Accepted,
+                """{"ok":true,"sessionId":"session_1","status":"accepted"}""");
+        });
+        EveSessionState initialState = new()
+        {
+            ContinuationToken = "eve:token",
+            SessionId = "session_1",
+            StreamIndex = 7,
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+
+        await Assert.That(async () => await session.CompactAsync(cts.Token))
+            .Throws<OperationCanceledException>();
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task CompactAsync_AllowsConsumingCompactionStreamEvents(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"compaction.requested","data":{"sequence":1}}""",
+            """{"type":"compaction.completed","data":{"sequence":2}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:after-compact","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        await session.SendAsync("Compact stream", cancellationToken);
+        EveCompactOutcome outcome = await session.CompactAsync(cancellationToken);
+        IReadOnlyList<EveStreamEvent> events = await CollectAsync(
+                    session.StreamAsync(
+                        new EveStreamOptions
+                        {
+                            ReconnectPolicy = EveStreamReconnectPolicy.Disabled,
+                        },
+                        cancellationToken),
+                    cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveCompactStatus.Accepted);
+        await Assert.That(events.Count).IsEqualTo(3);
+        await Assert.That(events[0].Kind).IsEqualTo(EveStreamEventKind.CompactionRequested);
+        await Assert.That(events[1].Kind).IsEqualTo(EveStreamEventKind.CompactionCompleted);
+        await Assert.That(events[2].Kind).IsEqualTo(EveStreamEventKind.SessionWaiting);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            ContinuationToken = "eve:after-compact",
+            SessionId = "session_1",
+            StreamIndex = 3,
+        });
+    }
+
+    private static async Task AssertAuthenticationHeaderPlacementAsync(
+    IEveAuthentication authentication,
+    CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<string, string> expectedHeaders =
             await authentication.GetHeadersAsync(cancellationToken);

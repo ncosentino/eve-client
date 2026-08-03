@@ -113,6 +113,47 @@ if (reset.Status == EveResetStatus.Reset)
 cooperative cancellation of the active turn and keeps the conversation
 resumable; `ResetAsync` retires the conversation itself.
 
+## Compact a session
+
+`CompactAsync` queues context compaction for the durable session that owns the
+current continuation token without sending model input:
+
+```csharp
+EveCompactOutcome compact = await session.CompactAsync(cancellationToken);
+
+if (compact.Status == EveCompactStatus.Accepted)
+{
+    await foreach (EveStreamEvent streamEvent in session.StreamAsync(cancellationToken))
+    {
+        if (streamEvent.Kind is EveStreamEventKind.SessionWaiting
+            or EveStreamEventKind.SessionCompleted
+            or EveStreamEventKind.SessionFailed)
+        {
+            break;
+        }
+    }
+}
+```
+
+- Compaction is asynchronous. Consume the durable stream through the next
+  session boundary before sending another turn. `compaction.completed` confirms
+  successful summarization.
+- The accepted continuation token is recorded as soon as `SendAsync` returns,
+  so compaction can run before the response stream is consumed.
+- A session that has an ID but no continuation token still has an outstanding
+  response stream. Consume it before compacting; otherwise `CompactAsync` throws
+  `InvalidOperationException`.
+- A session that never started returns `EveCompactStatus.NoActiveSession` and
+  issues no HTTP request.
+- Unlike reset, compaction preserves the local session cursor.
+- The route is present on upstream eve main and is not yet part of a released
+  eve package. Older deployments answer with HTTP 404, surfaced as
+  `EveClientException`. Keep this client path behind your own feature gate until
+  your deployment includes the route.
+
+`CompactAsync` is not an alias for `ResetAsync`. Compaction summarizes history
+in place and keeps the conversation resumable; reset retires the conversation.
+
 ## Terminal behavior
 
 `session.waiting` preserves the conversation for another turn. By default,
