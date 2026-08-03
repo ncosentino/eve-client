@@ -116,6 +116,11 @@ public enum EveStreamEventKind
     TurnCancelled,
 
     /// <summary>
+    /// Durable model-message history was cleared while the session remained intact.
+    /// </summary>
+    ContextCleared,
+
+    /// <summary>
     /// Session-history compaction was requested.
     /// </summary>
     CompactionRequested,

@@ -38,6 +38,51 @@ When only a continuation token was persisted:
 EveSession resumed = client.CreateSession(continuationToken);
 ```
 
+## Clear session context
+
+`ClearAsync` queues removal of durable model-message history while keeping the
+session identity, configuration, non-message state, limits, continuation token,
+and sandbox:
+
+```csharp
+EveClearOutcome clear = await session.ClearAsync(cancellationToken);
+
+if (clear.Status == EveClearStatus.Accepted)
+{
+    await foreach (EveStreamEvent streamEvent in session.StreamAsync(cancellationToken))
+    {
+        if (streamEvent.Kind == EveStreamEventKind.ContextCleared)
+        {
+            // History was cleared on the durable stream.
+        }
+
+        if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
+        {
+            break;
+        }
+    }
+}
+```
+
+- The accepted continuation token is recorded as soon as `SendAsync` returns,
+  so clear can run before the response stream is consumed.
+- A session that has an ID but no continuation token still has an outstanding
+  response stream. Consume it before clearing; otherwise `ClearAsync` throws
+  `InvalidOperationException`.
+- A session that never started returns `EveClearStatus.NoActiveSession` and
+  issues no HTTP request.
+- A successful clear leaves the local cursor unchanged. Consume the durable
+  stream through `context.cleared` and the following `session.waiting` boundary
+  before sending another turn.
+- This route is present on current upstream eve `main` and is covered by
+  contract tests here. It is not yet part of the pinned compatibility baseline
+  (`0.29.4`), so production deployments on that release answer with HTTP 404
+  surfaced as `EveClientException`.
+
+`ClearAsync` is not an alias for `ResetAsync`. `ResetAsync` retires the
+conversation; `ClearAsync` keeps the same durable session and only discards
+model-message history.
+
 ## Reset a session
 
 `ResetAsync` terminally retires the durable session that owns the current

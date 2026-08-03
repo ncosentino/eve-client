@@ -17,8 +17,8 @@ A C# client for the Vercel eve HTTP API.
 
 `NexusLabs.Eve` ports the framework-neutral `eve/client` protocol surface to .NET:
 health and agent inspection, authentication, durable sessions, human-input responses,
-cooperative cancellation, session reset, manual session compaction, NDJSON streaming,
-reconnect-by-index, attachments, and structured output.
+cooperative cancellation, session context clear, session reset, manual session compaction,
+NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
 The initial compatibility target is Vercel `eve` **0.29.4** at commit
 `85c1dd7a647a04cc1bd74879ba8d27a3ba0bdd9d`, whose message stream protocol is version
@@ -172,6 +172,17 @@ EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
 Continue consuming the stream after cancellation to observe `turn.cancelled` followed
 by `session.waiting` and to advance the cursor.
+
+`ClearAsync` queues removal of durable model-message history while preserving the
+session identity and local cursor. Consume the stream through `context.cleared` and the
+following `session.waiting` boundary before sending another turn:
+
+```csharp
+EveClearOutcome clear = await session.ClearAsync(cancellationToken);
+```
+
+Context clear is present on current upstream eve `main` and covered by contract tests
+here; it is not yet part of the pinned `0.29.4` compatibility baseline.
 
 `ResetAsync` retires the durable session instead of only stopping the active turn, so
 the next send starts a fresh conversation:

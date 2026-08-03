@@ -150,6 +150,7 @@ public sealed record EveStreamEvent
             "turn.completed" => EveStreamEventKind.TurnCompleted,
             "turn.failed" => EveStreamEventKind.TurnFailed,
             "turn.cancelled" => EveStreamEventKind.TurnCancelled,
+            "context.cleared" => EveStreamEventKind.ContextCleared,
             "compaction.requested" => EveStreamEventKind.CompactionRequested,
             "compaction.completed" => EveStreamEventKind.CompactionCompleted,
             "authorization.required" => EveStreamEventKind.AuthorizationRequired,

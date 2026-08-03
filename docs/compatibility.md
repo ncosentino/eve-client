@@ -18,7 +18,10 @@ eve remains preview software. Package upgrades should therefore validate both:
 The repository contains a pinned eve `0.29.4` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
-approval-gated human input, and session reset through the C# client.
+approval-gated human input, and session reset through the C# client. Session
+context clear (`ClearAsync` / `context.cleared`) is implemented and covered by
+contract tests against the upstream protocol shape, but is not exercised by the
+pinned fixture until an eve release that includes it becomes the baseline.
 
 The client stays readable against protocol 19 servers: durable event
 identifiers and input-request discriminators are both projected as absent

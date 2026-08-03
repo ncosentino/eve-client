@@ -5,6 +5,7 @@ internal static class EveRoutes
     internal const string Health = "/eve/v1/health";
     internal const string Info = "/eve/v1/info";
     internal const string CreateSession = "/eve/v1/session";
+    internal const string ClearSession = "/eve/v1/session/clear";
     internal const string ResetSession = "/eve/v1/session/reset";
     internal const string CompactSession = "/eve/v1/session/compact";
 

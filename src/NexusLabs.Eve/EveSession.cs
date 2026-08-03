@@ -172,6 +172,45 @@ public sealed class EveSession
     }
 
     /// <summary>
+    /// Queues clearing of this session's durable model-message history while preserving the
+    /// session identity, configuration, non-message state, limits, continuation token, and sandbox.
+    /// </summary>
+    /// <remarks>
+    /// The clear is asynchronous on the durable stream. Consume events through
+    /// <see cref="EveStreamEventKind.ContextCleared"/> and the following
+    /// <see cref="EveStreamEventKind.SessionWaiting"/> boundary before sending another turn.
+    /// Clearing a session that never started is a successful local no-op that issues no HTTP
+    /// request. Unlike <see cref="ResetAsync(CancellationToken)"/>, a successful clear leaves the
+    /// local cursor unchanged.
+    /// </remarks>
+    /// <param name="cancellationToken">Cancels the clear request.</param>
+    /// <returns>The successful clear disposition.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The session has an identifier but no continuation token, so its outstanding event stream
+    /// must be consumed before clearing.
+    /// </exception>
+    /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
+    /// <exception cref="EveProtocolException">The body was not a recognized clear payload.</exception>
+    public async Task<EveClearOutcome> ClearAsync(CancellationToken cancellationToken)
+    {
+        EveSessionState state = State;
+        string? continuationToken = RequireContinuationTokenOrNull(
+            state,
+            "clearing");
+        if (continuationToken is null)
+        {
+            return new EveClearOutcome(EveClearStatus.NoActiveSession, null);
+        }
+
+        string responseBody = await PostContinuationTokenControlAsync(
+            EveRequestKind.ClearSession,
+            EveRoutes.ClearSession,
+            continuationToken,
+            cancellationToken);
+        return ParseClearOutcome(responseBody, state.SessionId);
+    }
+
+    /// <summary>
     /// Terminally retires the durable session that owns this handle's continuation token.
     /// </summary>
     /// <remarks>
@@ -573,6 +612,36 @@ public sealed class EveSession
         }
 
         return null;
+    }
+
+    private static EveClearOutcome ParseClearOutcome(string body, string? currentSessionId)
+    {
+        const string routeLabel = "clear";
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(body);
+            JsonElement root = document.RootElement;
+            string status = ReadSuccessfulControlStatus(root, routeLabel);
+
+            switch (status)
+            {
+                case "no_active_session":
+                    return new EveClearOutcome(EveClearStatus.NoActiveSession, null);
+                case "accepted":
+                    string sessionId = ReadRequiredSessionId(root, "sessionId", routeLabel);
+                    EnsureSessionIdMatches(sessionId, currentSessionId, routeLabel);
+                    return new EveClearOutcome(EveClearStatus.Accepted, sessionId);
+                default:
+                    throw new EveProtocolException(
+                        "The eve clear route returned an unknown status.");
+            }
+        }
+        catch (JsonException exception)
+        {
+            throw new EveProtocolException(
+                "The eve clear route returned invalid JSON.",
+                exception);
+        }
     }
 
     private static EveResetOutcome ParseResetOutcome(string body, string? currentSessionId)
