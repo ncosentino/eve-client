@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   title:
@@ -14,13 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      PR_TITLE: ${{ github.event.pull_request.title }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
       TITLE_MAX_LENGTH: '72'
       TITLE_PATTERN: '^(feat|fix|docs|refactor|test|style|build|ci|chore|perf|revert)(\([a-z0-9][a-z0-9._/-]*\))?!?: .+$'
     steps:
       - name: Validate conventional title
         shell: bash
         run: |
+          set -euo pipefail
+
+          # The event payload is frozen when the run is created, but a run held
+          # for workflow approval can start long after the title was corrected.
+          # Re-read the title so every run, however delayed, judges the title the
+          # pull request actually has right now.
+          pull_request="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
+          PR_TITLE="$(jq -r '.title' <<<"$pull_request")"
+
           if [[ "$PR_TITLE" == *$'\n'* || "$PR_TITLE" == *$'\r'* ]]; then
             echo "::error::Pull request title must be a single line."
             exit 1
