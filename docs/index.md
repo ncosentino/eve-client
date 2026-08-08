@@ -24,9 +24,10 @@ part of the .NET API.
 
 ## Compatibility
 
-The initial release targets eve `0.29.4`, message-stream protocol version `20`.
-The client has also completed an end-to-end session against a real eve `0.24.6`
-application using the same protocol version.
+This release requires eve `0.31.0` or newer and targets eve `0.31.3`. eve `0.31.0`
+moved session control operations to identifier-addressed routes and removed
+continuation tokens from the client protocol, so an eve `0.29.x` or `0.30.x` agent is
+not supported. Pin `0.1.0-alpha.3` for those.
 
 ## Start here
 

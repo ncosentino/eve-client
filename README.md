@@ -20,9 +20,12 @@ health and agent inspection, authentication, durable sessions, human-input respo
 cooperative cancellation, session context clear, session reset, manual session compaction,
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
-The initial compatibility target is Vercel `eve` **0.29.4** at commit
-`85c1dd7a647a04cc1bd74879ba8d27a3ba0bdd9d`, whose message stream protocol is version
-**20**. eve is still a preview, so pin and test compatible versions before upgrading.
+This package requires Vercel `eve` **0.31.0 or newer** and cannot talk to an earlier
+server. The compatibility target is `eve` **0.31.3**. eve `0.31.0` moved session control
+operations to identifier-addressed routes and removed continuation tokens from the client
+protocol, so there is no fallback path to an older agent — pin `0.1.0-alpha.3` for an eve
+`0.29.x` or `0.30.x` deployment. eve is still a preview, so pin and test compatible
+versions before upgrading. See [Compatibility](docs/compatibility.md).
 
 ## Prerequisites
 
@@ -182,23 +185,20 @@ following `session.waiting` boundary before sending another turn:
 EveClearOutcome clear = await session.ClearAsync(cancellationToken);
 ```
 
-Context clear is present on current upstream eve `main` and covered by contract tests
-here; it is not yet part of the pinned `0.29.4` compatibility baseline.
+Context clear is covered by contract tests and by the pinned `0.31.3` fixture.
 
-`ResetAsync` retires the durable session instead of only stopping the active turn, so
-the next send starts a fresh conversation:
+`ResetAsync` retires the durable session instead of only stopping the active turn:
 
 ```csharp
 EveResetOutcome reset = await session.ResetAsync(cancellationToken);
 ```
 
-Reset requires eve `0.27.4` or newer and clears the local session state.
+The handle keeps its session identifier after a reset. Reusing it is refused with HTTP
+409, so call `client.CreateSession()` to start a fresh conversation.
 
 `CompactAsync` queues context compaction without sending model input and without
 clearing the local cursor. Consume the durable stream through the next session
 boundary before the next turn; `compaction.completed` confirms summarization.
-The route tracks unreleased upstream eve main and is not part of the current
-compatibility baseline (`0.29.4`).
 
 ```csharp
 EveCompactOutcome compact = await session.CompactAsync(cancellationToken);

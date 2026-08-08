@@ -19,6 +19,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - `EveClient.AttachSession(string sessionId, int streamIndex = 0)` for obtaining a fixed
   handle to a known session without replaying its stream.
+- `EveProtocol.MinimumEveVersion`, declaring the oldest supported eve release (`0.31.0`)
+  in code.
 
 ### Changed
 
