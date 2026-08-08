@@ -7,6 +7,21 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-08-08
+
+### Compatibility
+
+- **Supported eve versions:** `0.29.4` through `0.30.x`, message-stream protocol `20`.
+- **Not compatible with eve `0.31.0` and later.** eve `0.31.0` moved session control
+  operations to identifier-addressed routes (`/eve/v1/session/{sessionId}/clear`,
+  `/eve/v1/session/{sessionId}/compact`, `/eve/v1/session/{sessionId}/reset`) and
+  removed continuation tokens from the client protocol. This release still posts to the
+  fixed `/eve/v1/session/clear`, `/eve/v1/session/compact`, and `/eve/v1/session/reset`
+  routes, which return HTTP 404 on an eve `0.31.x` server. `SendAsync`, `StreamAsync`,
+  and `CancelAsync` are unaffected because their routes did not change.
+- This is the final release before the breaking cutover to eve `0.31.x`. Pin this
+  version when targeting an eve `0.29.x` or `0.30.x` agent.
+
 ### Added
 
 - `EveSession.ClearAsync` for queueing durable model-message history clearing
@@ -72,6 +87,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.2...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.3...HEAD
+[0.1.0-alpha.3]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/ncosentino/eve-client/releases/tag/v0.1.0-alpha.1
