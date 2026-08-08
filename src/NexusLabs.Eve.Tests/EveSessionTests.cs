@@ -1180,6 +1180,119 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task SendAsync_RejectsRequestCarryingInputResponses(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+        EveSendTurnRequest request = new()
+        {
+            Message = EveMessageContent.FromText("Both payloads"),
+            InputResponses = [new EveInputResponse("approval_1", "approve")],
+        };
+
+        await Assert.That(async () => await session.SendAsync(request, cancellationToken))
+            .Throws<ArgumentException>();
+        await Assert.That(handler.Calls.Count)
+            .IsEqualTo(0)
+            .Because("The conflict is rejected before any network call.");
+    }
+
+    [Test]
+    public async Task RespondAsync_RejectsRequestCarryingMessage(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+        EveSendTurnRequest request = new()
+        {
+            Message = EveMessageContent.FromText("Both payloads"),
+            InputResponses = [new EveInputResponse("approval_1", "approve")],
+        };
+
+        await Assert.That(async () => await session.RespondAsync(request, cancellationToken))
+            .Throws<ArgumentException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task SendAsync_RejectsRequestWithoutMessage(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () =>
+                await session.SendAsync(new EveSendTurnRequest(), cancellationToken))
+            .Throws<ArgumentException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task RespondAsync_RejectsEmptyInputResponses(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () =>
+                await session.RespondAsync([], cancellationToken))
+            .Throws<ArgumentException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task RespondAsync_RejectedOnUnstartedSession(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).CreateSession();
+
+        await Assert.That(async () => await session.RespondAsync(
+                [new EveInputResponse("approval_1", "approve")],
+                cancellationToken))
+            .Throws<ArgumentException>()
+            .Because("A new eve session must start with a message.");
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task RespondAsync_SendsInputResponsesWithoutMessageProperty(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        EveMessageResponse response = await session.RespondAsync(
+            [new EveInputResponse("approval_1", "approve")],
+            cancellationToken);
+        await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1");
+        using JsonDocument sentBody = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(sentBody.RootElement.TryGetProperty("message", out _))
+            .IsFalse()
+            .Because("eve 0.31.0 rejects a body carrying both payloads.");
+        await Assert.That(sentBody.RootElement.GetProperty("inputResponses")
+            .GetArrayLength())
+            .IsEqualTo(1);
+        await Assert.That(sentBody.RootElement.GetProperty("inputResponses")[0]
+            .GetProperty("requestId")
+            .GetString())
+            .IsEqualTo("approval_1");
+    }
+
+    [Test]
     public async Task InputResponse_RetriesSessionPropagationFailure(
         CancellationToken cancellationToken)
     {
@@ -1209,7 +1322,7 @@ public sealed class EveSessionTests
             ],
         };
 
-        EveMessageResponse response = await session.SendAsync(request, cancellationToken);
+        EveMessageResponse response = await session.RespondAsync(request, cancellationToken);
         await response.GetOutcomeAsync(cancellationToken);
 
         await Assert.That(handler.Calls.Count).IsEqualTo(3);

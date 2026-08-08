@@ -213,11 +213,8 @@ if (approvalRequest.Options.Count == 0)
         "The approval request did not offer any selectable options.");
 }
 
-EveMessageResponse resumedResponse = await approvalSession.SendAsync(
-    new EveSendTurnRequest
-    {
-        InputResponses = [new EveInputResponse(approvalRequest.RequestId, "approve")],
-    },
+EveMessageResponse resumedResponse = await approvalSession.RespondAsync(
+    [new EveInputResponse(approvalRequest.RequestId, "approve")],
     timeout.Token);
 EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resumedOutcome, "approved tool turn");

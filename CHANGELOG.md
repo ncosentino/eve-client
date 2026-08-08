@@ -17,6 +17,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
+- `EveSession.RespondAsync` for resolving pending human-input requests as an operation
+  distinct from sending a message.
 - `EveClient.AttachSession(string sessionId, int streamIndex = 0)` for obtaining a fixed
   handle to a known session without replaying its stream.
 - `EveProtocol.MinimumEveVersion`, declaring the oldest supported eve release (`0.31.0`)
@@ -40,6 +42,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `ResetAsync` no longer clears local state. The handle keeps its identifier; obtain a new
   conversation from `EveClient.CreateSession()`.
 - A `session.waiting` event is no longer required to carry a continuation token.
+- **Breaking.** A turn carries either a message or input responses, never both. eve
+  `0.31.0` answers a combined body with HTTP 400
+  (`'message' and 'inputResponses' are mutually exclusive`), so `SendAsync` now requires a
+  message and rejects input responses, and `RespondAsync` requires input responses and
+  rejects a message. Both conflicts throw `ArgumentException` before any network call.
+  Callers that delivered input responses through `SendAsync` must move to `RespondAsync`.
 - The compatibility reference moved to eve `0.31.3`. The pinned CI fixture runs that
   release, and the compatibility probe verifies the identifier-addressed control routes,
   empty control bodies, fixed-handle reset semantics, and the HTTP 409 refusal returned

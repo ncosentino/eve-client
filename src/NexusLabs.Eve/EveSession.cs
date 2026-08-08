@@ -58,18 +58,70 @@ public sealed class EveSession
             cancellationToken);
 
     /// <summary>
-    /// Sends a full user turn, including attachments, input responses, context, or output schema.
+    /// Sends a full user turn, including attachments, context, or output schema.
     /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never
+    /// both. Use <see cref="RespondAsync(EveSendTurnRequest, CancellationToken)"/> to resolve
+    /// pending human input.
+    /// </remarks>
     /// <param name="request">The turn payload.</param>
     /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
     /// <returns>Accepted turn metadata and its single-use event stream.</returns>
-    public async Task<EveMessageResponse> SendAsync(
+    /// <exception cref="ArgumentException">
+    /// The request carries no message, or carries input responses alongside one.
+    /// </exception>
+    public Task<EveMessageResponse> SendAsync(
         EveSendTurnRequest request,
+        CancellationToken cancellationToken) =>
+        PostTurnRequestAsync(request, EveTurnPayloadKind.Message, cancellationToken);
+
+    /// <summary>
+    /// Resolves pending human-input requests without sending a user message.
+    /// </summary>
+    /// <param name="inputResponses">Responses to pending approvals or questions.</param>
+    /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
+    /// <returns>Accepted turn metadata and its single-use event stream.</returns>
+    public Task<EveMessageResponse> RespondAsync(
+        IReadOnlyList<EveInputResponse> inputResponses,
+        CancellationToken cancellationToken) =>
+        RespondAsync(
+            new EveSendTurnRequest
+            {
+                InputResponses = inputResponses,
+            },
+            cancellationToken);
+
+    /// <summary>
+    /// Resolves pending human-input requests, optionally with context, headers, or a schema.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never
+    /// both. Use <see cref="SendAsync(EveSendTurnRequest, CancellationToken)"/> to send a
+    /// user message.
+    /// </remarks>
+    /// <param name="request">The response payload.</param>
+    /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
+    /// <returns>Accepted turn metadata and its single-use event stream.</returns>
+    /// <exception cref="ArgumentException">
+    /// The request carries no input responses, or carries a message alongside them.
+    /// </exception>
+    public Task<EveMessageResponse> RespondAsync(
+        EveSendTurnRequest request,
+        CancellationToken cancellationToken) =>
+        PostTurnRequestAsync(request, EveTurnPayloadKind.InputResponses, cancellationToken);
+
+    private async Task<EveMessageResponse> PostTurnRequestAsync(
+        EveSendTurnRequest request,
+        EveTurnPayloadKind payloadKind,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         EveSessionState initialState = State;
-        byte[] body = EveRequestWriter.WriteTurn(request, initialState.SessionId is null);
+        byte[] body = EveRequestWriter.WriteTurn(
+            request,
+            payloadKind,
+            initialState.SessionId is null);
         AcceptedTurn acceptedTurn = await PostTurnAsync(
             request,
             initialState,

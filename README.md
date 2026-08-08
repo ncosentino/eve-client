@@ -221,16 +221,12 @@ EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
 if (outcome.InputRequests.Count > 0)
 {
-    EveMessageResponse resumed = await session.SendAsync(
-        new EveSendTurnRequest
-        {
-            InputResponses =
-            [
-                new EveInputResponse(
-                    outcome.InputRequests[0].RequestId,
-                    optionId: "approve"),
-            ],
-        },
+    EveMessageResponse resumed = await session.RespondAsync(
+        [
+            new EveInputResponse(
+                outcome.InputRequests[0].RequestId,
+                optionId: "approve"),
+        ],
         cancellationToken);
 }
 ```
