@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Net;
 
 using NexusLabs.Eve;
 using NexusLabs.Eve.CompatibilityProbe;
@@ -226,10 +227,10 @@ EveMessageResponse resetResponse = await resetSession.SendAsync(
     "Return the deterministic compatibility response.",
     timeout.Token);
 string resetSessionId = resetResponse.SessionId;
-if (resetSession.State.ContinuationToken is null)
+if (!string.Equals(resetSession.State.SessionId, resetSessionId, StringComparison.Ordinal))
 {
     throw new InvalidOperationException(
-        "The accepted turn did not record a continuation token before stream consumption.");
+        "The accepted turn did not record the session id before stream consumption.");
 }
 
 EveTurnOutcome resetOutcome = await resetResponse.GetOutcomeAsync(timeout.Token);
@@ -244,17 +245,49 @@ if (reset.Status != EveResetStatus.Reset
         $"previousSessionId={reset.PreviousSessionId}, expected={resetSessionId}.");
 }
 
-if (resetSession.State != new EveSessionState())
+if (resetSession.State != new EveSessionState
 {
-    throw new InvalidOperationException("Reset did not clear the local session state.");
+    SessionId = resetSessionId,
+    StreamIndex = resetOutcome.Events.Count,
+})
+{
+    throw new InvalidOperationException("Reset did not retain the local session state.");
 }
 
-EveMessageResponse afterResetResponse = await resetSession.SendAsync(
+// A reset handle keeps its identifier instead of recycling, so reusing it must be refused by
+// the retired session rather than silently starting a new conversation.
+EveClientException? retiredSendFailure = null;
+try
+{
+    await resetSession.SendAsync(
+        "Return the deterministic compatibility response.",
+        timeout.Token);
+}
+catch (EveClientException exception)
+{
+    retiredSendFailure = exception;
+}
+
+if (retiredSendFailure is null)
+{
+    throw new InvalidOperationException(
+        "Sending on a reset session identifier was accepted.");
+}
+
+if (retiredSendFailure.StatusCode != HttpStatusCode.Conflict)
+{
+    throw new InvalidOperationException(
+        "Sending on a reset session identifier returned " +
+        $"{retiredSendFailure.StatusCode}, expected 409 Conflict.");
+}
+
+EveSession afterResetSession = client.CreateSession();
+EveMessageResponse afterResetResponse = await afterResetSession.SendAsync(
     "Return the deterministic compatibility response.",
     timeout.Token);
 if (string.Equals(afterResetResponse.SessionId, resetSessionId, StringComparison.Ordinal))
 {
-    throw new InvalidOperationException("Reset did not create a new remote session.");
+    throw new InvalidOperationException("A fresh session reused the retired session identifier.");
 }
 
 EveTurnOutcome afterResetOutcome = await afterResetResponse.GetOutcomeAsync(timeout.Token);

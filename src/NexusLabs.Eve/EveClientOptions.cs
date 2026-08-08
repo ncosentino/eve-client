@@ -87,12 +87,6 @@ public sealed record EveClientOptions
     public int? MaxStreamEventBytes { get; init; }
 
     /// <summary>
-    /// Gets whether a normally completed session retains its continuation state for another turn.
-    /// Failed sessions still reset.
-    /// </summary>
-    public bool PreserveCompletedSessions { get; init; }
-
-    /// <summary>
     /// Gets the maximum number of POST attempts used when delivering human-input responses.
     /// </summary>
     public int DeliveryRetryAttempts { get; init; } = 10;

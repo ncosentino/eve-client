@@ -235,22 +235,23 @@ public sealed class EveClient
     }
 
     /// <summary>
-    /// Creates a session from a continuation token when no stream cursor was persisted.
+    /// Creates a session handle for a known immutable session identifier.
     /// </summary>
-    /// <param name="continuationToken">The channel-owned continuation token.</param>
-    /// <returns>A resumable session with a zero stream cursor.</returns>
-    public EveSession CreateSession(string continuationToken)
+    /// <param name="sessionId">The runtime-owned session identifier to attach to.</param>
+    /// <param name="streamIndex">The absolute number of stream events already consumed.</param>
+    /// <returns>A fixed handle addressing the supplied session.</returns>
+    public EveSession AttachSession(string sessionId, int streamIndex = 0)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(continuationToken);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentOutOfRangeException.ThrowIfNegative(streamIndex);
         return new EveSession(
             this,
             new EveSessionState
             {
-                ContinuationToken = continuationToken,
+                SessionId = sessionId,
+                StreamIndex = streamIndex,
             });
     }
-
-    internal bool PreserveCompletedSessions => _options.PreserveCompletedSessions;
 
     internal int DeliveryRetryAttempts => _options.DeliveryRetryAttempts;
 

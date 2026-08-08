@@ -157,8 +157,9 @@ EveMessageResponse response = await resumed.SendAsync(
     cancellationToken);
 ```
 
-`SessionId` attaches to a durable stream; `ContinuationToken` sends the next turn;
-`StreamIndex` prevents replaying consumed events.
+`SessionId` addresses every turn, control, and stream; `StreamIndex` prevents
+replaying consumed events. When only the identifier was persisted, attach to it
+with `client.AttachSession(sessionId)`.
 
 Once a turn is accepted, cancellation can be requested before its stream settles:
 

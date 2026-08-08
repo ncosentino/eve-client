@@ -6,8 +6,14 @@ using System.Text.Json;
 namespace NexusLabs.Eve;
 
 /// <summary>
-/// Tracks one eve conversation's continuation token, session identifier, and stream cursor.
+/// Tracks one eve conversation's immutable session identifier and stream cursor.
 /// </summary>
+/// <remarks>
+/// The handle is fixed. Once a turn assigns a session identifier, that identifier is retained
+/// for every later turn, control, and stream, including after a terminal session boundary.
+/// Start a separate conversation with <see cref="EveClient.CreateSession()"/> instead of
+/// reusing a retired handle.
+/// </remarks>
 public sealed class EveSession
 {
     private readonly EveClient _client;
@@ -63,19 +69,15 @@ public sealed class EveSession
     {
         ArgumentNullException.ThrowIfNull(request);
         EveSessionState initialState = State;
-        byte[] body = EveRequestWriter.WriteTurn(request, initialState.ContinuationToken);
+        byte[] body = EveRequestWriter.WriteTurn(request, initialState.SessionId is null);
         AcceptedTurn acceptedTurn = await PostTurnAsync(
             request,
             initialState,
             body,
             cancellationToken);
-        MarkAcceptedIfCurrent(
-            initialState,
-            acceptedTurn.SessionId,
-            acceptedTurn.ContinuationToken);
+        MarkAcceptedIfCurrent(initialState, acceptedTurn.SessionId);
 
         return new EveMessageResponse(
-            acceptedTurn.ContinuationToken,
             acceptedTurn.SessionId,
             streamCancellationToken => CreateTurnStreamAsync(
                 acceptedTurn,
@@ -185,68 +187,50 @@ public sealed class EveSession
     /// </remarks>
     /// <param name="cancellationToken">Cancels the clear request.</param>
     /// <returns>The successful clear disposition.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// The session has an identifier but no continuation token, so its outstanding event stream
-    /// must be consumed before clearing.
-    /// </exception>
     /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
     /// <exception cref="EveProtocolException">The body was not a recognized clear payload.</exception>
     public async Task<EveClearOutcome> ClearAsync(CancellationToken cancellationToken)
     {
-        EveSessionState state = State;
-        string? continuationToken = RequireContinuationTokenOrNull(
-            state,
-            "clearing");
-        if (continuationToken is null)
+        string? sessionId = State.SessionId;
+        if (sessionId is null)
         {
             return new EveClearOutcome(EveClearStatus.NoActiveSession, null);
         }
 
-        string responseBody = await PostContinuationTokenControlAsync(
+        string responseBody = await PostControlAsync(
             EveRequestKind.ClearSession,
-            EveRoutes.ClearSession,
-            continuationToken,
+            EveRoutes.ClearSession(sessionId),
             cancellationToken);
-        return ParseClearOutcome(responseBody, state.SessionId);
+        return ParseClearOutcome(responseBody, sessionId);
     }
 
     /// <summary>
-    /// Terminally retires the durable session that owns this handle's continuation token.
+    /// Terminally retires the durable session addressed by this handle.
     /// </summary>
     /// <remarks>
     /// Unlike <see cref="CancelAsync(CancellationToken)"/>, which only requests cancellation of
-    /// the active turn, reset releases the durable session so the next send starts a fresh
-    /// conversation. Resetting a session that never started is a successful local no-op that
-    /// issues no HTTP request. After a successful reset the local state is empty.
+    /// the active turn, reset releases the durable session. The handle keeps its immutable
+    /// session identifier, so it does not recycle into a new conversation; obtain a fresh handle
+    /// from <see cref="EveClient.CreateSession()"/> to start one. Resetting a session that never
+    /// started is a successful local no-op that issues no HTTP request.
     /// </remarks>
     /// <param name="cancellationToken">Cancels the reset request.</param>
     /// <returns>The successful reset disposition.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// The session has an identifier but no continuation token, so its outstanding event stream
-    /// must be consumed before resetting.
-    /// </exception>
     /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
     /// <exception cref="EveProtocolException">The body was not a recognized reset payload.</exception>
     public async Task<EveResetOutcome> ResetAsync(CancellationToken cancellationToken)
     {
-        EveSessionState state = State;
-        string? continuationToken = RequireContinuationTokenOrNull(
-            state,
-            "resetting");
-        if (continuationToken is null)
+        string? sessionId = State.SessionId;
+        if (sessionId is null)
         {
-            SetState(new EveSessionState());
             return new EveResetOutcome(EveResetStatus.NoActiveSession, null);
         }
 
-        string responseBody = await PostContinuationTokenControlAsync(
+        string responseBody = await PostControlAsync(
             EveRequestKind.ResetSession,
-            EveRoutes.ResetSession,
-            continuationToken,
+            EveRoutes.ResetSession(sessionId),
             cancellationToken);
-        EveResetOutcome outcome = ParseResetOutcome(responseBody, state.SessionId);
-        ResetStateIfCurrent(state);
-        return outcome;
+        return ParseResetOutcome(responseBody, sessionId);
     }
 
     /// <summary>
@@ -262,31 +246,23 @@ public sealed class EveSession
     /// </remarks>
     /// <param name="cancellationToken">Cancels the compaction request.</param>
     /// <returns>The successful compaction disposition.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// The session has an identifier but no continuation token, so its outstanding event stream
-    /// must be consumed before compacting.
-    /// </exception>
     /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
     /// <exception cref="EveProtocolException">
     /// The body was not a recognized compaction payload.
     /// </exception>
     public async Task<EveCompactOutcome> CompactAsync(CancellationToken cancellationToken)
     {
-        EveSessionState state = State;
-        string? continuationToken = RequireContinuationTokenOrNull(
-            state,
-            "compacting");
-        if (continuationToken is null)
+        string? sessionId = State.SessionId;
+        if (sessionId is null)
         {
             return new EveCompactOutcome(EveCompactStatus.NoActiveSession, null);
         }
 
-        string responseBody = await PostContinuationTokenControlAsync(
+        string responseBody = await PostControlAsync(
             EveRequestKind.CompactSession,
-            EveRoutes.CompactSession,
-            continuationToken,
+            EveRoutes.CompactSession(sessionId),
             cancellationToken);
-        return ParseCompactOutcome(responseBody, state.SessionId);
+        return ParseCompactOutcome(responseBody, sessionId);
     }
 
     /// <summary>
@@ -435,14 +411,7 @@ public sealed class EveSession
                     "The eve message route did not return a session identifier.");
             }
 
-            string? continuationToken = root.ValueKind == JsonValueKind.Object
-                && root.TryGetProperty(
-                    "continuationToken",
-                    out JsonElement continuationTokenValue)
-                && continuationTokenValue.ValueKind == JsonValueKind.String
-                    ? continuationTokenValue.GetString()
-                    : null;
-            return new AcceptedTurn(sessionId, continuationToken);
+            return new AcceptedTurn(sessionId);
         }
         catch (JsonException exception)
         {
@@ -496,9 +465,7 @@ public sealed class EveSession
             SetState(AdvanceState(
                 initialState,
                 acceptedTurn.SessionId,
-                acceptedTurn.ContinuationToken,
-                events,
-                _client.PreserveCompletedSessions));
+                events));
         }
     }
 
@@ -539,17 +506,14 @@ public sealed class EveSession
                 SetState(AdvanceState(
                     cursorState,
                     initialState.SessionId!,
-                    initialState.ContinuationToken,
-                    events,
-                    _client.PreserveCompletedSessions));
+                    events));
             }
         }
     }
 
     private void MarkAcceptedIfCurrent(
         EveSessionState expected,
-        string sessionId,
-        string? continuationToken)
+        string sessionId)
     {
         lock (_stateGate)
         {
@@ -560,20 +524,17 @@ public sealed class EveSession
 
             _state = expected with
             {
-                ContinuationToken = continuationToken ?? expected.ContinuationToken,
                 SessionId = sessionId,
             };
         }
     }
 
-    private async Task<string> PostContinuationTokenControlAsync(
+    private async Task<string> PostControlAsync(
             EveRequestKind kind,
             string route,
-            string continuationToken,
             CancellationToken cancellationToken)
     {
-        byte[] body = EveRequestWriter.WriteContinuationToken(continuationToken);
-        using ByteArrayContent content = new(body);
+        using ByteArrayContent content = new([]);
         content.Headers.ContentType = new("application/json");
         using HttpRequestMessage request = await _client.CreateRequestAsync(
             HttpMethod.Post,
@@ -592,26 +553,6 @@ public sealed class EveSession
         }
 
         return await response.Content.ReadAsStringAsync(cancellationToken);
-    }
-
-    private static string? RequireContinuationTokenOrNull(
-        EveSessionState state,
-        string operationGerund)
-    {
-        string? continuationToken = state.ContinuationToken;
-        if (continuationToken is not null)
-        {
-            return continuationToken;
-        }
-
-        if (state.SessionId is not null)
-        {
-            throw new InvalidOperationException(
-                "The eve session has no continuation token. " +
-                $"Consume its event stream before {operationGerund}.");
-        }
-
-        return null;
     }
 
     private static EveClearOutcome ParseClearOutcome(string body, string? currentSessionId)
@@ -754,19 +695,6 @@ public sealed class EveSession
         }
     }
 
-    private void ResetStateIfCurrent(EveSessionState expected)
-    {
-        lock (_stateGate)
-        {
-            if (!ReferenceEquals(_state, expected))
-            {
-                return;
-            }
-
-            _state = new EveSessionState();
-        }
-    }
-
     private void SetState(EveSessionState state)
     {
         lock (_stateGate)
@@ -775,61 +703,17 @@ public sealed class EveSession
         }
     }
 
+    // eve 0.31.0 made the session handle fixed: no boundary event recycles the identifier and
+    // no continuation token is carried, so advancing is purely a cursor addition.
     private static EveSessionState AdvanceState(
         EveSessionState initialState,
         string sessionId,
-        string? continuationToken,
-        IReadOnlyList<EveStreamEvent> events,
-        bool preserveCompletedSessions)
-    {
-        EveStreamEvent? boundary = events
-            .Reverse()
-            .FirstOrDefault(static streamEvent => streamEvent.IsCurrentTurnBoundary);
-        int streamIndex = initialState.StreamIndex + events.Count;
-
-        if (boundary?.Kind == EveStreamEventKind.SessionWaiting)
+        IReadOnlyList<EveStreamEvent> events) =>
+        new()
         {
-            if (!boundary.Data.TryGetProperty(
-                    "continuationToken",
-                    out JsonElement waitingContinuationToken)
-                || waitingContinuationToken.ValueKind != JsonValueKind.String
-                || string.IsNullOrWhiteSpace(waitingContinuationToken.GetString()))
-            {
-                throw new EveProtocolException(
-                    "A session.waiting event did not contain a continuation token.");
-            }
+            SessionId = sessionId,
+            StreamIndex = initialState.StreamIndex + events.Count,
+        };
 
-            return new EveSessionState
-            {
-                ContinuationToken = waitingContinuationToken.GetString(),
-                SessionId = sessionId,
-                StreamIndex = streamIndex,
-            };
-        }
-
-        if (boundary?.Kind == EveStreamEventKind.SessionCompleted
-            && preserveCompletedSessions)
-        {
-            return new EveSessionState
-            {
-                ContinuationToken = continuationToken ?? initialState.ContinuationToken,
-                SessionId = sessionId,
-                StreamIndex = streamIndex,
-            };
-        }
-
-        if (boundary is null)
-        {
-            return new EveSessionState
-            {
-                ContinuationToken = continuationToken ?? initialState.ContinuationToken,
-                SessionId = sessionId,
-                StreamIndex = streamIndex,
-            };
-        }
-
-        return new EveSessionState();
-    }
-
-    private sealed record AcceptedTurn(string SessionId, string? ContinuationToken);
+    private sealed record AcceptedTurn(string SessionId);
 }

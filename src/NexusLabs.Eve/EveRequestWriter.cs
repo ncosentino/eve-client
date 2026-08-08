@@ -5,9 +5,9 @@ namespace NexusLabs.Eve;
 
 internal static class EveRequestWriter
 {
-    internal static byte[] WriteTurn(EveSendTurnRequest request, string? continuationToken)
+    internal static byte[] WriteTurn(EveSendTurnRequest request, bool isCreate)
     {
-        ValidateTurn(request, continuationToken);
+        ValidateTurn(request, isCreate);
 
         ArrayBufferWriter<byte> buffer = new();
         using (Utf8JsonWriter writer = new(buffer))
@@ -56,11 +56,6 @@ internal static class EveRequestWriter
                 outputSchema.WriteTo(writer);
             }
 
-            if (continuationToken is not null)
-            {
-                writer.WriteString("continuationToken", continuationToken);
-            }
-
             writer.WriteEndObject();
         }
 
@@ -80,20 +75,7 @@ internal static class EveRequestWriter
         return buffer.WrittenSpan.ToArray();
     }
 
-    internal static byte[] WriteContinuationToken(string continuationToken)
-    {
-        ArrayBufferWriter<byte> buffer = new();
-        using (Utf8JsonWriter writer = new(buffer))
-        {
-            writer.WriteStartObject();
-            writer.WriteString("continuationToken", continuationToken);
-            writer.WriteEndObject();
-        }
-
-        return buffer.WrittenSpan.ToArray();
-    }
-
-    private static void ValidateTurn(EveSendTurnRequest request, string? continuationToken)
+    private static void ValidateTurn(EveSendTurnRequest request, bool isCreate)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -106,7 +88,7 @@ internal static class EveRequestWriter
                 nameof(request));
         }
 
-        if (continuationToken is null && !hasMessage)
+        if (isCreate && !hasMessage)
         {
             throw new ArgumentException(
                 "A new eve session must start with a message.",
