@@ -177,6 +177,10 @@ EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 Continue consuming the stream after cancellation to observe `turn.cancelled` followed
 by `session.waiting` and to advance the cursor.
 
+Both cancellation results are successful. `EveCancellationStatus.Accepted` carries the
+session identifier; `EveCancellationStatus.NoActiveTurn` means there was nothing left to
+cancel and reports a `null` `SessionId`.
+
 `ClearAsync` queues removal of durable model-message history while preserving the
 session identity and local cursor. Consume the stream through `context.cleared` and the
 following `session.waiting` boundary before sending another turn:

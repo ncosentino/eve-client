@@ -799,6 +799,73 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task CancelAsync_NoActiveTurn_SucceedsWithoutSessionId(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"status":"no_active_turn"}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        EveCancellationOutcome outcome = await session.CancelAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveCancellationStatus.NoActiveTurn);
+        await Assert.That(outcome.SessionId)
+            .IsNull()
+            .Because("eve 0.31.0 names no session when nothing was cancelled.");
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/cancel");
+    }
+
+    [Test]
+    public async Task CancelAsync_NoActiveTurnCarryingSessionId_IsRejected(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"sessionId":"session_1","status":"no_active_turn"}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () => await session.CancelAsync(cancellationToken))
+            .Throws<EveProtocolException>()
+            .Because("Upstream validates the inactive variant strictly.");
+    }
+
+    [Test]
+    public async Task CancelAsync_AcceptedWithoutSessionId_IsRejected(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"status":"accepted"}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () => await session.CancelAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    public async Task CancelAsync_AcceptedForDifferentSession_IsRejected(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_other","status":"accepted"}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () => await session.CancelAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
     public async Task TurnStream_ReconnectsFromAdvancedCursor(
         CancellationToken cancellationToken)
     {

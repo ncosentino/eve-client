@@ -49,6 +49,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `ResetAsync` no longer clears local state. The handle keeps its identifier; obtain a new
   conversation from `EveClient.CreateSession()`.
 - A `session.waiting` event is no longer required to carry a continuation token.
+- **Breaking.** `EveCancellationOutcome.SessionId` is nullable. eve `0.31.0` returns the
+  identifier only for an accepted cancellation; a `no_active_turn` result names no session
+  because none was cancelled. The client previously required an identifier before reading
+  either status, so a valid inactive response failed to parse. Both variants are now
+  validated strictly, matching upstream: an inactive result carrying an identifier, and an
+  accepted result missing or mismatching one, are rejected as protocol errors.
 - **Breaking.** A turn carries either a message or input responses, never both. eve
   `0.31.0` answers a combined body with HTTP 400
   (`'message' and 'inputResponses' are mutually exclusive`). `SendAsync` now takes the

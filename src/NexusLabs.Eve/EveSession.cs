@@ -213,30 +213,30 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(responseBody);
             JsonElement root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
-                || !root.TryGetProperty("ok", out JsonElement ok)
-                || ok.ValueKind != JsonValueKind.True
-                || !root.TryGetProperty("sessionId", out JsonElement responseSessionId)
-                || responseSessionId.ValueKind != JsonValueKind.String
-                || !string.Equals(
-                    responseSessionId.GetString(),
-                    sessionId,
-                    StringComparison.Ordinal)
-                || !root.TryGetProperty("status", out JsonElement status)
-                || status.ValueKind != JsonValueKind.String)
-            {
-                throw new EveProtocolException(
-                    "The eve cancel route returned an invalid response.");
-            }
+            string status = ReadSuccessfulControlStatus(root, "cancel");
 
-            EveCancellationStatus cancellationStatus = status.GetString() switch
+            switch (status)
             {
-                "accepted" => EveCancellationStatus.Accepted,
-                "no_active_turn" => EveCancellationStatus.NoActiveTurn,
-                _ => throw new EveProtocolException(
-                    "The eve cancel route returned an unknown status."),
-            };
-            return new EveCancellationOutcome(sessionId, cancellationStatus);
+                case "no_active_turn":
+                    // eve 0.31.0 validates this variant strictly, so an identifier here means
+                    // the response does not match the contract rather than being extra data.
+                    if (root.TryGetProperty("sessionId", out _))
+                    {
+                        throw new EveProtocolException(
+                            "The eve cancel route returned an invalid response.");
+                    }
+
+                    return new EveCancellationOutcome(null, EveCancellationStatus.NoActiveTurn);
+                case "accepted":
+                    string acceptedSessionId = ReadRequiredSessionId(root, "sessionId", "cancel");
+                    EnsureSessionIdMatches(acceptedSessionId, sessionId, "cancel");
+                    return new EveCancellationOutcome(
+                        acceptedSessionId,
+                        EveCancellationStatus.Accepted);
+                default:
+                    throw new EveProtocolException(
+                        "The eve cancel route returned an unknown status.");
+            }
         }
         catch (JsonException exception)
         {
