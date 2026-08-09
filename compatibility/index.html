@@ -786,6 +786,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#preliminary-tool-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preliminary tool output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1122,13 +1133,13 @@
 <tr>
 <td>0.1.0-alpha.4+</td>
 <td style="text-align: right;">0.31.3</td>
-<td style="text-align: right;">20</td>
+<td style="text-align: right;">21</td>
 <td>Primary compatibility target</td>
 </tr>
 <tr>
 <td>0.1.0-alpha.4+</td>
 <td style="text-align: right;">0.31.0</td>
-<td style="text-align: right;">20</td>
+<td style="text-align: right;">21</td>
 <td>Minimum supported release</td>
 </tr>
 <tr>
@@ -1193,10 +1204,16 @@ attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
 C# client, including the HTTP 409 refusal returned when a retired session
 identifier is reused.</p>
-<p>The client stays readable against protocol 19 servers: durable event
+<p>Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
-rather than causing a failure. That path is covered by contract tests, not by
-the pinned fixture.</p>
+rather than causing a failure. That tolerance is covered by contract tests, not
+by the pinned fixture, and it does not extend the supported server range, which
+the identifier-addressed control routes fix at eve <code>0.31.0</code> and newer.</p>
+<h2 id="preliminary-tool-output">Preliminary tool output<a class="headerlink" href="#preliminary-tool-output" title="Permanent link">&para;</a></h2>
+<p>Stream protocol <code>21</code> adds <code>action.partial</code>, emitted for each non-terminal snapshot
+yielded by an async-generator tool. <code>EveStreamEventKind.ActionPartial</code> recognizes it, and
+the terminal <code>action.result</code> continues to carry the value exposed to the model. Treat
+partial snapshots as provisional display state and never as a final tool result.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>

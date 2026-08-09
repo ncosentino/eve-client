@@ -667,6 +667,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#preliminary-tool-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preliminary tool output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#durable-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1133,6 +1144,27 @@
 </code></pre></div>
 <p>Known event names map to <code>EveStreamEventKind</code>. The original wire-level <code>Type</code>
 and <code>Data</code> remain available for forward compatibility.</p>
+<h2 id="preliminary-tool-output">Preliminary tool output<a class="headerlink" href="#preliminary-tool-output" title="Permanent link">&para;</a></h2>
+<p>A tool implemented as an async generator streams provisional snapshots. Each
+non-terminal snapshot arrives as <code>action.partial</code>
+(<code>EveStreamEventKind.ActionPartial</code>); the final one arrives as <code>action.result</code>
+and is the only value exposed to the model.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ActionPartial</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">            </span><span class="n">RenderProvisional</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">&quot;result&quot;</span><span class="p">));</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ActionResult</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">            </span><span class="n">CommitResult</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">&quot;result&quot;</span><span class="p">));</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="p">}</span>
+</code></pre></div>
+<p>Treat a partial snapshot as provisional display state. Never persist one as a
+final tool result, and expect it to be superseded.</p>
 <h2 id="durable-event-identity">Durable event identity<a class="headerlink" href="#durable-event-identity" title="Permanent link">&para;</a></h2>
 <p>Stream protocol version 20 stamps every persisted event with a stable
 <code>evt_</code>-prefixed identifier before it is written, exposed as
@@ -1144,18 +1176,18 @@ retried step is not a replay: it is emitted again under a new identifier.</p>
 and never stamps one.
 <code>EveStreamEventDeduplicator</code> encodes that contract, so a caller that resumes a
 stream can drop events it already processed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">EveStreamEventDeduplicator</span><span class="w"> </span><span class="n">seen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">{</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">seen</span><span class="p">.</span><span class="n">Admit</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">))</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">        </span><span class="k">continue</span><span class="p">;</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="n">Handle</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">);</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">EveStreamEventDeduplicator</span><span class="w"> </span><span class="n">seen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">{</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">seen</span><span class="p">.</span><span class="n">Admit</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">))</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="k">continue</span><span class="p">;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="n">Handle</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">);</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>The remembered set is unbounded because a bounded window cannot survive a rewind
 past its capacity. Callers that retain nothing per event should bound their reads
@@ -1165,29 +1197,29 @@ with the session cursor instead.</p>
 Progress resets the idle retry budget, preventing a long-running active turn
 from being abandoned.</p>
 <p>Disable reconnection when a proxy owns cursor recovery:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
 </code></pre></div>
 <h2 id="attach-to-an-existing-stream">Attach to an existing stream<a class="headerlink" href="#attach-to-an-existing-stream" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="p">{</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.</p>
 <h2 id="bounded-catch-up-reads">Bounded catch-up reads<a class="headerlink" href="#bounded-catch-up-reads" title="Permanent link">&para;</a></h2>
 <p>Set <code>Follow = false</code> to read everything recorded through the durable tail
 observed when the stream opens, then stop instead of waiting for future events:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">{</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">{</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>The first bounded request sends <code>includeTailIndex=1</code> and the server answers with
 the <code>x-eve-stream-tail-index</code> response header. That first tail is an immutable
@@ -1203,10 +1235,10 @@ never reported the header, so bounded reads against that release fail.</p>
 <h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
 <p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
 behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">{</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">};</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">};</span>
 </code></pre></div>
 <p>The limit applies to one raw NDJSON line before trimming, excluding its line ending.
 An oversized event throws <code>EveProtocolException</code> without including the rejected
