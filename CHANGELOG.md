@@ -26,6 +26,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `EveSession.RespondAsync` for resolving pending human-input requests as an operation
   distinct from sending a message.
 - `EveTurnOptions`, carrying the settings shared by both turn operations.
+- `EveStreamEventKind.ActionPartial`, recognizing the `action.partial` events that stream
+  protocol `21` emits for each non-terminal snapshot yielded by an async-generator tool. The
+  terminal `action.result` still carries the value exposed to the model, and the full raw
+  payload remains available through `EveStreamEvent.Data`.
 - `EveClientException.ErrorCode`, projecting the stable machine-readable error code eve
   `0.31.0` reports alongside the human-readable message. The raw string is preserved so an
   unmodelled future code stays observable, and it is `null` when the response carried none.
@@ -67,12 +71,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   through `SendAsync` must move to `RespondAsync`, and callers that built an
   `EveSendTurnRequest` must pass the payload positionally with an optional
   `EveTurnOptions`.
-- The compatibility reference moved to eve `0.31.3`. The pinned CI fixture runs that
-  release, and the compatibility probe verifies the identifier-addressed control routes,
-  empty control bodies, fixed-handle reset semantics, and the HTTP 409 refusal returned
-  when a retired session identifier is reused. `EveProtocol.MessageStreamVersion` still
-  reports `20` because the stream protocol `21` event vocabulary is not yet fully
-  recognized.
+- The compatibility reference moved to eve `0.31.3`, message-stream protocol `21`. The pinned
+  CI fixture runs that release, and the compatibility probe verifies the identifier-addressed
+  control routes, empty control bodies, fixed-handle reset semantics, and the HTTP 409
+  `session_not_active` refusal returned when a retired session identifier is reused.
 
 ## [0.1.0-alpha.3] - 2026-08-08
 

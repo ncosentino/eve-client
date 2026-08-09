@@ -55,6 +55,38 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
+    public async Task Parse_RecognizesActionPartialAndPreservesPayload()
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            """{"type":"action.partial","data":{"result":{"output":"partial output"},"sequence":4,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ActionPartial);
+        await Assert.That(streamEvent.Type).IsEqualTo("action.partial");
+        await Assert.That(streamEvent.Data.GetProperty("result")
+            .GetProperty("output")
+            .GetString())
+            .IsEqualTo("partial output");
+        await Assert.That(streamEvent.Data.GetProperty("turnId").GetString())
+            .IsEqualTo("turn_1");
+        await Assert.That(streamEvent.IsCurrentTurnBoundary)
+            .IsFalse()
+            .Because("A preliminary snapshot never ends a turn.");
+    }
+
+    [Test]
+    public async Task Parse_KeepsActionPartialDistinctFromTerminalActionResult()
+    {
+        EveStreamEvent partial = EveStreamEvent.Parse(
+            """{"type":"action.partial","data":{"result":{"output":"provisional"},"sequence":1,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent terminal = EveStreamEvent.Parse(
+            """{"type":"action.result","data":{"result":{"output":"final"},"sequence":2,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(partial.Kind).IsEqualTo(EveStreamEventKind.ActionPartial);
+        await Assert.That(terminal.Kind).IsEqualTo(EveStreamEventKind.ActionResult);
+        await Assert.That(partial.Kind).IsNotEqualTo(terminal.Kind);
+    }
+
+    [Test]
     public async Task Deduplicator_DropsReplayedEventAndKeepsRetriedEmission()
     {
         EveStreamEventDeduplicator deduplicator = new();

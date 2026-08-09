@@ -24,7 +24,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the durable message-stream protocol version used by the reference client.
     /// </summary>
-    public const string MessageStreamVersion = "20";
+    public const string MessageStreamVersion = "21";
 
     /// <summary>
     /// Gets the media type returned by eve session streams.

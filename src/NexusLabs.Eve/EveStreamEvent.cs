@@ -135,6 +135,7 @@ public sealed record EveStreamEvent
             "actions.requested" => EveStreamEventKind.ActionsRequested,
             "input.requested" => EveStreamEventKind.InputRequested,
             "action.result" => EveStreamEventKind.ActionResult,
+            "action.partial" => EveStreamEventKind.ActionPartial,
             "subagent.called" => EveStreamEventKind.SubagentCalled,
             "subagent.started" => EveStreamEventKind.SubagentStarted,
             "subagent.event" => EveStreamEventKind.SubagentEvent,
