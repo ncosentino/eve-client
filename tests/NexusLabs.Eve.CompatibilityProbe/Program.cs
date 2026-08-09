@@ -275,6 +275,14 @@ if (retiredSendFailure.StatusCode != HttpStatusCode.Conflict)
         $"{retiredSendFailure.StatusCode}, expected 409 Conflict.");
 }
 
+if (!string.Equals(retiredSendFailure.ErrorCode, "session_not_active", StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "Sending on a reset session identifier reported error code " +
+        $"'{retiredSendFailure.ErrorCode ?? "<absent>"}', expected 'session_not_active'. " +
+        $"Body: {retiredSendFailure.ResponseBody}");
+}
+
 EveSession afterResetSession = client.CreateSession();
 EveMessageResponse afterResetResponse = await afterResetSession.SendAsync(
     "Return the deterministic compatibility response.",

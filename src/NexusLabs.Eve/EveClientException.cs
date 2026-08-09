@@ -53,7 +53,20 @@ public sealed class EveClientException : HttpRequestException
     {
         ResponseBody = responseBody;
         ResponseHeaders = responseHeaders;
+        ErrorCode = ReadErrorCode(responseBody);
     }
+
+    /// <summary>
+    /// Gets the stable machine-readable error code reported by the server, or
+    /// <see langword="null"/> when the response carried none.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> exposes a stable <c>code</c> alongside the human-readable message, so
+    /// callers can branch on a condition such as HTTP 409 <c>session_not_active</c> without
+    /// parsing <see cref="ResponseBody"/>. The value is deliberately left as the raw string so
+    /// an unmodelled future code stays observable.
+    /// </remarks>
+    public string? ErrorCode { get; }
 
     /// <summary>
     /// Gets the raw response body.
@@ -64,6 +77,28 @@ public sealed class EveClientException : HttpRequestException
     /// Gets the response headers keyed case-insensitively.
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> ResponseHeaders { get; }
+
+    private static string? ReadErrorCode(string responseBody)
+    {
+        if (responseBody.Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(responseBody);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("code", out JsonElement code)
+                && code.ValueKind == JsonValueKind.String
+                    ? code.GetString()
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     private static string CreateMessage(HttpStatusCode statusCode, string responseBody)
     {

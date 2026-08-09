@@ -26,6 +26,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `EveSession.RespondAsync` for resolving pending human-input requests as an operation
   distinct from sending a message.
 - `EveTurnOptions`, carrying the settings shared by both turn operations.
+- `EveClientException.ErrorCode`, projecting the stable machine-readable error code eve
+  `0.31.0` reports alongside the human-readable message. The raw string is preserved so an
+  unmodelled future code stays observable, and it is `null` when the response carried none.
+  The compatibility probe asserts a real HTTP 409 reports `session_not_active`.
 - `EveClient.AttachSession(string sessionId, int streamIndex = 0)` for obtaining a fixed
   handle to a known session without replaying its stream.
 - `EveProtocol.MinimumEveVersion`, declaring the oldest supported eve release (`0.31.0`)

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.ObjectModel;
+using System.Net;
 using System.Text;
 
 namespace NexusLabs.Eve.Tests;
@@ -486,6 +487,61 @@ public sealed class EveClientTests
         await Assert.That(exception.ResponseBody).IsEqualTo(
             """{"error":"Credentials are invalid."}""");
         await Assert.That(exception.ResponseHeaders["www-authenticate"][0]).IsEqualTo("Bearer");
+        await Assert.That(exception.ErrorCode)
+            .IsNull()
+            .Because("The response carried no code property.");
+    }
+
+    [Test]
+    public async Task EveClientException_ProjectsStableErrorCode()
+    {
+        EveClientException exception = new(
+            HttpStatusCode.Conflict,
+            """{"code":"session_not_active","error":"The session is not active.","ok":false}""",
+            ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+
+        await Assert.That(exception.ErrorCode).IsEqualTo("session_not_active");
+        await Assert.That(exception.Message).IsEqualTo("The session is not active.");
+        await Assert.That(exception.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
+    }
+
+    [Test]
+    public async Task EveClientException_PreservesUnmodelledErrorCode()
+    {
+        EveClientException exception = new(
+            HttpStatusCode.BadRequest,
+            """{"code":"some_future_code","error":"Nope."}""",
+            ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+
+        await Assert.That(exception.ErrorCode)
+            .IsEqualTo("some_future_code")
+            .Because("An unmodelled code stays observable as its raw value.");
+    }
+
+    [Test]
+    public async Task EveClientException_IgnoresNonStringErrorCode()
+    {
+        EveClientException exception = new(
+            HttpStatusCode.BadRequest,
+            """{"code":42,"error":"Nope."}""",
+            ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+
+        await Assert.That(exception.ErrorCode).IsNull();
+        await Assert.That(exception.ResponseBody)
+            .IsEqualTo("""{"code":42,"error":"Nope."}""")
+            .Because("The raw body is never discarded.");
+    }
+
+    [Test]
+    public async Task EveClientException_HandlesNonJsonBody()
+    {
+        EveClientException exception = new(
+            HttpStatusCode.BadGateway,
+            "upstream unavailable",
+            ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+
+        await Assert.That(exception.ErrorCode).IsNull();
+        await Assert.That(exception.Message).IsEqualTo("upstream unavailable");
     }
 
     private static EveClient CreateBootstrapClient(
