@@ -22,9 +22,8 @@ public sealed class EveSessionTests
             """{"type":"session.waiting","data":{"continuationToken":"eve:rekeyed","wait":"next-user-message"}}""")));
         EveClient client = CreateClient(transport);
         EveSession session = client.CreateSession();
-        EveSendTurnRequest request = new()
+        EveTurnOptions options = new()
         {
-            Message = EveMessageContent.FromText("Run the check."),
             ClientContext = EveClientContext.FromJson(EveJsonElementFactory.CreateObject(writer =>
             {
                 writer.WriteString("route", "/billing");
@@ -39,7 +38,10 @@ public sealed class EveSessionTests
             },
         };
 
-        EveMessageResponse response = await session.SendAsync(request, cancellationToken);
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Run the check."),
+            options,
+            cancellationToken);
         EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
         await Assert.That(response.SessionId).IsEqualTo("session_1");
@@ -270,9 +272,9 @@ public sealed class EveSessionTests
         await client.GetInfoAsync(cancellationToken);
         EveSession session = client.CreateSession();
         EveMessageResponse firstResponse = await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("First"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("First"),
                 Headers = new Dictionary<string, string>
                 {
                     ["x-turn"] = "first",
@@ -345,9 +347,9 @@ public sealed class EveSessionTests
             });
 
         EveMessageResponse response = await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Forward the caller identity"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Forward the caller identity"),
                 Headers = new Dictionary<string, string>
                 {
                     ["Authorization"] = PerTurnAuthorization,
@@ -387,9 +389,9 @@ public sealed class EveSessionTests
             });
 
         EveMessageResponse response = await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Forward the caller identity"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Forward the caller identity"),
                 Headers = new Dictionary<string, string>
                 {
                     ["authorization"] = "Token generic-value",
@@ -431,9 +433,9 @@ public sealed class EveSessionTests
             });
 
         EveMessageResponse response = await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Forward the caller identity"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Forward the caller identity"),
                 Headers = new Dictionary<string, string>
                 {
                     ["authorization"] = "Token generic-value",
@@ -475,9 +477,9 @@ public sealed class EveSessionTests
             });
 
         await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Authenticate"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Authenticate"),
                 Headers = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -507,9 +509,9 @@ public sealed class EveSessionTests
             });
 
         await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Authenticate"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Authenticate"),
                 Headers = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -538,9 +540,9 @@ public sealed class EveSessionTests
             });
 
         await Assert.That(async () => await client.CreateSession().SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Authenticate"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Authenticate"),
                 ProtectedHeaderOverrides = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -574,9 +576,9 @@ public sealed class EveSessionTests
         EveSession session = client.CreateSession();
 
         EveMessageResponse firstResponse = await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("First"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("First"),
                 ProtectedHeaderOverrides = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -617,9 +619,9 @@ public sealed class EveSessionTests
         EveSession session = client.CreateSession();
 
         await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Start"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Start"),
                 ProtectedHeaderOverrides = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -658,9 +660,9 @@ public sealed class EveSessionTests
         EveSession session = client.CreateSession();
 
         EveMessageResponse response = await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Start"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Start"),
                 ProtectedHeaderOverrides = new Dictionary<string, string>
                 {
                     ["authorization"] = PerTurnAuthorization,
@@ -808,13 +810,15 @@ public sealed class EveSessionTests
         handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
             """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
         EveSession session = CreateClient(transport).CreateSession();
-        EveSendTurnRequest request = new()
+        EveTurnOptions options = new()
         {
-            Message = EveMessageContent.FromText("Reconnect"),
             StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
         };
 
-        EveMessageResponse response = await session.SendAsync(request, cancellationToken);
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Reconnect"),
+            options,
+            cancellationToken);
         EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Events.Count).IsEqualTo(2);
@@ -840,9 +844,9 @@ public sealed class EveSessionTests
         handler.Enqueue((_, _) => Task.FromResult(StreamResponse(oversizedEvent)));
         EveSession session = CreateClient(transport, maximumEventBytes).CreateSession();
         EveMessageResponse response = await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Bound this event"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Bound this event"),
                 StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
             },
             cancellationToken);
@@ -880,13 +884,15 @@ public sealed class EveSessionTests
         handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
             """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}""")));
         EveSession session = CreateClient(transport).CreateSession();
-        EveSendTurnRequest request = new()
+        EveTurnOptions options = new()
         {
-            Message = EveMessageContent.FromText("One connection"),
             StreamReconnectPolicy = EveStreamReconnectPolicy.Disabled,
         };
 
-        EveMessageResponse response = await session.SendAsync(request, cancellationToken);
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("One connection"),
+            options,
+            cancellationToken);
         EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Events.Count).IsEqualTo(1);
@@ -1180,58 +1186,6 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task SendAsync_RejectsRequestCarryingInputResponses(
-        CancellationToken cancellationToken)
-    {
-        using RecordingHttpMessageHandler handler = new();
-        using HttpMessageInvoker transport = new(handler, false);
-        EveSession session = CreateClient(transport).AttachSession("session_1");
-        EveSendTurnRequest request = new()
-        {
-            Message = EveMessageContent.FromText("Both payloads"),
-            InputResponses = [new EveInputResponse("approval_1", "approve")],
-        };
-
-        await Assert.That(async () => await session.SendAsync(request, cancellationToken))
-            .Throws<ArgumentException>();
-        await Assert.That(handler.Calls.Count)
-            .IsEqualTo(0)
-            .Because("The conflict is rejected before any network call.");
-    }
-
-    [Test]
-    public async Task RespondAsync_RejectsRequestCarryingMessage(
-        CancellationToken cancellationToken)
-    {
-        using RecordingHttpMessageHandler handler = new();
-        using HttpMessageInvoker transport = new(handler, false);
-        EveSession session = CreateClient(transport).AttachSession("session_1");
-        EveSendTurnRequest request = new()
-        {
-            Message = EveMessageContent.FromText("Both payloads"),
-            InputResponses = [new EveInputResponse("approval_1", "approve")],
-        };
-
-        await Assert.That(async () => await session.RespondAsync(request, cancellationToken))
-            .Throws<ArgumentException>();
-        await Assert.That(handler.Calls.Count).IsEqualTo(0);
-    }
-
-    [Test]
-    public async Task SendAsync_RejectsRequestWithoutMessage(
-        CancellationToken cancellationToken)
-    {
-        using RecordingHttpMessageHandler handler = new();
-        using HttpMessageInvoker transport = new(handler, false);
-        EveSession session = CreateClient(transport).AttachSession("session_1");
-
-        await Assert.That(async () =>
-                await session.SendAsync(new EveSendTurnRequest(), cancellationToken))
-            .Throws<ArgumentException>();
-        await Assert.That(handler.Calls.Count).IsEqualTo(0);
-    }
-
-    [Test]
     public async Task RespondAsync_RejectsEmptyInputResponses(
         CancellationToken cancellationToken)
     {
@@ -1256,8 +1210,8 @@ public sealed class EveSessionTests
         await Assert.That(async () => await session.RespondAsync(
                 [new EveInputResponse("approval_1", "approve")],
                 cancellationToken))
-            .Throws<ArgumentException>()
-            .Because("A new eve session must start with a message.");
+            .Throws<InvalidOperationException>()
+            .Because("A session with no id has no pending input.");
         await Assert.That(handler.Calls.Count).IsEqualTo(0);
     }
 
@@ -1314,15 +1268,9 @@ public sealed class EveSessionTests
         {
             SessionId = "session_1",
         });
-        EveSendTurnRequest request = new()
-        {
-            InputResponses =
-            [
-                new EveInputResponse("approval_1", "approve"),
-            ],
-        };
-
-        EveMessageResponse response = await session.RespondAsync(request, cancellationToken);
+        EveMessageResponse response = await session.RespondAsync(
+            [new EveInputResponse("approval_1", "approve")],
+            cancellationToken);
         await response.GetOutcomeAsync(cancellationToken);
 
         await Assert.That(handler.Calls.Count).IsEqualTo(3);

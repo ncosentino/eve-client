@@ -42,15 +42,12 @@ RequireDurableEventEnvelope(textOutcome, "text turn");
 
 EveSession attachmentSession = client.CreateSession();
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
-    new EveSendTurnRequest
-    {
-        Message = EveMessageContent.FromParts(
-            EveContentPart.CreateText("Read the attached fixture."),
-            EveContentPart.CreateFile(
-                "fixture"u8,
-                "text/plain",
-                "fixture.txt")),
-    },
+    EveMessageContent.FromParts(
+        EveContentPart.CreateText("Read the attached fixture."),
+        EveContentPart.CreateFile(
+            "fixture"u8,
+            "text/plain",
+            "fixture.txt")),
     timeout.Token);
 EveTurnOutcome attachmentOutcome = await attachmentResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(attachmentOutcome, "attachment turn");

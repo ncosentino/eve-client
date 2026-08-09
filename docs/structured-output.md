@@ -8,11 +8,8 @@ Pass a JSON Schema object on the turn:
 
 ```csharp
 EveMessageResponse response = await session.SendAsync(
-    new EveSendTurnRequest
-    {
-        Message = EveMessageContent.FromText("Return a structured summary."),
-        OutputSchema = outputSchema,
-    },
+    EveMessageContent.FromText("Return a structured summary."),
+    new EveTurnOptions { OutputSchema = outputSchema },
     cancellationToken);
 ```
 

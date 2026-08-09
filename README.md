@@ -138,9 +138,9 @@ recovery can disable it:
 
 ```csharp
 EveMessageResponse response = await session.SendAsync(
-    new EveSendTurnRequest
+    EveMessageContent.FromText("Run the long operation."),
+    new EveTurnOptions
     {
-        Message = EveMessageContent.FromText("Run the long operation."),
         StreamReconnectPolicy = EveStreamReconnectPolicy.Disabled,
     },
     cancellationToken);
@@ -214,9 +214,7 @@ EveMessageContent message = EveMessageContent.FromParts(
         "application/pdf",
         "report.pdf"));
 
-EveMessageResponse response = await session.SendAsync(
-    new EveSendTurnRequest { Message = message },
-    cancellationToken);
+EveMessageResponse response = await session.SendAsync(message, cancellationToken);
 EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
 
 if (outcome.InputRequests.Count > 0)
@@ -233,7 +231,7 @@ if (outcome.InputRequests.Count > 0)
 
 ## Structured output
 
-Pass raw JSON Schema in `EveSendTurnRequest.OutputSchema`. The server remains
+Pass raw JSON Schema in `EveTurnOptions.OutputSchema`. The server remains
 authoritative for validation. Deserialize the final `result.completed` value with
 source-generated metadata:
 

@@ -133,9 +133,9 @@ public sealed class EveStreamEventIdentityTests
             new EveClientOptions("https://agent.example.com")).CreateSession();
 
         EveMessageResponse response = await session.SendAsync(
-            new EveSendTurnRequest
+            EveMessageContent.FromText("Reconnect"),
+            new EveTurnOptions
             {
-                Message = EveMessageContent.FromText("Reconnect"),
                 StreamReconnectPolicy = new EveStreamReconnectPolicy
                 {
                     StreamOpenRetry = new EveRetryPolicy

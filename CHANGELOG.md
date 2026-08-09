@@ -14,11 +14,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `EveClientOptions.PreserveCompletedSessions`. eve `0.31.0` removed continuation
   tokens from the client protocol; sessions are addressed only by their immutable
   identifier.
+- `EveSendTurnRequest`, replaced by `EveTurnOptions`. The old type carried both `Message`
+  and `InputResponses`, so it could express the combination eve `0.31.0` rejects with
+  HTTP 400. The payload is now a required argument of `SendAsync` or `RespondAsync` and
+  `EveTurnOptions` carries only the shared settings, making that combination impossible
+  to compile rather than caught at runtime. This mirrors upstream's
+  `send(message, options)` and `respond(inputResponses, options)` split.
 
 ### Added
 
 - `EveSession.RespondAsync` for resolving pending human-input requests as an operation
   distinct from sending a message.
+- `EveTurnOptions`, carrying the settings shared by both turn operations.
 - `EveClient.AttachSession(string sessionId, int streamIndex = 0)` for obtaining a fixed
   handle to a known session without replaying its stream.
 - `EveProtocol.MinimumEveVersion`, declaring the oldest supported eve release (`0.31.0`)
@@ -44,10 +51,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - A `session.waiting` event is no longer required to carry a continuation token.
 - **Breaking.** A turn carries either a message or input responses, never both. eve
   `0.31.0` answers a combined body with HTTP 400
-  (`'message' and 'inputResponses' are mutually exclusive`), so `SendAsync` now requires a
-  message and rejects input responses, and `RespondAsync` requires input responses and
-  rejects a message. Both conflicts throw `ArgumentException` before any network call.
-  Callers that delivered input responses through `SendAsync` must move to `RespondAsync`.
+  (`'message' and 'inputResponses' are mutually exclusive`). `SendAsync` now takes the
+  message as a required argument and `RespondAsync` takes the input responses, so the
+  rejected combination cannot be expressed. Callers that delivered input responses
+  through `SendAsync` must move to `RespondAsync`, and callers that built an
+  `EveSendTurnRequest` must pass the payload positionally with an optional
+  `EveTurnOptions`.
 - The compatibility reference moved to eve `0.31.3`. The pinned CI fixture runs that
   release, and the compatibility probe verifies the identifier-addressed control routes,
   empty control bodies, fixed-handle reset semantics, and the HTTP 409 refusal returned

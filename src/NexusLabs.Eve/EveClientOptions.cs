@@ -44,7 +44,7 @@ public sealed record EveClientOptions
     /// <summary>
     /// Gets protected header names that may be replaced through a dedicated per-call override.
     /// A name must be listed here and supplied through
-    /// <see cref="EveSendTurnRequest.ProtectedHeaderOverrides"/> or
+    /// <see cref="EveTurnOptions.ProtectedHeaderOverrides"/> or
     /// <see cref="EveRawRequestOptions.ProtectedHeaderOverrides"/>.
     /// </summary>
     public IReadOnlyCollection<string>? AllowedProtectedHeaderOverrides { get; init; }

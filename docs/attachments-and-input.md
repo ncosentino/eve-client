@@ -14,9 +14,7 @@ EveMessageContent message = EveMessageContent.FromParts(
         "application/pdf",
         "report.pdf"));
 
-EveMessageResponse response = await session.SendAsync(
-    new EveSendTurnRequest { Message = message },
-    cancellationToken);
+EveMessageResponse response = await session.SendAsync(message, cancellationToken);
 ```
 
 Files may use inline data URLs or caller-provided URLs.
