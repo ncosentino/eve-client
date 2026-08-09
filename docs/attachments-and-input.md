@@ -14,9 +14,7 @@ EveMessageContent message = EveMessageContent.FromParts(
         "application/pdf",
         "report.pdf"));
 
-EveMessageResponse response = await session.SendAsync(
-    new EveSendTurnRequest { Message = message },
-    cancellationToken);
+EveMessageResponse response = await session.SendAsync(message, cancellationToken);
 ```
 
 Files may use inline data URLs or caller-provided URLs.
@@ -27,16 +25,15 @@ Files may use inline data URLs or caller-provided URLs.
 
 ```csharp
 EveInputRequest request = outcome.InputRequests[0];
-EveMessageResponse resumed = await session.SendAsync(
-    new EveSendTurnRequest
-    {
-        InputResponses =
-        [
-            new EveInputResponse(request.RequestId, optionId: "approve"),
-        ],
-    },
+EveMessageResponse resumed = await session.RespondAsync(
+    [new EveInputResponse(request.RequestId, optionId: "approve")],
     cancellationToken);
 ```
+
+eve `0.31.0` requires a turn to carry either a message or input responses, never both.
+`SendAsync` sends a message and `RespondAsync` resolves pending input; passing both on one
+request throws `ArgumentException` before any network call, matching the server's HTTP 400
+`'message' and 'inputResponses' are mutually exclusive`.
 
 Input responses are retried for the short propagation window where an accepted
 durable session is not yet visible to the delivery route.

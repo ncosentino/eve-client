@@ -50,28 +50,101 @@ public sealed class EveSession
     public Task<EveMessageResponse> SendAsync(
         string message,
         CancellationToken cancellationToken) =>
-        SendAsync(
-            new EveSendTurnRequest
-            {
-                Message = EveMessageContent.FromText(message),
-            },
-            cancellationToken);
+        SendAsync(EveMessageContent.FromText(message), null, cancellationToken);
 
     /// <summary>
-    /// Sends a full user turn, including attachments, input responses, context, or output schema.
+    /// Sends a user turn carrying attachments or multi-part content.
     /// </summary>
-    /// <param name="request">The turn payload.</param>
+    /// <param name="message">The user message.</param>
     /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
     /// <returns>Accepted turn metadata and its single-use event stream.</returns>
-    public async Task<EveMessageResponse> SendAsync(
-        EveSendTurnRequest request,
+    public Task<EveMessageResponse> SendAsync(
+        EveMessageContent message,
+        CancellationToken cancellationToken) =>
+        SendAsync(message, null, cancellationToken);
+
+    /// <summary>
+    /// Sends a user turn with context, headers, an output schema, or a reconnect policy.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never
+    /// both. Resolve pending human input with
+    /// <see cref="RespondAsync(IReadOnlyList{EveInputResponse}, EveTurnOptions, CancellationToken)"/>.
+    /// </remarks>
+    /// <param name="message">The user message.</param>
+    /// <param name="options">Optional per-turn settings.</param>
+    /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
+    /// <returns>Accepted turn metadata and its single-use event stream.</returns>
+    public Task<EveMessageResponse> SendAsync(
+        EveMessageContent message,
+        EveTurnOptions? options,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(message);
+        return PostTurnRequestAsync(
+            EveRequestWriter.WriteMessageTurn(message, options),
+            options,
+            false,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Resolves pending human-input requests without sending a user message.
+    /// </summary>
+    /// <param name="inputResponses">Responses to pending approvals or questions.</param>
+    /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
+    /// <returns>Accepted turn metadata and its single-use event stream.</returns>
+    public Task<EveMessageResponse> RespondAsync(
+        IReadOnlyList<EveInputResponse> inputResponses,
+        CancellationToken cancellationToken) =>
+        RespondAsync(inputResponses, null, cancellationToken);
+
+    /// <summary>
+    /// Resolves pending human-input requests with context, headers, or a reconnect policy.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never
+    /// both. Send a user message with
+    /// <see cref="SendAsync(EveMessageContent, EveTurnOptions, CancellationToken)"/>.
+    /// </remarks>
+    /// <param name="inputResponses">Responses to pending approvals or questions.</param>
+    /// <param name="options">Optional per-turn settings.</param>
+    /// <param name="cancellationToken">Cancels the POST and subsequent response stream.</param>
+    /// <returns>Accepted turn metadata and its single-use event stream.</returns>
+    /// <exception cref="ArgumentException">No input responses were supplied.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The session has not started, so there is no pending input to resolve.
+    /// </exception>
+    public Task<EveMessageResponse> RespondAsync(
+        IReadOnlyList<EveInputResponse> inputResponses,
+        EveTurnOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(inputResponses);
+        if (State.SessionId is null)
+        {
+            throw new InvalidOperationException(
+                "A new eve session must start with a message. " +
+                "There is no pending input to resolve.");
+        }
+
+        return PostTurnRequestAsync(
+            EveRequestWriter.WriteResponseTurn(inputResponses, options),
+            options,
+            true,
+            cancellationToken);
+    }
+
+    private async Task<EveMessageResponse> PostTurnRequestAsync(
+        byte[] body,
+        EveTurnOptions? options,
+        bool mustDeliver,
+        CancellationToken cancellationToken)
+    {
         EveSessionState initialState = State;
-        byte[] body = EveRequestWriter.WriteTurn(request, initialState.SessionId is null);
         AcceptedTurn acceptedTurn = await PostTurnAsync(
-            request,
+            options,
+            mustDeliver,
             initialState,
             body,
             cancellationToken);
@@ -82,7 +155,7 @@ public sealed class EveSession
             streamCancellationToken => CreateTurnStreamAsync(
                 acceptedTurn,
                 initialState,
-                request,
+                options,
                 cancellationToken,
                 streamCancellationToken));
     }
@@ -328,7 +401,8 @@ public sealed class EveSession
     }
 
     private async Task<AcceptedTurn> PostTurnAsync(
-        EveSendTurnRequest request,
+        EveTurnOptions? options,
+        bool mustDeliver,
         EveSessionState state,
         byte[] body,
         CancellationToken cancellationToken)
@@ -339,7 +413,6 @@ public sealed class EveSession
         EveRequestKind requestKind = state.SessionId is null
             ? EveRequestKind.CreateSession
             : EveRequestKind.ContinueSession;
-        bool mustDeliver = request.InputResponses is { Count: > 0 };
         int attempts = mustDeliver ? _client.DeliveryRetryAttempts : 1;
 
         for (int attempt = 0; attempt < attempts; attempt++)
@@ -350,10 +423,10 @@ public sealed class EveSession
                 HttpMethod.Post,
                 requestKind,
                 route,
-                request.Headers,
+                options?.Headers,
                 content,
                 cancellationToken,
-                protectedHeaderOverrides: request.ProtectedHeaderOverrides);
+                protectedHeaderOverrides: options?.ProtectedHeaderOverrides);
             using HttpResponseMessage response = await _client.SendTransportAsync(
                 httpRequest,
                 false,
@@ -424,7 +497,7 @@ public sealed class EveSession
     private async IAsyncEnumerable<EveStreamEvent> CreateTurnStreamAsync(
         AcceptedTurn acceptedTurn,
         EveSessionState initialState,
-        EveSendTurnRequest request,
+        EveTurnOptions? options,
         CancellationToken sendCancellationToken,
         [EnumeratorCancellation] CancellationToken streamCancellationToken)
     {
@@ -446,9 +519,9 @@ public sealed class EveSession
                 acceptedTurn.SessionId,
                 startIndex,
                 true,
-                request.Headers,
-                request.ProtectedHeaderOverrides,
-                request.StreamReconnectPolicy,
+                options?.Headers,
+                options?.ProtectedHeaderOverrides,
+                options?.StreamReconnectPolicy,
                 _client.MaxStreamEventBytes,
                 linkedSource.Token))
             {

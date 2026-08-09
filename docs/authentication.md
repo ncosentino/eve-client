@@ -72,7 +72,7 @@ Header resolution is:
 5. Generic per-request headers for names that are not protected.
 6. Explicit protected-header overrides allowed by client policy.
 
-Per-request headers are `EveSendTurnRequest.Headers` and the caller-owned request and
+Per-request headers are `EveTurnOptions.Headers` and the caller-owned request and
 content headers of an `HttpRequestMessage` passed to `EveClient.SendRawAsync`. They
 replace same-named non-protected client-level values case-insensitively.
 
@@ -94,18 +94,22 @@ EveClientOptions options = new("https://agent.example.com")
     AllowedProtectedHeaderOverrides = ["authorization"],
 };
 
-EveSendTurnRequest request = new()
+EveTurnOptions turnOptions = new()
 {
-    Message = EveMessageContent.FromText("Summarize my invoices."),
     ProtectedHeaderOverrides = new Dictionary<string, string>
     {
         ["authorization"] = audienceRestrictedForwardedIdentityToken,
     },
 };
+
+EveMessageResponse response = await session.SendAsync(
+    EveMessageContent.FromText("Summarize my invoices."),
+    turnOptions,
+    cancellationToken);
 ```
 
 Both conditions are required: the client must allow the header name, and the individual
-turn must use `ProtectedHeaderOverrides`. `EveSendTurnRequest.Headers` can never replace
+turn must use `ProtectedHeaderOverrides`. `EveTurnOptions.Headers` can never replace
 a protected credential.
 
 The override is used for the turn POST and every stream connection and reconnect of that
@@ -146,7 +150,7 @@ upstream eve identity-forwarding use case:
 
 1. Identify the exact protected header that must be replaceable.
 2. Add only that name to `AllowedProtectedHeaderOverrides`.
-3. Move the trusted value from `EveSendTurnRequest.Headers` or raw request headers into the
+3. Move the trusted value from `EveTurnOptions.Headers` or raw request headers into the
    dedicated `ProtectedHeaderOverrides` property.
 4. Never copy an inbound request-header collection into the protected override dictionary.
 5. List credentials supplied outside `IEveAuthentication` in `ProtectedHeaderNames`.

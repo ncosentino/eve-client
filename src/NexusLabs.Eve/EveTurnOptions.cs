@@ -3,20 +3,16 @@
 namespace NexusLabs.Eve;
 
 /// <summary>
-/// Describes one user turn sent to an eve session.
+/// Carries the settings shared by sending a message and responding to human input.
 /// </summary>
-public sealed record EveSendTurnRequest
+/// <remarks>
+/// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never both,
+/// so the payload is supplied to <see cref="EveSession.SendAsync(EveMessageContent, EveTurnOptions, System.Threading.CancellationToken)"/>
+/// or <see cref="EveSession.RespondAsync(IReadOnlyList{EveInputResponse}, EveTurnOptions, System.Threading.CancellationToken)"/>
+/// directly. Keeping it off this type makes the rejected combination impossible to express.
+/// </remarks>
+public sealed record EveTurnOptions
 {
-    /// <summary>
-    /// Gets the optional user message.
-    /// </summary>
-    public EveMessageContent? Message { get; init; }
-
-    /// <summary>
-    /// Gets responses that resolve pending approvals or questions.
-    /// </summary>
-    public IReadOnlyList<EveInputResponse>? InputResponses { get; init; }
-
     /// <summary>
     /// Gets ephemeral context used only for this model call.
     /// </summary>

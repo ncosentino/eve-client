@@ -42,15 +42,12 @@ RequireDurableEventEnvelope(textOutcome, "text turn");
 
 EveSession attachmentSession = client.CreateSession();
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
-    new EveSendTurnRequest
-    {
-        Message = EveMessageContent.FromParts(
-            EveContentPart.CreateText("Read the attached fixture."),
-            EveContentPart.CreateFile(
-                "fixture"u8,
-                "text/plain",
-                "fixture.txt")),
-    },
+    EveMessageContent.FromParts(
+        EveContentPart.CreateText("Read the attached fixture."),
+        EveContentPart.CreateFile(
+            "fixture"u8,
+            "text/plain",
+            "fixture.txt")),
     timeout.Token);
 EveTurnOutcome attachmentOutcome = await attachmentResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(attachmentOutcome, "attachment turn");
@@ -213,11 +210,8 @@ if (approvalRequest.Options.Count == 0)
         "The approval request did not offer any selectable options.");
 }
 
-EveMessageResponse resumedResponse = await approvalSession.SendAsync(
-    new EveSendTurnRequest
-    {
-        InputResponses = [new EveInputResponse(approvalRequest.RequestId, "approve")],
-    },
+EveMessageResponse resumedResponse = await approvalSession.RespondAsync(
+    [new EveInputResponse(approvalRequest.RequestId, "approve")],
     timeout.Token);
 EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resumedOutcome, "approved tool turn");
