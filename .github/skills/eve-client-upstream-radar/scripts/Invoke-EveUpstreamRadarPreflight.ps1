@@ -17,6 +17,9 @@ GitHub owner/repository identifier used for remote validation and fingerprint lo
 .PARAMETER RunRoot
 Directory that owns durable radar run artifacts.
 
+.PARAMETER StatePath
+Radar-owned durable state file recording the verified upstream release baseline.
+
 .PARAMETER SkipFetch
 Uses currently available refs and is intended only for supervised dry-run diagnostics.
 #>
@@ -29,6 +32,11 @@ param(
             -Path ([Environment]::GetFolderPath(
                 [Environment+SpecialFolder]::LocalApplicationData)) `
             -ChildPath 'eve-client-upstream-radar\runs'),
+    [string] $StatePath = $(
+        Join-Path `
+            -Path ([Environment]::GetFolderPath(
+                [Environment+SpecialFolder]::LocalApplicationData)) `
+            -ChildPath 'eve-client-upstream-radar\state.json'),
     [switch] $SkipFetch
 )
 
@@ -51,6 +59,7 @@ $inventory = & (Join-Path $PSScriptRoot 'Collect-EveUpstreamDelta.ps1') `
     -TargetRepoPath $TargetRepoPath `
     -TargetRepository $TargetRepository `
     -OutputPath $inventoryPath `
+    -StatePath $StatePath `
     -SkipTargetFetch:$SkipFetch `
     -SkipUpstreamFetch:$SkipFetch
 

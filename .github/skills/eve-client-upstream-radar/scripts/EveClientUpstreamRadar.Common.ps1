@@ -43,28 +43,186 @@ function Get-EveRadarReferenceVersion {
     return $match.Groups['version'].Value
 }
 
-function Get-EveRadarReadmeReference {
+function Get-EveRadarJsonProperty {
     <#
     .SYNOPSIS
-    Reads the upstream eve version and commit documented in README.md.
+    Reads an optional property from deserialized JSON without tripping strict mode.
+    #>
+    [CmdletBinding()]
+    param(
+        $InputObject,
+        [Parameter(Mandatory)]
+        [string] $Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
+function Get-EveRadarTimestampText {
+    <#
+    .SYNOPSIS
+    Normalizes a timestamp to an invariant UTC round-trip string.
+    #>
+    [CmdletBinding()]
+    param(
+        $Value
+    )
+
+    if ($Value -is [DateTimeOffset]) {
+        return $Value.ToUniversalTime().ToString('o')
+    }
+
+    if ($Value -is [DateTime]) {
+        return ([DateTimeOffset] $Value).ToUniversalTime().ToString('o')
+    }
+
+    $text = [string] $Value
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $null
+    }
+
+    $parsed = [DateTimeOffset]::MinValue
+    $parsedSuccessfully = [DateTimeOffset]::TryParse(
+        $text,
+        [cultureinfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::RoundtripKind,
+        [ref] $parsed)
+    if ($parsedSuccessfully) {
+        return $parsed.ToUniversalTime().ToString('o')
+    }
+
+    return $text
+}
+
+function Read-EveRadarState {
+    <#
+    .SYNOPSIS
+    Reads radar-owned durable state, returning empty state when none is recorded yet.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [string] $Readme
+        [string] $StatePath
     )
 
-    $match = [regex]::Match(
-        $Readme,
-        '(?is)compatibility target\s+is\s+Vercel\s+`eve`\s+\*\*(?<version>[^*]+)\*\*' +
-        '\s+at\s+commit\s+`(?<commit>[0-9a-f]{40})`')
-    if (-not $match.Success) {
-        throw 'Could not find the README compatibility version and commit.'
+    if (-not (Test-Path -LiteralPath $StatePath -PathType Leaf)) {
+        return [pscustomobject]@{
+            schemaVersion = 1
+            baseline = $null
+        }
+    }
+
+    $state = [System.IO.File]::ReadAllText($StatePath) | ConvertFrom-Json
+    $schemaVersion = Get-EveRadarJsonProperty -InputObject $state -Name 'schemaVersion'
+    if ($schemaVersion -ne 1) {
+        throw (
+            "Unsupported radar state schema version '$schemaVersion' in " +
+            "'$StatePath'.")
+    }
+
+    return $state
+}
+
+function Save-EveRadarState {
+    <#
+    .SYNOPSIS
+    Writes radar-owned durable state so an interrupted run cannot leave it partial.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $StatePath,
+        [Parameter(Mandatory)]
+        $State
+    )
+
+    $directory = Split-Path -Parent $StatePath
+    if (-not [string]::IsNullOrWhiteSpace($directory) -and
+        -not (Test-Path -LiteralPath $directory -PathType Container)) {
+        $null = New-Item -ItemType Directory -Path $directory -Force
+    }
+
+    $temporaryPath = "$StatePath.tmp"
+    [System.IO.File]::WriteAllText(
+        $temporaryPath,
+        ($State | ConvertTo-Json -Depth 8))
+    [System.IO.File]::Move($temporaryPath, $StatePath, $true)
+}
+
+function Update-EveRadarBaseline {
+    <#
+    .SYNOPSIS
+    Validates the upstream release commit against durable state and advances it.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $Version,
+        [Parameter(Mandatory)]
+        [string] $Commit,
+        [DateTimeOffset] $RecordedAt = [DateTimeOffset]::UtcNow
+    )
+
+    $normalizedCommit = $Commit.Trim().ToLowerInvariant()
+    $baseline = Get-EveRadarJsonProperty -InputObject $State -Name 'baseline'
+    $recordedVersion = Get-EveRadarJsonProperty `
+        -InputObject $baseline `
+        -Name 'eveVersion'
+    $recordedCommit = Get-EveRadarJsonProperty `
+        -InputObject $baseline `
+        -Name 'eveCommit'
+
+    $status = if ([string]::IsNullOrWhiteSpace($recordedVersion)) {
+        'Bootstrapped'
+    }
+    elseif ($recordedVersion -ne $Version) {
+        'Advanced'
+    }
+    elseif ($recordedCommit -ne $normalizedCommit) {
+        throw (
+            "Upstream tag eve@$Version now resolves to commit " +
+            "'$normalizedCommit' but the radar recorded '$recordedCommit'. " +
+            'The upstream release tag moved, so re-verify parity before ' +
+            'trusting a delta.')
+    }
+    else {
+        'Unchanged'
+    }
+
+    $baselineRecordedAt = if ($status -eq 'Unchanged') {
+        Get-EveRadarTimestampText -Value (
+            Get-EveRadarJsonProperty -InputObject $baseline -Name 'recordedAt')
+    }
+    else {
+        $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($baselineRecordedAt)) {
+        $baselineRecordedAt = Get-EveRadarTimestampText -Value $RecordedAt
     }
 
     return [pscustomobject]@{
-        Version = $match.Groups['version'].Value.Trim()
-        Commit = $match.Groups['commit'].Value.ToLowerInvariant()
+        Status = $status
+        Commit = $normalizedCommit
+        State = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = $Version
+                eveCommit = $normalizedCommit
+                recordedAt = $baselineRecordedAt
+            }
+        }
     }
 }
 
