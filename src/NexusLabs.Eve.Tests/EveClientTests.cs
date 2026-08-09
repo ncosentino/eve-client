@@ -436,10 +436,10 @@ public sealed class EveClientTests
         using HttpMessageInvoker secondTransport = new(secondHandler, false);
         firstHandler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
             HttpStatusCode.Accepted,
-            """{"ok":true,"sessionId":"session_1","continuationToken":"eve:first"}""")));
+            """{"ok":true,"sessionId":"session_1"}""")));
         secondHandler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
             HttpStatusCode.Accepted,
-            """{"ok":true,"sessionId":"session_2","continuationToken":"eve:second"}""")));
+            """{"ok":true,"sessionId":"session_2"}""")));
         EveClient firstClient = CreateBootstrapClient(firstTransport, "bootstrap_1");
         EveClient secondClient = CreateBootstrapClient(secondTransport, "bootstrap_2");
 

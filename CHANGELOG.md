@@ -7,6 +7,46 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Removed
+
+- `EveSessionState.ContinuationToken`, `EveMessageResponse.ContinuationToken`,
+  `EveClient.CreateSession(string continuationToken)`, and
+  `EveClientOptions.PreserveCompletedSessions`. eve `0.31.0` removed continuation
+  tokens from the client protocol; sessions are addressed only by their immutable
+  identifier.
+
+### Added
+
+- `EveClient.AttachSession(string sessionId, int streamIndex = 0)` for obtaining a fixed
+  handle to a known session without replaying its stream.
+- `EveProtocol.MinimumEveVersion`, declaring the oldest supported eve release (`0.31.0`)
+  in code.
+
+### Changed
+
+- **Breaking, requires eve `0.31.0` or newer.** Session control operations moved to
+  identifier-addressed routes: `POST /eve/v1/session/{sessionId}/clear`,
+  `/compact`, and `/reset` replace the fixed `/eve/v1/session/clear`, `/compact`, and
+  `/reset` routes. Those fixed routes return HTTP 404 on an eve `0.31.x` server, and the
+  new routes do not exist before eve `0.31.0`, so this release cannot talk to an eve
+  `0.29.x` or `0.30.x` agent. Pin `0.1.0-alpha.3` for those. `SendAsync`, `StreamAsync`,
+  and `CancelAsync` route unchanged.
+- Session message and control request bodies no longer carry `continuationToken`. Clear,
+  compact, and reset send an empty body.
+- A session handle is now fixed. `session.completed` and `session.failed` retain the
+  session identifier and advancing cursor instead of resetting local state, so a finished
+  conversation stays streamable and inspectable. This replaces the opt-in
+  `PreserveCompletedSessions` behavior, which upstream removed.
+- `ResetAsync` no longer clears local state. The handle keeps its identifier; obtain a new
+  conversation from `EveClient.CreateSession()`.
+- A `session.waiting` event is no longer required to carry a continuation token.
+- The compatibility reference moved to eve `0.31.3`. The pinned CI fixture runs that
+  release, and the compatibility probe verifies the identifier-addressed control routes,
+  empty control bodies, fixed-handle reset semantics, and the HTTP 409 refusal returned
+  when a retired session identifier is reused. `EveProtocol.MessageStreamVersion` still
+  reports `20` because the stream protocol `21` event vocabulary is not yet fully
+  recognized.
+
 ## [0.1.0-alpha.3] - 2026-08-08
 
 ### Compatibility

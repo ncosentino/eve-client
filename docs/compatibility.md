@@ -6,22 +6,44 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| 0.1.x | 0.29.4 | 20 | Primary compatibility target |
-| 0.1.x | 0.27.6 | 19 | Previous baseline; tolerated, not gated by CI |
-| 0.1.x | 0.24.6 | 19 | End-to-end verified with `bg-eve` |
+| 0.1.0-alpha.4+ | 0.31.3 | 20 | Primary compatibility target |
+| 0.1.0-alpha.4+ | 0.31.0 | 20 | Minimum supported release |
+| 0.1.0-alpha.3 | 0.29.4 | 20 | Final release for eve 0.29.x-0.30.x |
+| 0.1.0-alpha.3 | 0.27.6 | 19 | Tolerated by that release, not gated by CI |
+
+## Minimum supported eve release
+
+**This package requires eve `0.31.0` or newer and cannot talk to an earlier server.**
+`EveProtocol.MinimumEveVersion` declares the line in code.
+
+eve `0.31.0` moved session control operations from fixed continuation-token body routes to
+identifier-addressed routes:
+
+| Operation | eve 0.30.x and earlier | eve 0.31.0 and newer |
+|---|---|---|
+| clear | `POST /eve/v1/session/clear` | `POST /eve/v1/session/{sessionId}/clear` |
+| compact | `POST /eve/v1/session/compact` | `POST /eve/v1/session/{sessionId}/compact` |
+| reset | `POST /eve/v1/session/reset` | `POST /eve/v1/session/{sessionId}/reset` |
+
+The identifier-addressed routes return HTTP 404 on an older server, and continuation tokens are
+no longer accepted or returned anywhere in the client protocol. There is no negotiation or
+fallback: a protocol cutover has no half-migrated state. Pin `0.1.0-alpha.3` to target an eve
+`0.29.x` or `0.30.x` agent.
+
+Session creation, follow-up turns, streaming, and cancellation route identically on both sides
+of the boundary, so only the three control operations are affected.
 
 eve remains preview software. Package upgrades should therefore validate both:
 
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.29.4` fixture with a deterministic
+The repository contains a pinned eve `0.31.3` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
-approval-gated human input, and session reset through the C# client. Session
-context clear (`ClearAsync` / `context.cleared`) is implemented and covered by
-contract tests against the upstream protocol shape, but is not exercised by the
-pinned fixture until an eve release that includes it becomes the baseline.
+approval-gated human input, session context clear, and session reset through the
+C# client, including the HTTP 409 refusal returned when a retired session
+identifier is reused.
 
 The client stays readable against protocol 19 servers: durable event
 identifiers and input-request discriminators are both projected as absent

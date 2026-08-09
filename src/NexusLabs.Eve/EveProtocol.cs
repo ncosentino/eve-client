@@ -8,7 +8,18 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.29.4";
+    public const string ReferenceEveVersion = "0.31.3";
+
+    /// <summary>
+    /// Gets the oldest eve release this package can talk to.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.31.0</c> moved session control operations to identifier-addressed routes and
+    /// removed continuation tokens from the client protocol. Those routes do not exist on an
+    /// earlier server, so this package cannot be used against one. Use <c>0.1.0-alpha.3</c> for
+    /// an eve <c>0.29.x</c> or <c>0.30.x</c> agent.
+    /// </remarks>
+    public const string MinimumEveVersion = "0.31.0";
 
     /// <summary>
     /// Gets the durable message-stream protocol version used by the reference client.

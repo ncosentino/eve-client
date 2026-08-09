@@ -11,19 +11,12 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     private int _consumed;
 
     internal EveMessageResponse(
-        string? continuationToken,
         string sessionId,
         Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> createStream)
     {
-        ContinuationToken = continuationToken;
         SessionId = sessionId;
         _createStream = createStream;
     }
-
-    /// <summary>
-    /// Gets the continuation token returned when the turn was accepted.
-    /// </summary>
-    public string? ContinuationToken { get; }
 
     /// <summary>
     /// Gets the runtime-owned session identifier.
