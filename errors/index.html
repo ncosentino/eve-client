@@ -759,6 +759,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#branch-on-a-stable-error-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Branch on a stable error code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#protocol-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1113,11 +1124,29 @@
 <p>Non-successful routes throw <code>EveClientException</code>. It exposes:</p>
 <ul>
 <li>The HTTP status code.</li>
+<li><code>ErrorCode</code>, the server's stable machine-readable code, when present.</li>
 <li>The raw response body.</li>
 <li>Normalized response headers.</li>
 </ul>
 <p>When the body contains <code>{ "error": "..." }</code>, that value becomes the exception
 message.</p>
+<h2 id="branch-on-a-stable-error-code">Branch on a stable error code<a class="headerlink" href="#branch-on-a-stable-error-code" title="Permanent link">&para;</a></h2>
+<p>eve <code>0.31.0</code> reports a stable <code>code</code> alongside the human-readable message. Branch
+on <code>ErrorCode</code> instead of matching message text, which is not a contract:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">try</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span><span class="s">&quot;Continue.&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">EveClientException</span><span class="w"> </span><span class="n">exception</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="p">(</span><span class="n">exception</span><span class="p">.</span><span class="n">ErrorCode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;session_not_active&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">{</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">EveSession</span><span class="w"> </span><span class="n">replacement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">();</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>session_not_active</code> accompanies HTTP 409 when a turn targets a session that was
+reset or is otherwise no longer active. <code>ErrorCode</code> is the raw server string, so
+a code this client does not model stays observable rather than being discarded,
+and it is <code>null</code> when the response carried none.</p>
 <h2 id="protocol-failures">Protocol failures<a class="headerlink" href="#protocol-failures" title="Permanent link">&para;</a></h2>
 <p>Successful responses that do not satisfy the expected eve contract throw
 <code>EveProtocolException</code>.</p>
