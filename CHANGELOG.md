@@ -7,6 +7,20 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.4] - 2026-08-09
+
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` and newer, message-stream protocol `21`. The
+  compatibility target is eve `0.31.3` and `EveProtocol.MinimumEveVersion` declares the
+  floor in code.
+- **Not compatible with eve `0.30.x` or earlier.** eve `0.31.0` moved session control
+  operations to identifier-addressed routes and removed continuation tokens from the
+  client protocol. There is no negotiation or fallback. Pin `0.1.0-alpha.3` when targeting
+  an eve `0.29.x` or `0.30.x` agent.
+- This release contains breaking API changes in addition to the protocol cutover. Read the
+  `Removed` and `Changed` sections before upgrading.
+
 ### Removed
 
 - `EveSessionState.ContinuationToken`, `EveMessageResponse.ContinuationToken`,
@@ -156,7 +170,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.3...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.4...HEAD
+[0.1.0-alpha.4]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.3...v0.1.0-alpha.4
 [0.1.0-alpha.3]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/ncosentino/eve-client/releases/tag/v0.1.0-alpha.1
