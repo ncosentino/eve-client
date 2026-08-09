@@ -21,6 +21,32 @@ await foreach (EveStreamEvent streamEvent in
 Known event names map to `EveStreamEventKind`. The original wire-level `Type`
 and `Data` remain available for forward compatibility.
 
+## Preliminary tool output
+
+A tool implemented as an async generator streams provisional snapshots. Each
+non-terminal snapshot arrives as `action.partial`
+(`EveStreamEventKind.ActionPartial`); the final one arrives as `action.result`
+and is the only value exposed to the model.
+
+```csharp
+await foreach (EveStreamEvent streamEvent in
+    response.WithCancellation(cancellationToken))
+{
+    switch (streamEvent.Kind)
+    {
+        case EveStreamEventKind.ActionPartial:
+            RenderProvisional(streamEvent.Data.GetProperty("result"));
+            break;
+        case EveStreamEventKind.ActionResult:
+            CommitResult(streamEvent.Data.GetProperty("result"));
+            break;
+    }
+}
+```
+
+Treat a partial snapshot as provisional display state. Never persist one as a
+final tool result, and expect it to be superseded.
+
 ## Durable event identity
 
 Stream protocol version 20 stamps every persisted event with a stable

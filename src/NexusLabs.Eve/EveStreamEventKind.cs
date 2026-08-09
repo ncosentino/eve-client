@@ -41,6 +41,17 @@ public enum EveStreamEventKind
     ActionResult,
 
     /// <summary>
+    /// An action produced a preliminary output snapshot that a later
+    /// <see cref="ActionResult"/> supersedes.
+    /// </summary>
+    /// <remarks>
+    /// Stream protocol <c>21</c> emits this for each non-terminal snapshot yielded by an
+    /// async-generator tool. Only the terminal <see cref="ActionResult"/> is exposed to the
+    /// model, so treat these as provisional display state.
+    /// </remarks>
+    ActionPartial,
+
+    /// <summary>
     /// A remote subagent was called.
     /// </summary>
     SubagentCalled,
