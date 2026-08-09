@@ -6,8 +6,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| 0.1.0-alpha.4+ | 0.31.3 | 20 | Primary compatibility target |
-| 0.1.0-alpha.4+ | 0.31.0 | 20 | Minimum supported release |
+| 0.1.0-alpha.4+ | 0.31.3 | 21 | Primary compatibility target |
+| 0.1.0-alpha.4+ | 0.31.0 | 21 | Minimum supported release |
 | 0.1.0-alpha.3 | 0.29.4 | 20 | Final release for eve 0.29.x-0.30.x |
 | 0.1.0-alpha.3 | 0.27.6 | 19 | Tolerated by that release, not gated by CI |
 
@@ -45,10 +45,18 @@ approval-gated human input, session context clear, and session reset through the
 C# client, including the HTTP 409 refusal returned when a retired session
 identifier is reused.
 
-The client stays readable against protocol 19 servers: durable event
+Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
-rather than causing a failure. That path is covered by contract tests, not by
-the pinned fixture.
+rather than causing a failure. That tolerance is covered by contract tests, not
+by the pinned fixture, and it does not extend the supported server range, which
+the identifier-addressed control routes fix at eve `0.31.0` and newer.
+
+## Preliminary tool output
+
+Stream protocol `21` adds `action.partial`, emitted for each non-terminal snapshot
+yielded by an async-generator tool. `EveStreamEventKind.ActionPartial` recognizes it, and
+the terminal `action.result` continues to carry the value exposed to the model. Treat
+partial snapshots as provisional display state and never as a final tool result.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
