@@ -12,7 +12,7 @@ permissions:
 jobs:
   title:
     name: PR title
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || github.event.repository.private && (vars.REPOSITORY_AUTOMATION_CONTROL_RUNNER || 'repository-automation-capability-unavailable') || (vars.REPOSITORY_AUTOMATION_CONTROL_RUNNER || 'ubuntu-24.04') }}
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
@@ -26,24 +26,45 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The event payload is frozen when the run is created, but a run held
-          # for workflow approval can start long after the title was corrected.
-          # Re-read the title so every run, however delayed, judges the title the
-          # pull request actually has right now.
-          pull_request="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
-          PR_TITLE="$(jq -r '.title' <<<"$pull_request")"
+          # The event payload freezes the title when the run is created. A run
+          # held in action_required, or merely queued, would otherwise judge a
+          # title the pull request no longer has and win as the last completed
+          # check run on an unchanged head SHA.
+          pull_request=''
+          for attempt in 1 2 3; do
+            if pull_request="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"; then
+              break
+            fi
+            pull_request=''
+            if [ "$attempt" -lt 3 ]; then
+              sleep "$(( attempt * 5 ))"
+            fi
+          done
 
-          if [[ "$PR_TITLE" == *$'\n'* || "$PR_TITLE" == *$'\r'* ]]; then
+          if [ -z "$pull_request" ]; then
+            echo "::error::Could not read pull request #$PR_NUMBER after 3 attempts; the title was not validated."
+            exit 1
+          fi
+
+          pr_title="$(jq -r '.title // empty' <<<"$pull_request")"
+          if [ -z "$pr_title" ]; then
+            echo "::error::Pull request #$PR_NUMBER reported no title; the title was not validated."
+            exit 1
+          fi
+
+          echo "Validating title: $pr_title"
+
+          if [[ "$pr_title" == *$'\n'* || "$pr_title" == *$'\r'* ]]; then
             echo "::error::Pull request title must be a single line."
             exit 1
           fi
 
-          if (( ${#PR_TITLE} > TITLE_MAX_LENGTH )); then
-            echo "::error::Pull request title is ${#PR_TITLE} characters; maximum is $TITLE_MAX_LENGTH."
+          if (( ${#pr_title} > TITLE_MAX_LENGTH )); then
+            echo "::error::Pull request title is ${#pr_title} characters; maximum is $TITLE_MAX_LENGTH."
             exit 1
           fi
 
-          if [[ ! "$PR_TITLE" =~ $TITLE_PATTERN ]]; then
+          if [[ ! "$pr_title" =~ $TITLE_PATTERN ]]; then
             echo "::error::Use a conventional title such as 'feat(scope): description'."
             exit 1
           fi
