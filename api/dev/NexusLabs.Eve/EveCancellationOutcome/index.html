@@ -1023,11 +1023,17 @@
 <h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
 <p><a name='NexusLabs.Eve.EveCancellationOutcome.SessionId'></a></p>
 <h2 id="evecancellationoutcomesessionid-property">EveCancellationOutcome.SessionId Property<a class="headerlink" href="#evecancellationoutcomesessionid-property" title="Permanent link">&para;</a></h2>
-<p>Gets the session targeted by the request.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">SessionId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<p>Gets the session targeted by the request, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when there was no
+active turn to cancel.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">SessionId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>eve <code>0.31.0</code> returns the identifier only for
+<a href="../EveCancellationStatus/#NexusLabs.Eve.EveCancellationStatus.Accepted" title="NexusLabs.Eve.EveCancellationStatus.Accepted">Accepted</a>. A
+<a href="../EveCancellationStatus/#NexusLabs.Eve.EveCancellationStatus.NoActiveTurn" title="NexusLabs.Eve.EveCancellationStatus.NoActiveTurn">NoActiveTurn</a> result names no session because none
+was cancelled.</p>
 <p><a name='NexusLabs.Eve.EveCancellationOutcome.Status'></a></p>
 <h2 id="evecancellationoutcomestatus-property">EveCancellationOutcome.Status Property<a class="headerlink" href="#evecancellationoutcomestatus-property" title="Permanent link">&para;</a></h2>
 <p>Gets the cancellation disposition.</p>
