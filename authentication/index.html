@@ -1192,7 +1192,7 @@ routes, so exhaustive switches should include a default arm.</p>
 <li>Generic per-request headers for names that are not protected.</li>
 <li>Explicit protected-header overrides allowed by client policy.</li>
 </ol>
-<p>Per-request headers are <code>EveSendTurnRequest.Headers</code> and the caller-owned request and
+<p>Per-request headers are <code>EveTurnOptions.Headers</code> and the caller-owned request and
 content headers of an <code>HttpRequestMessage</code> passed to <code>EveClient.SendRawAsync</code>. They
 replace same-named non-protected client-level values case-insensitively.</p>
 <p>Every name declared by <code>IEveAuthentication.AuthenticationHeaderNames</code>, every header
@@ -1209,17 +1209,21 @@ that provider should also be listed in <code>ProtectedHeaderNames</code>.</p>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="n">AllowedProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;authorization&quot;</span><span class="p">],</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">};</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">EveSendTurnRequest</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">()</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">EveTurnOptions</span><span class="w"> </span><span class="n">turnOptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">()</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">{</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">&quot;Summarize my invoices.&quot;</span><span class="p">),</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="na">[&quot;authorization&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audienceRestrictedForwardedIdentityToken</span><span class="p">,</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="p">};</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">        </span><span class="na">[&quot;authorization&quot;]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audienceRestrictedForwardedIdentityToken</span><span class="p">,</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="p">};</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">&quot;Summarize my invoices.&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">    </span><span class="n">turnOptions</span><span class="p">,</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
 <p>Both conditions are required: the client must allow the header name, and the individual
-turn must use <code>ProtectedHeaderOverrides</code>. <code>EveSendTurnRequest.Headers</code> can never replace
+turn must use <code>ProtectedHeaderOverrides</code>. <code>EveTurnOptions.Headers</code> can never replace
 a protected credential.</p>
 <p>The override is used for the turn POST and every stream connection and reconnect of that
 turn. It does not flow to <code>CancelAsync</code>, <code>ResetAsync</code>, or a separate <code>StreamAsync</code>
@@ -1251,7 +1255,7 @@ upstream eve identity-forwarding use case:</p>
 <ol>
 <li>Identify the exact protected header that must be replaceable.</li>
 <li>Add only that name to <code>AllowedProtectedHeaderOverrides</code>.</li>
-<li>Move the trusted value from <code>EveSendTurnRequest.Headers</code> or raw request headers into the
+<li>Move the trusted value from <code>EveTurnOptions.Headers</code> or raw request headers into the
    dedicated <code>ProtectedHeaderOverrides</code> property.</li>
 <li>Never copy an inbound request-header collection into the protected override dictionary.</li>
 <li>List credentials supplied outside <code>IEveAuthentication</code> in <code>ProtectedHeaderNames</code>.</li>

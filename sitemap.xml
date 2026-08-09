@@ -173,10 +173,6 @@
          <lastmod>2026-08-09</lastmod>
     </url>
     <url>
-         <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSendTurnRequest/</loc>
-         <lastmod>2026-08-09</lastmod>
-    </url>
-    <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSession/</loc>
          <lastmod>2026-08-09</lastmod>
     </url>
@@ -206,6 +202,10 @@
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamReconnectPolicy/</loc>
+         <lastmod>2026-08-09</lastmod>
+    </url>
+    <url>
+         <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnOptions/</loc>
          <lastmod>2026-08-09</lastmod>
     </url>
     <url>
