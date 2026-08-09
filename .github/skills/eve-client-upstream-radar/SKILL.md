@@ -63,7 +63,7 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
 2. Verify the target path exists and its configured remote identifies
    `ncosentino/eve-client`.
 3. When `--inventory-path` is supplied, read that file, verify
-   `SchemaVersion=2`, and use its immutable target/upstream commits. Do not
+   `SchemaVersion=3`, and use its immutable target/upstream commits. Do not
    recollect or create a second run directory.
 4. Otherwise run the deterministic preflight:
 
@@ -78,9 +78,12 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
 
    - Fetches only the target's remote `main` ref; it does not inspect or alter
      working-tree files.
-   - Verifies `EveProtocol.ReferenceEveVersion`, README's exact upstream commit,
-     and the npm Eve fixture all agree.
+   - Verifies `EveProtocol.ReferenceEveVersion` and the npm Eve fixture agree.
    - Resolves the matching `eve@<version>` tag.
+   - Verifies that tag against the radar-owned baseline recorded in
+     `%LOCALAPPDATA%\eve-client-upstream-radar\state.json`, failing when a
+     published tag moved, and advancing the record when the declared version
+     changes.
    - Updates a radar-owned partial clone of `vercel/eve`.
    - Enumerates every commit from that baseline through upstream main.
    - Resolves each commit's `ReleasedInVersion`: the lowest published

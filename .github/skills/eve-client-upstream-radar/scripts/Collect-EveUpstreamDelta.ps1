@@ -4,7 +4,7 @@ Collects the exact upstream eve commit delta beyond the .NET client's declared b
 
 .DESCRIPTION
 Reads the committed ncosentino/eve-client main ref without inspecting working-tree files,
-verifies that its protocol constant, README baseline, and npm fixture agree, updates a
+verifies that its protocol constant and npm fixture agree, updates a
 radar-owned partial clone of vercel/eve, and writes a deterministic JSON inventory.
 
 .PARAMETER TargetRepoPath
@@ -29,6 +29,9 @@ Official Eve branch compared with the declared compatibility baseline.
 .PARAMETER CachePath
 Radar-owned partial clone used for immutable upstream git objects.
 
+.PARAMETER StatePath
+Radar-owned durable state file recording the verified upstream release baseline.
+
 .PARAMETER OutputPath
 Absolute JSON path for the generated inventory.
 
@@ -51,6 +54,11 @@ param(
             -Path ([Environment]::GetFolderPath(
                 [Environment+SpecialFolder]::LocalApplicationData)) `
             -ChildPath 'eve-client-upstream-radar\repositories\vercel-eve'),
+    [string] $StatePath = $(
+        Join-Path `
+            -Path ([Environment]::GetFolderPath(
+                [Environment+SpecialFolder]::LocalApplicationData)) `
+            -ChildPath 'eve-client-upstream-radar\state.json'),
     [Parameter(Mandatory)]
     [string] $OutputPath,
     [switch] $SkipTargetFetch,
@@ -148,24 +156,13 @@ $protocolSource = Get-GitTextAtRef `
     -RepositoryPath $TargetRepoPath `
     -Ref $targetCommit `
     -Path 'src/NexusLabs.Eve/EveProtocol.cs'
-$readme = Get-GitTextAtRef `
-    -RepositoryPath $TargetRepoPath `
-    -Ref $targetCommit `
-    -Path 'README.md'
 $fixtureJson = Get-GitTextAtRef `
     -RepositoryPath $TargetRepoPath `
     -Ref $targetCommit `
     -Path 'test/fixtures/eve-agent/package.json'
 
 $referenceVersion = Get-EveRadarReferenceVersion -ProtocolSource $protocolSource
-$readmeReference = Get-EveRadarReadmeReference -Readme $readme
 $fixtureVersion = ($fixtureJson | ConvertFrom-Json).dependencies.eve
-
-if ($readmeReference.Version -ne $referenceVersion) {
-    throw (
-        "README reference version '$($readmeReference.Version)' does not match " +
-        "EveProtocol.ReferenceEveVersion '$referenceVersion'.")
-}
 
 if ($fixtureVersion -ne $referenceVersion) {
     throw (
@@ -240,11 +237,10 @@ $upstreamHeadCommit = (
         "${upstreamRef}^{commit}"
     ) | Select-Object -First 1).Trim().ToLowerInvariant()
 
-if ($baselineCommit -ne $readmeReference.Commit) {
-    throw (
-        "README reference commit '$($readmeReference.Commit)' does not match " +
-        "upstream tag eve@$referenceVersion commit '$baselineCommit'.")
-}
+$baselineUpdate = Update-EveRadarBaseline `
+    -State (Read-EveRadarState -StatePath $StatePath) `
+    -Version $referenceVersion `
+    -Commit $baselineCommit
 
 $null = & git -C $CachePath merge-base --is-ancestor $baselineCommit $upstreamHeadCommit
 if ($LASTEXITCODE -ne 0) {
@@ -252,6 +248,8 @@ if ($LASTEXITCODE -ne 0) {
         "The declared baseline '$baselineCommit' is not an ancestor of " +
         "upstream '$UpstreamBranch' at '$upstreamHeadCommit'.")
 }
+
+Save-EveRadarState -StatePath $StatePath -State $baselineUpdate.State
 
 $commitShas = @(
     Invoke-Git -Arguments @(
@@ -377,7 +375,7 @@ $commits = foreach ($sha in $commitShas) {
 }
 
 $result = [pscustomobject]@{
-    SchemaVersion = 2
+    SchemaVersion = 3
     GeneratedAt = [DateTimeOffset]::UtcNow.ToString('o')
     Target = [pscustomobject]@{
         Repository = $TargetRepository
@@ -386,6 +384,7 @@ $result = [pscustomobject]@{
         Commit = $targetCommit
         ReferenceEveVersion = $referenceVersion
         ReferenceEveCommit = $baselineCommit
+        BaselineStatus = $baselineUpdate.Status
         FixtureEveVersion = $fixtureVersion
     }
     Upstream = [pscustomobject]@{

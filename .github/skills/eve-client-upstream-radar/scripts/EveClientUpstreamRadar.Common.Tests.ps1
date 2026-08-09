@@ -30,17 +30,134 @@ Describe 'Eve client upstream radar helpers' {
             Should -Be '0.27.6'
     }
 
-    It 'extracts a multiline README baseline' {
-        $commit = '05f348023d4268c974c225c1189a283ace20b742'
-        $readme = @"
-The initial compatibility target is Vercel ``eve`` **0.27.6** at commit
-``$commit``, whose message stream protocol is version **19**.
-"@
+    It 'returns empty state when none has been recorded' {
+        $statePath = Join-Path $TestDrive 'missing\state.json'
 
-        $reference = Get-EveRadarReadmeReference -Readme $readme
+        $state = Read-EveRadarState -StatePath $statePath
 
-        $reference.Version | Should -Be '0.27.6'
-        $reference.Commit | Should -Be $commit
+        $state.schemaVersion | Should -Be 1
+        $state.baseline | Should -BeNullOrEmpty
+    }
+
+    It 'rejects an unsupported state schema version' {
+        $statePath = Join-Path $TestDrive 'unsupported-state.json'
+        Set-Content -LiteralPath $statePath -Value '{"schemaVersion":99}'
+
+        { Read-EveRadarState -StatePath $statePath } |
+            Should -Throw '*Unsupported radar state schema version*'
+    }
+
+    It 'round-trips saved state through a created directory' {
+        $statePath = Join-Path $TestDrive 'nested\radar\state.json'
+        $saved = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = '0.31.3'
+                eveCommit = '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+                recordedAt = '2026-08-09T19:00:00.0000000+00:00'
+            }
+        }
+
+        Save-EveRadarState -StatePath $statePath -State $saved
+
+        $state = Read-EveRadarState -StatePath $statePath
+        $state.baseline.eveVersion | Should -Be '0.31.3'
+        $state.baseline.eveCommit |
+            Should -Be '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+        Test-Path -LiteralPath "$statePath.tmp" | Should -BeFalse
+    }
+
+    It 'bootstraps a baseline when no state exists' {
+        $state = Read-EveRadarState -StatePath (Join-Path $TestDrive 'none.json')
+
+        $update = Update-EveRadarBaseline `
+            -State $state `
+            -Version '0.31.3' `
+            -Commit '8E0BD60CD49246706A7EBDB8F7C84C3683048970'
+
+        $update.Status | Should -Be 'Bootstrapped'
+        $update.State.baseline.eveCommit |
+            Should -Be '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+    }
+
+    It 'keeps the original record time when the baseline is unchanged' {
+        $recordedAt = '2026-08-01T00:00:00.0000000+00:00'
+        $state = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = '0.31.3'
+                eveCommit = '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+                recordedAt = $recordedAt
+            }
+        }
+
+        $update = Update-EveRadarBaseline `
+            -State $state `
+            -Version '0.31.3' `
+            -Commit '8e0bd60cd49246706a7ebdb8f7c84c3683048970' `
+            -RecordedAt ([DateTimeOffset]::Parse('2026-08-09T00:00:00Z'))
+
+        $update.Status | Should -Be 'Unchanged'
+        $update.State.baseline.recordedAt | Should -Be $recordedAt
+    }
+
+    It 'normalizes a recorded time that JSON parsing coerced to local time' {
+        $state = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = '0.31.3'
+                eveCommit = '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+                recordedAt = [DateTime]::Parse('2026-08-09T12:21:48-07:00')
+            }
+        }
+
+        $update = Update-EveRadarBaseline `
+            -State $state `
+            -Version '0.31.3' `
+            -Commit '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+
+        $update.State.baseline.recordedAt |
+            Should -Be '2026-08-09T19:21:48.0000000+00:00'
+    }
+
+    It 'advances the baseline when the declared version changes' {
+        $state = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = '0.31.3'
+                eveCommit = '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+                recordedAt = '2026-08-01T00:00:00.0000000+00:00'
+            }
+        }
+
+        $update = Update-EveRadarBaseline `
+            -State $state `
+            -Version '0.32.0' `
+            -Commit '05f348023d4268c974c225c1189a283ace20b742' `
+            -RecordedAt ([DateTimeOffset]::Parse('2026-08-09T00:00:00Z'))
+
+        $update.Status | Should -Be 'Advanced'
+        $update.State.baseline.eveVersion | Should -Be '0.32.0'
+        $update.State.baseline.recordedAt |
+            Should -Be ([DateTimeOffset]::Parse('2026-08-09T00:00:00Z').ToString('o'))
+    }
+
+    It 'rejects a release tag that moved to a different commit' {
+        $state = [pscustomobject]@{
+            schemaVersion = 1
+            baseline = [pscustomobject]@{
+                eveVersion = '0.31.3'
+                eveCommit = '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+                recordedAt = '2026-08-01T00:00:00.0000000+00:00'
+            }
+        }
+
+        {
+            Update-EveRadarBaseline `
+                -State $state `
+                -Version '0.31.3' `
+                -Commit '05f348023d4268c974c225c1189a283ace20b742'
+        } | Should -Throw '*release tag moved*'
     }
 
     It 'extracts a squash-merged pull request number' {
