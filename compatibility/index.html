@@ -775,6 +775,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#minimum-supported-eve-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimum supported eve release
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1109,37 +1120,79 @@
 </thead>
 <tbody>
 <tr>
-<td>0.1.x</td>
-<td style="text-align: right;">0.29.4</td>
+<td>0.1.0-alpha.4+</td>
+<td style="text-align: right;">0.31.3</td>
 <td style="text-align: right;">20</td>
 <td>Primary compatibility target</td>
 </tr>
 <tr>
-<td>0.1.x</td>
-<td style="text-align: right;">0.27.6</td>
-<td style="text-align: right;">19</td>
-<td>Previous baseline; tolerated, not gated by CI</td>
+<td>0.1.0-alpha.4+</td>
+<td style="text-align: right;">0.31.0</td>
+<td style="text-align: right;">20</td>
+<td>Minimum supported release</td>
 </tr>
 <tr>
-<td>0.1.x</td>
-<td style="text-align: right;">0.24.6</td>
+<td>0.1.0-alpha.3</td>
+<td style="text-align: right;">0.29.4</td>
+<td style="text-align: right;">20</td>
+<td>Final release for eve 0.29.x-0.30.x</td>
+</tr>
+<tr>
+<td>0.1.0-alpha.3</td>
+<td style="text-align: right;">0.27.6</td>
 <td style="text-align: right;">19</td>
-<td>End-to-end verified with <code>bg-eve</code></td>
+<td>Tolerated by that release, not gated by CI</td>
 </tr>
 </tbody>
 </table>
+<h2 id="minimum-supported-eve-release">Minimum supported eve release<a class="headerlink" href="#minimum-supported-eve-release" title="Permanent link">&para;</a></h2>
+<p><strong>This package requires eve <code>0.31.0</code> or newer and cannot talk to an earlier server.</strong>
+<code>EveProtocol.MinimumEveVersion</code> declares the line in code.</p>
+<p>eve <code>0.31.0</code> moved session control operations from fixed continuation-token body routes to
+identifier-addressed routes:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>eve 0.30.x and earlier</th>
+<th>eve 0.31.0 and newer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clear</td>
+<td><code>POST /eve/v1/session/clear</code></td>
+<td><code>POST /eve/v1/session/{sessionId}/clear</code></td>
+</tr>
+<tr>
+<td>compact</td>
+<td><code>POST /eve/v1/session/compact</code></td>
+<td><code>POST /eve/v1/session/{sessionId}/compact</code></td>
+</tr>
+<tr>
+<td>reset</td>
+<td><code>POST /eve/v1/session/reset</code></td>
+<td><code>POST /eve/v1/session/{sessionId}/reset</code></td>
+</tr>
+</tbody>
+</table>
+<p>The identifier-addressed routes return HTTP 404 on an older server, and continuation tokens are
+no longer accepted or returned anywhere in the client protocol. There is no negotiation or
+fallback: a protocol cutover has no half-migrated state. Pin <code>0.1.0-alpha.3</code> to target an eve
+<code>0.29.x</code> or <code>0.30.x</code> agent.</p>
+<p>Session creation, follow-up turns, streaming, and cancellation route identically on both sides
+of the boundary, so only the three control operations are affected.</p>
 <p>eve remains preview software. Package upgrades should therefore validate both:</p>
 <ol>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.29.4</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.31.3</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
-approval-gated human input, and session reset through the C# client. Session
-context clear (<code>ClearAsync</code> / <code>context.cleared</code>) is implemented and covered by
-contract tests against the upstream protocol shape, but is not exercised by the
-pinned fixture until an eve release that includes it becomes the baseline.</p>
+approval-gated human input, session context clear, and session reset through the
+C# client, including the HTTP 409 refusal returned when a retired session
+identifier is reused.</p>
 <p>The client stays readable against protocol 19 servers: durable event
 identifiers and input-request discriminators are both projected as absent
 rather than causing a failure. That path is covered by contract tests, not by

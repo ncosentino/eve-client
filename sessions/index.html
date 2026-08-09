@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Persist and resume eve continuation tokens, session IDs, and stream cursors.">
+        <meta name="description" content="Persist and resume eve session IDs and stream cursors.">
       
       
         <meta name="author" content="Nick Cosentino">
@@ -65,12 +65,12 @@
   
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Sessions – NexusLabs.Eve" />
-  <meta property="og:description" content="Persist and resume eve continuation tokens, session IDs, and stream cursors." />
+  <meta property="og:description" content="Persist and resume eve session IDs and stream cursors." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/sessions/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Sessions – NexusLabs.Eve" />
-  <meta name="twitter:description" content="Persist and resume eve continuation tokens, session IDs, and stream cursors." />
+  <meta name="twitter:description" content="Persist and resume eve session IDs and stream cursors." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
 
@@ -1131,12 +1131,15 @@
 
 
 <h1 id="sessions">Sessions<a class="headerlink" href="#sessions" title="Permanent link">&para;</a></h1>
-<p>An <code>EveSession</code> tracks three independent values:</p>
+<p>An <code>EveSession</code> is a fixed handle. It tracks two values:</p>
 <ul>
-<li><code>ContinuationToken</code> sends the next user turn.</li>
-<li><code>SessionId</code> identifies the durable runtime stream.</li>
+<li><code>SessionId</code> identifies the durable runtime session. It addresses every turn,
+  control, and stream, and never changes once assigned.</li>
 <li><code>StreamIndex</code> counts events already consumed.</li>
 </ul>
+<p>eve <code>0.31.0</code> removed continuation tokens from the client protocol. A handle
+keeps its identifier across every session boundary, so a completed or failed
+conversation stays inspectable and streamable.</p>
 <h2 id="persist-state">Persist state<a class="headerlink" href="#persist-state" title="Permanent link">&para;</a></h2>
 <p>Consume the response before saving the fully advanced cursor:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
@@ -1152,13 +1155,13 @@
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="s">&quot;Shorten the checklist.&quot;</span><span class="p">,</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<p>When only a continuation token was persisted:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">resumed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">(</span><span class="n">continuationToken</span><span class="p">);</span>
+<p>When only the session identifier was persisted, attach to it directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">resumed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">AttachSession</span><span class="p">(</span><span class="n">sessionId</span><span class="p">);</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">rewound</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">AttachSession</span><span class="p">(</span><span class="n">sessionId</span><span class="p">,</span><span class="w"> </span><span class="n">streamIndex</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="clear-session-context">Clear session context<a class="headerlink" href="#clear-session-context" title="Permanent link">&para;</a></h2>
 <p><code>ClearAsync</code> queues removal of durable model-message history while keeping the
-session identity, configuration, non-message state, limits, continuation token,
-and sandbox:</p>
+session identity, configuration, non-message state, limits, and sandbox:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">EveClearOutcome</span><span class="w"> </span><span class="n">clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ClearAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">clear</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveClearStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
@@ -1178,53 +1181,42 @@ and sandbox:</p>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
-<li>The accepted continuation token is recorded as soon as <code>SendAsync</code> returns,
-  so clear can run before the response stream is consumed.</li>
-<li>A session that has an ID but no continuation token still has an outstanding
-  response stream. Consume it before clearing; otherwise <code>ClearAsync</code> throws
-  <code>InvalidOperationException</code>.</li>
+<li>The session identifier is recorded as soon as <code>SendAsync</code> returns, so clear
+  can run before the response stream is consumed.</li>
 <li>A session that never started returns <code>EveClearStatus.NoActiveSession</code> and
   issues no HTTP request.</li>
 <li>A successful clear leaves the local cursor unchanged. Consume the durable
   stream through <code>context.cleared</code> and the following <code>session.waiting</code> boundary
   before sending another turn.</li>
-<li>This route is present on current upstream eve <code>main</code> and is covered by
-  contract tests here. It is not yet part of the pinned compatibility baseline
-  (<code>0.29.4</code>), so production deployments on that release answer with HTTP 404
-  surfaced as <code>EveClientException</code>.</li>
+<li>The route is <code>POST /eve/v1/session/{sessionId}/clear</code> and requires eve
+  <code>0.31.0</code> or newer.</li>
 </ul>
 <p><code>ClearAsync</code> is not an alias for <code>ResetAsync</code>. <code>ResetAsync</code> retires the
 conversation; <code>ClearAsync</code> keeps the same durable session and only discards
 model-message history.</p>
 <h2 id="reset-a-session">Reset a session<a class="headerlink" href="#reset-a-session" title="Permanent link">&para;</a></h2>
-<p><code>ResetAsync</code> terminally retires the durable session that owns the current
-continuation token, so the next send starts a fresh conversation:</p>
+<p><code>ResetAsync</code> terminally retires the durable session addressed by this handle:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EveResetOutcome</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ResetAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reset</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveResetStatus</span><span class="p">.</span><span class="n">Reset</span><span class="p">)</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">{</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">SaveAsync</span><span class="p">(</span><span class="n">session</span><span class="p">.</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">EveSession</span><span class="w"> </span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">();</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
-<li>The accepted continuation token is recorded as soon as <code>SendAsync</code> returns,
-  so reset can run before the response stream is consumed.</li>
-<li>A session that has an ID but no continuation token still has an outstanding
-  response stream. Consume it before resetting; otherwise <code>ResetAsync</code> throws
-  <code>InvalidOperationException</code>.</li>
 <li>A session that never started returns <code>EveResetStatus.NoActiveSession</code> and
   issues no HTTP request.</li>
-<li>A successful reset clears the local state. Persist the empty state and
-  discard any previously cached cursor.</li>
-<li>The route requires eve <code>0.27.4</code> or newer. Older deployments answer with
-  HTTP 404, surfaced as <code>EveClientException</code>.</li>
+<li>The handle keeps its session identifier after a successful reset. It does not
+  recycle into a new conversation; call <code>CreateSession()</code> for that.</li>
+<li>The route is <code>POST /eve/v1/session/{sessionId}/reset</code> and requires eve
+  <code>0.31.0</code> or newer.</li>
 </ul>
 <p><code>ResetAsync</code> is not an alias for <code>CancelAsync</code>. <code>CancelAsync</code> only requests
 cooperative cancellation of the active turn and keeps the conversation
 resumable; <code>ResetAsync</code> retires the conversation itself.</p>
 <h2 id="compact-a-session">Compact a session<a class="headerlink" href="#compact-a-session" title="Permanent link">&para;</a></h2>
-<p><code>CompactAsync</code> queues context compaction for the durable session that owns the
-current continuation token without sending model input:</p>
+<p><code>CompactAsync</code> queues context compaction for the durable session without
+sending model input:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveCompactOutcome</span><span class="w"> </span><span class="n">compact</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">CompactAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">compact</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveCompactStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
@@ -1244,25 +1236,20 @@ current continuation token without sending model input:</p>
 <li>Compaction is asynchronous. Consume the durable stream through the next
   session boundary before sending another turn. <code>compaction.completed</code> confirms
   successful summarization.</li>
-<li>The accepted continuation token is recorded as soon as <code>SendAsync</code> returns,
-  so compaction can run before the response stream is consumed.</li>
-<li>A session that has an ID but no continuation token still has an outstanding
-  response stream. Consume it before compacting; otherwise <code>CompactAsync</code> throws
-  <code>InvalidOperationException</code>.</li>
 <li>A session that never started returns <code>EveCompactStatus.NoActiveSession</code> and
   issues no HTTP request.</li>
 <li>Unlike reset, compaction preserves the local session cursor.</li>
-<li>The route is present on upstream eve main and is not yet part of a released
-  eve package. Older deployments answer with HTTP 404, surfaced as
-  <code>EveClientException</code>. Keep this client path behind your own feature gate until
-  your deployment includes the route.</li>
+<li>The route is <code>POST /eve/v1/session/{sessionId}/compact</code> and requires eve
+  <code>0.31.0</code> or newer.</li>
 </ul>
 <p><code>CompactAsync</code> is not an alias for <code>ResetAsync</code>. Compaction summarizes history
 in place and keeps the conversation resumable; reset retires the conversation.</p>
 <h2 id="terminal-behavior">Terminal behavior<a class="headerlink" href="#terminal-behavior" title="Permanent link">&para;</a></h2>
-<p><code>session.waiting</code> preserves the conversation for another turn. By default,
-<code>session.completed</code> and <code>session.failed</code> reset the local cursor. Set
-<code>PreserveCompletedSessions</code> when completed sessions should remain resumable.</p>
+<p>Every session boundary advances the cursor and preserves the session
+identifier. <code>session.waiting</code> parks the conversation for another turn;
+<code>session.completed</code> and <code>session.failed</code> end it. In all three cases the handle
+remains valid for streaming and inspection, so a finished conversation can
+still be replayed from index <code>0</code>.</p>
 
 
 

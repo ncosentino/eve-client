@@ -1034,38 +1034,41 @@ while sessions or response streams are active.</p>
 <p><code>options</code> <a href="../EveClientOptions/" title="NexusLabs.Eve.EveClientOptions">EveClientOptions</a></p>
 <p>The host, authentication, headers, and retry options.</p>
 <h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveClient.AttachSession(string,int)'></a></p>
+<h2 id="eveclientattachsessionstring-int-method">EveClient.AttachSession(string, int) Method<a class="headerlink" href="#eveclientattachsessionstring-int-method" title="Permanent link">&para;</a></h2>
+<p>Creates a session handle for a known immutable session identifier.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">AttachSession</span><span class="p">(</span><span class="kt">string</span><span class="w"> </span><span class="n">sessionId</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">streamIndex</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveClient.AttachSession(string,int).sessionId'></a></p>
+<p><code>sessionId</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p>The runtime-owned session identifier to attach to.</p>
+<p><a name='NexusLabs.Eve.EveClient.AttachSession(string,int).streamIndex'></a></p>
+<p><code>streamIndex</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a></p>
+<p>The absolute number of stream events already consumed.</p>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
+A fixed handle addressing the supplied session.</p>
 <p><a name='NexusLabs.Eve.EveClient.CreateSession()'></a></p>
 <h2 id="eveclientcreatesession-method">EveClient.CreateSession() Method<a class="headerlink" href="#eveclientcreatesession-method" title="Permanent link">&para;</a></h2>
 <p>Creates a handle for a fresh conversation.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">();</span>
 </code></pre></div>
-<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
 <p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
 A session whose first send creates the remote run.</p>
 <p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionState)'></a></p>
 <h2 id="eveclientcreatesessionevesessionstate-method">EveClient.CreateSession(EveSessionState) Method<a class="headerlink" href="#eveclientcreatesessionevesessionstate-method" title="Permanent link">&para;</a></h2>
 <p>Creates a handle from a previously persisted session cursor.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionState</span><span class="w"> </span><span class="n">state</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionState</span><span class="w"> </span><span class="n">state</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionState).state'></a></p>
 <p><code>state</code> <a href="../EveSessionState/" title="NexusLabs.Eve.EveSessionState">EveSessionState</a></p>
 <p>The session state to resume.</p>
-<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
-<p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
-A session initialized from the supplied cursor.</p>
-<p><a name='NexusLabs.Eve.EveClient.CreateSession(string)'></a></p>
-<h2 id="eveclientcreatesessionstring-method">EveClient.CreateSession(string) Method<a class="headerlink" href="#eveclientcreatesessionstring-method" title="Permanent link">&para;</a></h2>
-<p>Creates a session from a continuation token when no stream cursor was persisted.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="kt">string</span><span class="w"> </span><span class="n">continuationToken</span><span class="p">);</span>
-</code></pre></div>
-<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
-<p><a name='NexusLabs.Eve.EveClient.CreateSession(string).continuationToken'></a></p>
-<p><code>continuationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p>The channel-owned continuation token.</p>
 <h4 id="returns_2">Returns<a class="headerlink" href="#returns_2" title="Permanent link">&para;</a></h4>
 <p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
-A resumable session with a zero stream cursor.</p>
+A session initialized from the supplied cursor.</p>
 <p><a name='NexusLabs.Eve.EveClient.GetHealthAsync(System.Threading.CancellationToken)'></a></p>
 <h2 id="eveclientgethealthasynccancellationtoken-method">EveClient.GetHealthAsync(CancellationToken) Method<a class="headerlink" href="#eveclientgethealthasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Checks whether the eve deployment is ready.</p>

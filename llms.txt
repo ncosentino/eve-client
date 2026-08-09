@@ -7,7 +7,7 @@ Author: Nick Cosentino (https://www.devleader.ca).
 - [Home](https://www.devleader.ca/projects/eve-client/) -- Use Vercel eve agents from .NET with durable sessions, streaming, cancellation, and structured output.
 - [Getting Started](https://www.devleader.ca/projects/eve-client/getting-started/) -- Install NexusLabs.Eve, create a client, and send the first turn to an eve agent.
 - [Authentication](https://www.devleader.ca/projects/eve-client/authentication/) -- Configure bearer, HTTP Basic, Vercel OIDC, and dynamic request headers.
-- [Sessions](https://www.devleader.ca/projects/eve-client/sessions/) -- Persist and resume eve continuation tokens, session IDs, and stream cursors.
+- [Sessions](https://www.devleader.ca/projects/eve-client/sessions/) -- Persist and resume eve session IDs and stream cursors.
 - [Streaming](https://www.devleader.ca/projects/eve-client/streaming/) -- Consume live eve events and configure automatic cursor-based reconnection.
 - [Attachments and Input](https://www.devleader.ca/projects/eve-client/attachments-and-input/) -- Send files and answer human-input requests emitted by an eve agent.
 - [Structured Output](https://www.devleader.ca/projects/eve-client/structured-output/) -- Request JSON Schema output and deserialize result.completed with source-generated metadata.
