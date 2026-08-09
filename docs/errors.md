@@ -9,11 +9,34 @@ description: Distinguish HTTP failures, malformed protocol responses, and termin
 Non-successful routes throw `EveClientException`. It exposes:
 
 - The HTTP status code.
+- `ErrorCode`, the server's stable machine-readable code, when present.
 - The raw response body.
 - Normalized response headers.
 
 When the body contains `{ "error": "..." }`, that value becomes the exception
 message.
+
+## Branch on a stable error code
+
+eve `0.31.0` reports a stable `code` alongside the human-readable message. Branch
+on `ErrorCode` instead of matching message text, which is not a contract:
+
+```csharp
+try
+{
+    await session.SendAsync("Continue.", cancellationToken);
+}
+catch (EveClientException exception)
+    when (exception.ErrorCode == "session_not_active")
+{
+    EveSession replacement = client.CreateSession();
+}
+```
+
+`session_not_active` accompanies HTTP 409 when a turn targets a session that was
+reset or is otherwise no longer active. `ErrorCode` is the raw server string, so
+a code this client does not model stays observable rather than being discarded,
+and it is `null` when the response carried none.
 
 ## Protocol failures
 
