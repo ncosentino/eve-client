@@ -45,6 +45,12 @@ EveSession rewound = client.AttachSession(sessionId, streamIndex: 12);
 
 ## Clear session context
 
+!!! note "Control operations require identifier-addressed routes"
+    `ClearAsync`, `CompactAsync`, and `ResetAsync` post to
+    `/eve/v1/session/{sessionId}/clear`, `/compact`, and `/reset`, which exist only in eve
+    `0.31.0` and newer. They report HTTP 404 on an earlier agent. Turns, streaming, and
+    cancellation are unaffected. See [Migration](migration.md).
+
 `ClearAsync` queues removal of durable model-message history while keeping the
 session identity, configuration, non-message state, limits, and sandbox:
 

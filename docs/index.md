@@ -27,7 +27,9 @@ part of the .NET API.
 This release requires eve `0.31.0` or newer and targets eve `0.31.3`. eve `0.31.0`
 moved session control operations to identifier-addressed routes and removed
 continuation tokens from the client protocol, so an eve `0.29.x` or `0.30.x` agent is
-not supported. Pin `0.1.0-alpha.3` for those.
+not supported. Pin `0.1.0-alpha.3` for those. A mismatched client and agent accept the
+first turn and fail the second, so verify a multi-turn conversation when changing
+either side. See [Compatibility](compatibility.md) and [Migration](migration.md).
 
 ## Start here
 
