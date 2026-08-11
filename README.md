@@ -25,7 +25,11 @@ server. The compatibility target is `eve` **0.31.3**. eve `0.31.0` moved session
 operations to identifier-addressed routes and removed continuation tokens from the client
 protocol, so there is no fallback path to an older agent — pin `0.1.0-alpha.3` for an eve
 `0.29.x` or `0.30.x` deployment. eve is still a preview, so pin and test compatible
-versions before upgrading. See [Compatibility](docs/compatibility.md).
+versions before upgrading. See [Compatibility](docs/compatibility.md) and
+[Migration](docs/migration.md).
+
+A mismatched client and server complete the first turn and fail the second, so verify a
+multi-turn conversation rather than a single message when changing either side.
 
 ## Prerequisites
 

@@ -58,10 +58,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Breaking, requires eve `0.31.0` or newer.** Session control operations moved to
   identifier-addressed routes: `POST /eve/v1/session/{sessionId}/clear`,
   `/compact`, and `/reset` replace the fixed `/eve/v1/session/clear`, `/compact`, and
-  `/reset` routes. Those fixed routes return HTTP 404 on an eve `0.31.x` server, and the
-  new routes do not exist before eve `0.31.0`, so this release cannot talk to an eve
-  `0.29.x` or `0.30.x` agent. Pin `0.1.0-alpha.3` for those. `SendAsync`, `StreamAsync`,
-  and `CancelAsync` route unchanged.
+  `/reset` routes. The new routes do not exist before eve `0.31.0` and return HTTP 404
+  there, so this release cannot talk to an eve `0.29.x` or `0.30.x` agent. The old fixed
+  routes do not return 404 on an eve `0.31.x` server; `/eve/v1/session/clear` matches the
+  continue route with a session identifier of `clear`, so the request is misrouted and
+  fails with HTTP 400. Pin `0.1.0-alpha.3` for those agents. `SendAsync`, `StreamAsync`,
+  and `CancelAsync` route unchanged. See [Migration](docs/migration.md).
 - Session message and control request bodies no longer carry `continuationToken`. Clear,
   compact, and reset send an empty body.
 - A session handle is now fixed. `session.completed` and `session.failed` retain the

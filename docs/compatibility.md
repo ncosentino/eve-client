@@ -31,7 +31,14 @@ fallback: a protocol cutover has no half-migrated state. Pin `0.1.0-alpha.3` to 
 `0.29.x` or `0.30.x` agent.
 
 Session creation, follow-up turns, streaming, and cancellation route identically on both sides
-of the boundary, so only the three control operations are affected.
+of the boundary, so only the three control operations moved. The turn body still differs: an
+eve `0.30.x` or earlier server requires `continuationToken` to continue a session, and an eve
+`0.31.x` server rejects that field. A mismatched pair therefore completes the first turn and
+fails the second. See [Migration](migration.md) for the observed behavior in both directions
+and the required order of operations.
+
+`ClearAsync` and `CompactAsync` require eve `0.30.0` or newer even in `0.1.0-alpha.3`; those
+two routes did not exist in eve `0.29.x`.
 
 eve remains preview software. Package upgrades should therefore validate both:
 
