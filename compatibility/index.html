@@ -18,7 +18,7 @@
         <link rel="prev" href="../errors/">
       
       
-        <link rel="next" href="../api/">
+        <link rel="next" href="../migration/">
       
       
         
@@ -400,6 +400,25 @@
     
   
   Compatibility
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migration
 
       </a>
     </li>
@@ -843,6 +862,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -859,10 +905,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
         
           
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
             
   
   
@@ -880,8 +926,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_10">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1004,10 +1050,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   
@@ -1025,8 +1071,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1192,7 +1238,13 @@ no longer accepted or returned anywhere in the client protocol. There is no nego
 fallback: a protocol cutover has no half-migrated state. Pin <code>0.1.0-alpha.3</code> to target an eve
 <code>0.29.x</code> or <code>0.30.x</code> agent.</p>
 <p>Session creation, follow-up turns, streaming, and cancellation route identically on both sides
-of the boundary, so only the three control operations are affected.</p>
+of the boundary, so only the three control operations moved. The turn body still differs: an
+eve <code>0.30.x</code> or earlier server requires <code>continuationToken</code> to continue a session, and an eve
+<code>0.31.x</code> server rejects that field. A mismatched pair therefore completes the first turn and
+fails the second. See <a href="../migration/">Migration</a> for the observed behavior in both directions
+and the required order of operations.</p>
+<p><code>ClearAsync</code> and <code>CompactAsync</code> require eve <code>0.30.0</code> or newer even in <code>0.1.0-alpha.3</code>; those
+two routes did not exist in eve <code>0.29.x</code>.</p>
 <p>eve remains preview software. Package upgrades should therefore validate both:</p>
 <ol>
 <li>The public HTTP route and body contracts.</li>

@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Browse development, stable, and versioned NexusLabs.Eve API documentation.">
+        <meta name="description" content="Move an existing deployment from eve 0.29.x or 0.30.x to eve 0.31.x without breaking a running conversation.">
       
       
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/migration/">
       
       
-        <link rel="prev" href="../migration/">
+        <link rel="prev" href="../compatibility/">
       
       
-        <link rel="next" href="dev/">
+        <link rel="next" href="../api/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Overview - NexusLabs.Eve</title>
+        <title>Migration - NexusLabs.Eve</title>
       
     
     
@@ -64,13 +64,13 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Overview – NexusLabs.Eve" />
-  <meta property="og:description" content="Browse development, stable, and versioned NexusLabs.Eve API documentation." />
+  <meta property="og:title" content="Migration – NexusLabs.Eve" />
+  <meta property="og:description" content="Move an existing deployment from eve 0.29.x or 0.30.x to eve 0.31.x without breaking a running conversation." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/migration/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Overview – NexusLabs.Eve" />
-  <meta name="twitter:description" content="Browse development, stable, and versioned NexusLabs.Eve API documentation." />
+  <meta name="twitter:title" content="Migration – NexusLabs.Eve" />
+  <meta name="twitter:description" content="Move an existing deployment from eve 0.29.x or 0.30.x to eve 0.31.x without breaking a running conversation." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
 
@@ -93,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#api-reference" class="md-skip">
+        <a href="#migrating-to-eve-031x" class="md-skip">
           Skip to content
         </a>
       
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Migration
             
           </span>
         </div>
@@ -408,9 +408,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -427,13 +429,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -758,10 +758,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -777,6 +804,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-single-smoke-test-will-not-catch-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a single smoke test will not catch this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#route-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Route matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observed-behavior-across-the-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observed behavior across the boundary
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Observed behavior across the boundary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adopting-the-new-client-while-the-agent-stays-on-029x-or-030x" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adopting the new client while the agent stays on 0.29.x or 0.30.x
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-the-agent-to-031x-while-the-application-stays-on-the-old-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading the agent to 0.31.x while the application stays on the old client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-several-agent-deployments-on-different-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running several agent deployments on different versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#order-of-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order of operations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-changes-required-by-010-alpha4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code changes required by 0.1.0-alpha.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-these-results-were-produced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How these results were produced
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -785,31 +937,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" checked>
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
             
   
   
@@ -827,7 +976,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
             <span class="md-nav__icon md-icon"></span>
             
@@ -842,19 +991,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -870,7 +1010,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -883,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="dev/" class="md-nav__link">
+      <a href="../api/dev/" class="md-nav__link">
         
   
   
@@ -911,7 +1050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="stable/" class="md-nav__link">
+      <a href="../api/stable/" class="md-nav__link">
         
   
   
@@ -1076,12 +1215,219 @@
   
 
 
-<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<h1 id="migrating-to-eve-031x">Migrating to eve 0.31.x<a class="headerlink" href="#migrating-to-eve-031x" title="Permanent link">&para;</a></h1>
+<p><code>NexusLabs.Eve</code> <code>0.1.0-alpha.4</code> requires eve <code>0.31.0</code> or newer. <code>0.1.0-alpha.3</code> is the
+final release for eve <code>0.29.x</code> and <code>0.30.x</code>.</p>
+<p><strong>The boundary is hard in both directions.</strong> A mismatched client and server complete the
+first turn and fail the second. Upgrading either side alone breaks the conversation, so
+the client and the agent must move together.</p>
+<h2 id="why-a-single-smoke-test-will-not-catch-this">Why a single smoke test will not catch this<a class="headerlink" href="#why-a-single-smoke-test-will-not-catch-this" title="Permanent link">&para;</a></h2>
+<p>The client sends no protocol version. The only headers it sets are <code>authorization</code>,
+<code>content-type</code>, and the Vercel OIDC token header; the only query parameters are
+<code>startIndex</code>, <code>includeTailIndex</code>, <code>token</code>, and <code>bypass</code>. Nothing negotiates a version, so
+a mismatch cannot be detected at connect time.</p>
+<p>The first turn carries no continuation token in either direction, so it succeeds against
+either server. The failure appears on the <strong>second</strong> turn. A health check, an info call,
+or a one-message test will all pass against a server the client cannot actually talk to.</p>
+<p>Always verify a <strong>multi-turn</strong> conversation.</p>
+<h2 id="route-matrix">Route matrix<a class="headerlink" href="#route-matrix" title="Permanent link">&para;</a></h2>
+<p>Taken from each release's shipped <code>dist/src/protocol/routes.js</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>eve 0.29.x</th>
+<th>eve 0.30.x</th>
+<th>eve 0.31.x</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>create / continue / stream / cancel</td>
+<td>unchanged</td>
+<td>unchanged</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td>reset</td>
+<td><code>POST /eve/v1/session/reset</code></td>
+<td><code>POST /eve/v1/session/reset</code></td>
+<td><code>POST /eve/v1/session/{id}/reset</code></td>
+</tr>
+<tr>
+<td>clear</td>
+<td><strong>not available</strong></td>
+<td><code>POST /eve/v1/session/clear</code></td>
+<td><code>POST /eve/v1/session/{id}/clear</code></td>
+</tr>
+<tr>
+<td>compact</td>
+<td><strong>not available</strong></td>
+<td><code>POST /eve/v1/session/compact</code></td>
+<td><code>POST /eve/v1/session/{id}/compact</code></td>
+</tr>
+</tbody>
+</table>
+<p>Session creation, follow-up turns, streaming, and cancellation use the same paths on every
+release. Only the control operations moved.</p>
+<div class="admonition note">
+<p class="admonition-title">Clear and compact require eve 0.30.0</p>
+<p><code>0.1.0-alpha.3</code> exposes <code>ClearAsync</code> and <code>CompactAsync</code> even though it names eve
+<code>0.29.4</code> as its reference. Those two routes were introduced in eve <code>0.30.0</code>. Against an
+eve <code>0.29.x</code> agent they never worked, and they fail with HTTP 400 rather than 404
+because <code>/eve/v1/session/clear</code> matches the continue route with a session identifier of
+<code>clear</code>.</p>
+</div>
+<h2 id="observed-behavior-across-the-boundary">Observed behavior across the boundary<a class="headerlink" href="#observed-behavior-across-the-boundary" title="Permanent link">&para;</a></h2>
+<p>Each row was executed against a real server of the named version.</p>
+<table>
+<thead>
+<tr>
+<th>Client</th>
+<th>Server</th>
+<th>First turn</th>
+<th>Second turn</th>
+<th>Control operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>alpha.4</code></td>
+<td><code>0.31.x</code></td>
+<td>202 accepted</td>
+<td>202 accepted</td>
+<td>202 / 200</td>
+</tr>
+<tr>
+<td><code>alpha.4</code></td>
+<td><code>0.29.x</code></td>
+<td>202 accepted</td>
+<td><strong>400</strong> <code>Missing or empty 'continuationToken' field.</code></td>
+<td><strong>404</strong> no route matching</td>
+</tr>
+<tr>
+<td><code>alpha.3</code></td>
+<td><code>0.31.x</code></td>
+<td>202 accepted</td>
+<td><strong>400</strong> <code>Session-ID routes do not accept 'continuationToken'.</code></td>
+<td><strong>400</strong>, misrouted</td>
+</tr>
+<tr>
+<td><code>alpha.3</code></td>
+<td><code>0.30.x</code></td>
+<td>supported</td>
+<td>supported</td>
+<td>supported</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adopting-the-new-client-while-the-agent-stays-on-029x-or-030x">Adopting the new client while the agent stays on 0.29.x or 0.30.x<a class="headerlink" href="#adopting-the-new-client-while-the-agent-stays-on-029x-or-030x" title="Permanent link">&para;</a></h3>
+<p>This breaks. <code>alpha.4</code> never sends a continuation token, and an eve <code>0.29.x</code> or <code>0.30.x</code>
+server requires one to continue a session, so the second turn is rejected with HTTP 400.
+The three identifier-addressed control routes also return HTTP 404 because they do not
+exist before eve <code>0.31.0</code>.</p>
+<h3 id="upgrading-the-agent-to-031x-while-the-application-stays-on-the-old-client">Upgrading the agent to 0.31.x while the application stays on the old client<a class="headerlink" href="#upgrading-the-agent-to-031x-while-the-application-stays-on-the-old-client" title="Permanent link">&para;</a></h3>
+<p>This also breaks, and it is the more deceptive case.</p>
+<ol>
+<li>The first turn is posted with no token and is accepted.</li>
+<li>eve <code>0.31.x</code> still emits a <code>continuationToken</code> inside the <code>session.waiting</code> stream
+   event, where it is now a channel-local value.</li>
+<li><code>alpha.3</code> harvests that value and stores it as session state.</li>
+<li>The next turn includes it, and the server rejects the request with HTTP 400
+   <code>Session-ID routes do not accept 'continuationToken'.</code></li>
+</ol>
+<p>The old fixed control routes do not return 404 on eve <code>0.31.x</code>. <code>/eve/v1/session/clear</code>
+matches the continue route with a session identifier of <code>clear</code>, so the request is
+misrouted and fails with a message about missing content rather than a missing route.</p>
+<h2 id="running-several-agent-deployments-on-different-versions">Running several agent deployments on different versions<a class="headerlink" href="#running-several-agent-deployments-on-different-versions" title="Permanent link">&para;</a></h2>
+<p>Mixed agent versions are fine. Serving them from one application is not.</p>
 <ul>
-<li><a href="dev/">Development</a> is generated from the latest <code>main</code> build.</li>
-<li><a href="stable/">Stable</a> is generated from the latest release tag.</li>
-<li>Immutable versioned references are published under <code>/api/v&lt;version&gt;/</code>.</li>
+<li>A .NET project can reference only one version of <code>NexusLabs.Eve</code>, so a single process
+  carries a single client version.</li>
+<li>The client has no per-instance protocol switch. <code>EveClient</code> selects the host; the
+  protocol is fixed when the package is compiled.</li>
 </ul>
+<p>To promote one agent deployment while another stays behind, give each one its own
+deployable pinned to the matching client version. Promote an instance only when every
+application that talks to it is cut over at the same time.</p>
+<h2 id="order-of-operations">Order of operations<a class="headerlink" href="#order-of-operations" title="Permanent link">&para;</a></h2>
+<p>Because both directions break, this is a coordinated cutover for each deployable rather
+than a rolling upgrade of one side.</p>
+<ol>
+<li><strong>Inventory.</strong> Record which applications talk to which agent deployments, and whether
+   they call <code>ClearAsync</code>, <code>CompactAsync</code>, or <code>ResetAsync</code>.</li>
+<li><strong>Pin explicitly.</strong> Set <code>0.1.0-alpha.3</code> as an exact version so nothing floats forward
+   before the agent is ready.</li>
+<li><strong>Migrate the code on a branch.</strong> This is compile-time work and is independent of
+   deployment. See the table below.</li>
+<li><strong>Stand up a new agent deployment on eve <code>0.31.x</code> beside the existing one.</strong> Do not
+   upgrade in place; the old client cannot talk to it.</li>
+<li><strong>Deploy the <code>alpha.4</code> build against the new deployment only.</strong></li>
+<li><strong>Verify a multi-turn conversation</strong>, plus every control operation the application
+   uses. A single message proves nothing.</li>
+<li><strong>Move traffic, then retire the old deployment.</strong></li>
+<li><strong>Remove the <code>alpha.3</code> pin</strong> once no deployment runs eve <code>0.30.x</code> or earlier.</li>
+</ol>
+<h2 id="code-changes-required-by-010-alpha4">Code changes required by 0.1.0-alpha.4<a class="headerlink" href="#code-changes-required-by-010-alpha4" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SendAsync(new EveSendTurnRequest { Message = m })</code></td>
+<td><code>SendAsync(m, options, cancellationToken)</code></td>
+</tr>
+<tr>
+<td><code>SendAsync</code> carrying <code>InputResponses</code></td>
+<td><code>RespondAsync(inputResponses, options, cancellationToken)</code></td>
+</tr>
+<tr>
+<td><code>EveSendTurnRequest</code> for shared settings</td>
+<td><code>EveTurnOptions</code></td>
+</tr>
+<tr>
+<td><code>EveClient.CreateSession(continuationToken)</code></td>
+<td><code>EveClient.AttachSession(sessionId, streamIndex)</code></td>
+</tr>
+<tr>
+<td><code>EveSessionState.ContinuationToken</code></td>
+<td>removed; sessions are addressed by identifier</td>
+</tr>
+<tr>
+<td><code>EveMessageResponse.ContinuationToken</code></td>
+<td>removed</td>
+</tr>
+<tr>
+<td><code>EveClientOptions.PreserveCompletedSessions</code></td>
+<td>removed; a completed session stays streamable</td>
+</tr>
+<tr>
+<td><code>EveCancellationOutcome.SessionId</code> non-null</td>
+<td>nullable; a <code>no_active_turn</code> result names no session</td>
+</tr>
+<tr>
+<td><code>ResetAsync</code> clearing local state</td>
+<td>the handle keeps its identifier; call <code>CreateSession</code> for a new conversation</td>
+</tr>
+</tbody>
+</table>
+<p>A turn now carries either a message or input responses and never both. eve <code>0.31.0</code>
+rejects a combined body with HTTP 400, so the payload is a required argument and the
+combination can no longer be expressed in code.</p>
+<p>Reusing a retired session identifier returns HTTP 409 with the error code
+<code>session_not_active</code>, available through <code>EveClientException.ErrorCode</code>.</p>
+<h2 id="how-these-results-were-produced">How these results were produced<a class="headerlink" href="#how-these-results-were-produced" title="Permanent link">&para;</a></h2>
+<p>The route matrix comes from the published <code>dist/src/protocol/routes.js</code> of eve <code>0.29.4</code>,
+<code>0.30.0</code>, <code>0.31.0</code>, and <code>0.31.3</code>.</p>
+<p>The behavior table comes from requests issued against real servers: the pinned eve
+<code>0.31.3</code> fixture in <code>test/fixtures/eve-agent</code>, and an eve <code>0.29.4</code> agent built from the
+same agent sources. Each cell records the status code and error body that server returned.</p>
+<p>The eve <code>0.30.x</code> row is the supported baseline for <code>0.1.0-alpha.3</code> and is stated from the
+route matrix rather than from an executed request.</p>
 
 
 

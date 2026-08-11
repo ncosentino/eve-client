@@ -13,6 +13,7 @@ Author: Nick Cosentino (https://www.devleader.ca).
 - [Structured Output](https://www.devleader.ca/projects/eve-client/structured-output/) -- Request JSON Schema output and deserialize result.completed with source-generated metadata.
 - [Errors](https://www.devleader.ca/projects/eve-client/errors/) -- Distinguish HTTP failures, malformed protocol responses, and terminal eve session failures.
 - [Compatibility](https://www.devleader.ca/projects/eve-client/compatibility/) -- Understand supported eve versions, stream protocol compatibility, and preview-version policy.
+- [Migration](https://www.devleader.ca/projects/eve-client/migration/) -- Move an existing deployment from eve 0.29.x or 0.30.x to eve 0.31.x without breaking a running conversation.
 
 ## API Reference
 
