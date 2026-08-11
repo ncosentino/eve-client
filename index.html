@@ -1150,7 +1150,9 @@ part of the .NET API.</p>
 <p>This release requires eve <code>0.31.0</code> or newer and targets eve <code>0.31.3</code>. eve <code>0.31.0</code>
 moved session control operations to identifier-addressed routes and removed
 continuation tokens from the client protocol, so an eve <code>0.29.x</code> or <code>0.30.x</code> agent is
-not supported. Pin <code>0.1.0-alpha.3</code> for those.</p>
+not supported. Pin <code>0.1.0-alpha.3</code> for those. A mismatched client and agent accept the
+first turn and fail the second, so verify a multi-turn conversation when changing
+either side. See <a href="compatibility/">Compatibility</a> and <a href="migration/">Migration</a>.</p>
 <h2 id="start-here">Start here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>
 <p>Continue with <a href="getting-started/">Getting Started</a>, then read
 <a href="sessions/">Sessions</a> and <a href="streaming/">Streaming</a>.</p><script type="application/ld+json">

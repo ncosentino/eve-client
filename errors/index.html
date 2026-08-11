@@ -800,6 +800,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#version-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version mismatch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#session-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1196,6 +1207,38 @@ and it is <code>null</code> when the response carried none.</p>
 <h2 id="protocol-failures">Protocol failures<a class="headerlink" href="#protocol-failures" title="Permanent link">&para;</a></h2>
 <p>Successful responses that do not satisfy the expected eve contract throw
 <code>EveProtocolException</code>.</p>
+<h2 id="version-mismatch">Version mismatch<a class="headerlink" href="#version-mismatch" title="Permanent link">&para;</a></h2>
+<p>A client and agent on opposite sides of the eve <code>0.31.0</code> cutover accept the first
+turn and fail the second, because the first turn carries no continuation token in
+either direction. These <code>EveClientException</code> messages identify a mismatch rather
+than an application error:</p>
+<table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP 400 <code>Missing or empty 'continuationToken' field.</code></td>
+<td>The agent predates eve <code>0.31.0</code> and requires a token this package no longer sends.</td>
+</tr>
+<tr>
+<td>HTTP 400 <code>Session-ID routes do not accept 'continuationToken'.</code></td>
+<td>The agent is eve <code>0.31.0</code> or newer and the caller is on <code>0.1.0-alpha.3</code> or earlier.</td>
+</tr>
+<tr>
+<td>HTTP 404 <code>Cannot find any route matching ... /clear</code>, <code>/compact</code>, or <code>/reset</code></td>
+<td>The agent predates eve <code>0.31.0</code>, so the identifier-addressed control routes do not exist.</td>
+</tr>
+</tbody>
+</table>
+<p>A control operation sent to the old fixed paths does <strong>not</strong> report 404 on eve
+<code>0.31.x</code>. <code>/eve/v1/session/clear</code> matches the continue route with a session
+identifier of <code>clear</code>, so it is misrouted and reports HTTP 400 about missing
+message content instead.</p>
+<p>Upgrade the client and the agent together. See <a href="../migration/">Migration</a>.</p>
 <h2 id="session-failures">Session failures<a class="headerlink" href="#session-failures" title="Permanent link">&para;</a></h2>
 <p>A streamed <code>session.failed</code> event is part of the protocol, not a transport
 exception. <code>GetOutcomeAsync</code> returns <code>EveTurnStatus.Failed</code> and preserves the

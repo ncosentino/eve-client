@@ -1206,6 +1206,13 @@ conversation stays inspectable and streamable.</p>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">rewound</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">AttachSession</span><span class="p">(</span><span class="n">sessionId</span><span class="p">,</span><span class="w"> </span><span class="n">streamIndex</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="clear-session-context">Clear session context<a class="headerlink" href="#clear-session-context" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Control operations require identifier-addressed routes</p>
+<p><code>ClearAsync</code>, <code>CompactAsync</code>, and <code>ResetAsync</code> post to
+<code>/eve/v1/session/{sessionId}/clear</code>, <code>/compact</code>, and <code>/reset</code>, which exist only in eve
+<code>0.31.0</code> and newer. They report HTTP 404 on an earlier agent. Turns, streaming, and
+cancellation are unaffected. See <a href="../migration/">Migration</a>.</p>
+</div>
 <p><code>ClearAsync</code> queues removal of durable model-message history while keeping the
 session identity, configuration, non-message state, limits, and sandbox:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">EveClearOutcome</span><span class="w"> </span><span class="n">clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ClearAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
