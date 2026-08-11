@@ -52,6 +52,7 @@ nav:
   - Structured Output: structured-output.md
   - Errors: errors.md
   - Compatibility: compatibility.md
+  - Migration: migration.md
   - API Reference:
       - Overview: api/index.md
       - Development: api/dev/index.md
