@@ -43,6 +43,26 @@ and it is `null` when the response carried none.
 Successful responses that do not satisfy the expected eve contract throw
 `EveProtocolException`.
 
+## Version mismatch
+
+A client and agent on opposite sides of the eve `0.31.0` cutover accept the first
+turn and fail the second, because the first turn carries no continuation token in
+either direction. These `EveClientException` messages identify a mismatch rather
+than an application error:
+
+| Message | Meaning |
+|---|---|
+| HTTP 400 `Missing or empty 'continuationToken' field.` | The agent predates eve `0.31.0` and requires a token this package no longer sends. |
+| HTTP 400 `Session-ID routes do not accept 'continuationToken'.` | The agent is eve `0.31.0` or newer and the caller is on `0.1.0-alpha.3` or earlier. |
+| HTTP 404 `Cannot find any route matching ... /clear`, `/compact`, or `/reset` | The agent predates eve `0.31.0`, so the identifier-addressed control routes do not exist. |
+
+A control operation sent to the old fixed paths does **not** report 404 on eve
+`0.31.x`. `/eve/v1/session/clear` matches the continue route with a session
+identifier of `clear`, so it is misrouted and reports HTTP 400 about missing
+message content instead.
+
+Upgrade the client and the agent together. See [Migration](migration.md).
+
 ## Session failures
 
 A streamed `session.failed` event is part of the protocol, not a transport
