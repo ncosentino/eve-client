@@ -63,7 +63,7 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
 2. Verify the target path exists and its configured remote identifies
    `ncosentino/eve-client`.
 3. When `--inventory-path` is supplied, read that file, verify
-   `SchemaVersion=3`, and use its immutable target/upstream commits. Do not
+   `SchemaVersion=4`, and use its immutable target/upstream commits. Do not
    recollect or create a second run directory.
 4. Otherwise run the deterministic preflight:
 
@@ -90,17 +90,28 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
      `eve@<semver>` tag containing it, or `null` when it exists only on
      upstream main.
    - Marks direct path candidates and provides subsystem hints.
+   - Marks behavioral-evidence commits: a commit whose only client-directory
+     footprint is the test file of an implementation this package never ports.
+     Those tests assert durable stream ordering, so they are protocol evidence
+     even though the implementation beside them is out of scope.
 
 5. If preflight collection fails, stop without creating issues.
 6. If `preflight.Status` is `NoCandidates` or `NoUntrackedCandidates`, print
    its inventory/report paths and counts, then finish immediately. The
    deterministic script has already written the complete report; do not read
    the full skill, fetch PR bodies, inspect diffs, or rewrite the report.
+   Neither status is possible while `BehavioralEvidenceCount` is nonzero.
 7. If `preflight.Status` is `AnalysisRequired`, continue with
    `preflight.InventoryPath`.
 8. Path filtering is only the first signal for remaining work. Review every
    `CandidateByPath=true` commit; do not create issues directly from the
    collector output.
+9. Also review every commit in `preflight.BehavioralEvidenceCommits`. Read the
+   changed test to determine which event orderings, lifetimes, or interleavings
+   the server now guarantees, then parity-check the .NET client against that
+   contract exactly like any other candidate. Such a commit may only be dropped
+   with a stated reason; it must never be discarded merely because it changed no
+   tracked path.
 
 ## Phase 1 - Resolve merged pull requests
 
@@ -144,7 +155,10 @@ For each path candidate:
 
 Drop docs-only, build-only, formatting, cleanup, server-internal, and
 TypeScript-only UI/store/reducer work unless the diff proves a client-visible
-contract change.
+contract change. A changed reducer *test* is such a proof whenever it asserts a
+new event ordering, lifetime, or interleaving: the reducer stays out of scope
+while the ordering it now encodes is a protocol contract this client must
+interpret.
 
 ## Phase 2 - Mandatory .NET parity research
 
@@ -176,6 +190,33 @@ Agents must inspect git objects, not the target working tree:
 git -C <target-path> grep -n <pattern> <target-commit> -- <paths>
 git -C <target-path> show <target-commit>:<path>
 ```
+
+### Mandatory default-and-semantics audit
+
+A field the client never sends is still governed by a server default, so an
+unchanged request can change meaning with no wire-format change. Perform this
+audit for every cluster that adds or changes an optional request field, option,
+or configuration value, and record the answers in the issue.
+
+1. Locate where the server resolves the value when the client omits it. Follow
+   the resolution chain to the constant that terminates it, even when that chain
+   leaves the tracked client paths. Cite the file and line.
+2. State the effective behavior before and after the change for a request that
+   does **not** carry the field.
+3. Answer explicitly: can a .NET caller reproduce the previous behavior today?
+
+Classify the result:
+
+| Finding | Classification |
+|---|---|
+| Default unchanged; new field only adds a capability | `feature` |
+| Default changed, and the client can already opt back in | `behavior-change` |
+| Default changed, and the client cannot opt back in | `behavior-change`, and treat as a regression |
+
+A default the client cannot override is not a convenience gap. Rank it under
+"correctness and durable state", label it `bug`, and write the issue so the
+silent behavior change is the first thing stated. Never describe such a change
+only as the ability to choose a value.
 
 For each cluster, assign exactly one parity result:
 
@@ -262,6 +303,43 @@ eligible on the next run.
 
 Interactive invocation without `--auto-create` never writes to GitHub.
 
+## Phase 5b - Independent verification
+
+Every drafted issue body must pass an independent review before it is created.
+This runs unattended, so it is the only check between a mistaken analysis and a
+filed issue.
+
+Dispatch one `rubber-duck` agent per drafted issue. Choose a model from a
+different family than the one that drafted the issue, so a shared blind spot
+cannot pass itself. When the drafting orchestrator ran on a Claude model, use
+`gpt-5.6-sol`; when it ran on a GPT model, use `claude-opus-4.8`. Bound the
+review to ten minutes and require partial findings at that deadline.
+
+The reviewer receives the drafted body, the upstream cache path and source
+commit, the target repository path, and `inventory.Target.Commit`. It must
+verify against source, not judge plausibility, and answer:
+
+1. Does every cited upstream and .NET file and line say what the issue claims?
+2. Is any claim stated as verified that was not actually read from source?
+3. Did the default-and-semantics audit reach the terminating constant, and is
+   its conclusion correct?
+4. Is the severity right? Specifically, is a silent behavior change described
+   only as a missing capability?
+5. Is the stated parity gap genuinely absent from committed eve-client main?
+6. Does the issue omit a client-observable consequence the diff supports?
+
+Each answer is `pass`, `revise`, or `unverifiable`, with a citation. Apply the
+result:
+
+- All `pass`: create the issue.
+- Any `revise`: correct the body and re-verify once. A second `revise` on the
+  same point downgrades the issue to a reported finding and blocks creation.
+- Any `unverifiable` on a load-bearing claim: remove the claim or label it
+  explicitly as underived in a `Verification status` section.
+
+Record every verification outcome in the run report. Never create an issue whose
+review did not complete; report it as deferred instead.
+
 ## Phase 6 - Create and verify issues
 
 Before the first create, ensure these labels exist:
@@ -314,7 +392,13 @@ Write `<run-directory>\eve-client-upstream-radar.md` with:
 - Target main commit and declared eve baseline.
 - Upstream main commit and total delta size.
 - How many path candidates are not yet in a published eve release.
+- Every behavioral-evidence commit, the contract its changed tests encode, and
+  its parity result or explicit drop reason.
 - Every source cluster, classification, parity result, and evidence summary.
+- Every default-and-semantics audit result, including the resolved default
+  before and after and whether a .NET caller can restore the prior behavior.
+- Every independent verification outcome, including revisions applied and any
+  issue blocked or deferred by review.
 - Dedup matches.
 - Created issue URLs.
 - Cap-deferred candidates.
@@ -330,6 +414,7 @@ Print the inventory and report paths plus counts for:
 
 - upstream commits
 - path candidates
+- behavioral-evidence commits
 - confirmed gaps
 - already present
 - out of scope
@@ -337,6 +422,7 @@ Print the inventory and report paths plus counts for:
 - created
 - deduplicated
 - cap deferred
+- verification revisions and blocks
 
 ## Scheduled prompt
 
