@@ -1221,6 +1221,14 @@ final release for eve <code>0.29.x</code> and <code>0.30.x</code>.</p>
 <p><strong>The boundary is hard in both directions.</strong> A mismatched client and server complete the
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.</p>
+<div class="admonition success">
+<p class="admonition-title">eve 0.32.0 needs no migration</p>
+<p>eve <code>0.32.0</code> introduced no client-protocol break. Every session route is unchanged, the
+stream event vocabulary is identical, and only one file in the upstream client surface
+changed. A <code>0.31.x</code> deployment can move to <code>0.32.0</code> without touching this package, and
+this package treats <code>0.31.0</code> through <code>0.32.x</code> as one supported range. The only
+boundary remains eve <code>0.31.0</code>.</p>
+</div>
 <h2 id="why-a-single-smoke-test-will-not-catch-this">Why a single smoke test will not catch this<a class="headerlink" href="#why-a-single-smoke-test-will-not-catch-this" title="Permanent link">&para;</a></h2>
 <p>The client sends no protocol version. The only headers it sets are <code>authorization</code>,
 <code>content-type</code>, and the Vercel OIDC token header; the only query parameters are
@@ -1422,10 +1430,11 @@ combination can no longer be expressed in code.</p>
 <code>session_not_active</code>, available through <code>EveClientException.ErrorCode</code>.</p>
 <h2 id="how-these-results-were-produced">How these results were produced<a class="headerlink" href="#how-these-results-were-produced" title="Permanent link">&para;</a></h2>
 <p>The route matrix comes from the published <code>dist/src/protocol/routes.js</code> of eve <code>0.29.4</code>,
-<code>0.30.0</code>, <code>0.31.0</code>, and <code>0.31.3</code>.</p>
-<p>The behavior table comes from requests issued against real servers: the pinned eve
-<code>0.31.3</code> fixture in <code>test/fixtures/eve-agent</code>, and an eve <code>0.29.4</code> agent built from the
-same agent sources. Each cell records the status code and error body that server returned.</p>
+<code>0.30.0</code>, <code>0.31.0</code>, <code>0.31.3</code>, and <code>0.32.0</code>.</p>
+<p>The behavior table comes from requests issued against real servers: the pinned eve fixture
+in <code>test/fixtures/eve-agent</code>, and eve <code>0.29.4</code> and <code>0.32.0</code> agents built from the same
+agent sources. Each cell records the status code and error body that server returned. The
+<code>0.32.0</code> server returned the same status for every operation as <code>0.31.3</code>.</p>
 <p>The eve <code>0.30.x</code> row is the supported baseline for <code>0.1.0-alpha.3</code> and is stated from the
 route matrix rather than from an executed request.</p>
 
