@@ -11,6 +11,13 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
+!!! success "eve 0.32.0 needs no migration"
+    eve `0.32.0` introduced no client-protocol break. Every session route is unchanged, the
+    stream event vocabulary is identical, and only one file in the upstream client surface
+    changed. A `0.31.x` deployment can move to `0.32.0` without touching this package, and
+    this package treats `0.31.0` through `0.32.x` as one supported range. The only
+    boundary remains eve `0.31.0`.
+
 ## Why a single smoke test will not catch this
 
 The client sends no protocol version. The only headers it sets are `authorization`,
@@ -134,11 +141,12 @@ Reusing a retired session identifier returns HTTP 409 with the error code
 ## How these results were produced
 
 The route matrix comes from the published `dist/src/protocol/routes.js` of eve `0.29.4`,
-`0.30.0`, `0.31.0`, and `0.31.3`.
+`0.30.0`, `0.31.0`, `0.31.3`, and `0.32.0`.
 
-The behavior table comes from requests issued against real servers: the pinned eve
-`0.31.3` fixture in `test/fixtures/eve-agent`, and an eve `0.29.4` agent built from the
-same agent sources. Each cell records the status code and error body that server returned.
+The behavior table comes from requests issued against real servers: the pinned eve fixture
+in `test/fixtures/eve-agent`, and eve `0.29.4` and `0.32.0` agents built from the same
+agent sources. Each cell records the status code and error body that server returned. The
+`0.32.0` server returned the same status for every operation as `0.31.3`.
 
 The eve `0.30.x` row is the supported baseline for `0.1.0-alpha.3` and is stated from the
 route matrix rather than from an executed request.

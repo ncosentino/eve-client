@@ -8,8 +8,8 @@
     "test:client": "node run-client-probe.mjs"
   },
   "dependencies": {
-    "ai": "7.0.42",
-    "eve": "0.31.3",
+    "ai": "7.0.58",
+    "eve": "0.32.0",
     "just-bash": "3.1.0"
   },
   "engines": {
