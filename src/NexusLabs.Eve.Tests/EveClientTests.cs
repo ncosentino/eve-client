@@ -72,11 +72,128 @@ public sealed class EveClientTests
 
         await Assert.That(info.AgentName).IsEqualTo("Weather Agent");
         await Assert.That(info.ModelId).IsEqualTo("openai/gpt-5.5");
+        await Assert.That(info.ModelRouting)
+            .IsEqualTo(EveAgentModelRouting.Unknown)
+            .Because("eve reported no routing before 0.33.0.");
+        await Assert.That(info.RawModelRouting).IsNull();
         await Assert.That(info.Description).IsEqualTo("Answers weather questions.");
         await Assert.That(info.DevelopmentRoutesAvailable)
             .IsTrue()
             .Because("The agent advertises dev routes.");
         await Assert.That(info.Raw.GetProperty("extra").GetString()).IsEqualTo("preserved");
+    }
+
+    [Test]
+    [Arguments("gateway", EveAgentModelRouting.Gateway)]
+    [Arguments("external", EveAgentModelRouting.External)]
+    [Arguments("satellite", EveAgentModelRouting.Unknown)]
+    public async Task GetInfoAsync_AcceptsStaticModelRouting(
+        string rawRouting,
+        EveAgentModelRouting expected,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            $$"""
+            {
+              "kind": "eve-agent-info",
+              "version": 1,
+              "mode": "production",
+              "agent": {
+                "name": "Static Agent",
+                "model": {
+                  "id": "openai/gpt-5.5",
+                  "routing": { "kind": "{{rawRouting}}", "target": "openai/gpt-5.5" }
+                }
+              },
+              "capabilities": { "devRoutes": false }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveAgentInfo info = await client.GetInfoAsync(cancellationToken);
+
+        await Assert.That(info.ModelId).IsEqualTo("openai/gpt-5.5");
+        await Assert.That(info.ModelRouting).IsEqualTo(expected);
+        await Assert.That(info.RawModelRouting).IsEqualTo(rawRouting);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsDynamicModelWithoutIdentifier(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {
+              "kind": "eve-agent-info",
+              "version": 1,
+              "mode": "production",
+              "agent": {
+                "name": "Dynamic Agent",
+                "model": {
+                  "routing": { "kind": "dynamic" },
+                  "contextWindowTokens": 200000
+                }
+              },
+              "capabilities": { "devRoutes": false }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveAgentInfo info = await client.GetInfoAsync(cancellationToken);
+
+        await Assert.That(info.AgentName).IsEqualTo("Dynamic Agent");
+        await Assert.That(info.ModelId)
+            .IsNull()
+            .Because("eve 0.33.0 reports no identifier for a dynamic model.");
+        await Assert.That(info.ModelRouting).IsEqualTo(EveAgentModelRouting.Dynamic);
+        await Assert.That(info.RawModelRouting).IsEqualTo("dynamic");
+        await Assert.That(
+                info.Raw.GetProperty("agent").GetProperty("model")
+                    .GetProperty("contextWindowTokens").GetInt32())
+            .IsEqualTo(200000)
+            .Because("The complete model object stays available in Raw.");
+    }
+
+    [Test]
+    [Arguments(
+        """{ "id": "openai/gpt-5.5", "routing": { "kind": "dynamic" } }""",
+        "A dynamic model may not also report an identifier.")]
+    [Arguments(
+        """{ "routing": { "kind": "dynamic" }, "endpoint": { "kind": "external", "provider": "openai" } }""",
+        "A dynamic model may not also report an endpoint.")]
+    [Arguments(
+        """{ "routing": { "kind": "gateway", "target": "openai/gpt-5.5" } }""",
+        "A static model must report an identifier.")]
+    [Arguments("{ }", "A model with neither an identifier nor dynamic routing is invalid.")]
+    public async Task GetInfoAsync_RejectsContradictoryModelShapes(
+        string modelJson,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            $$"""
+            {
+              "kind": "eve-agent-info",
+              "version": 1,
+              "mode": "production",
+              "agent": { "name": "Hybrid Agent", "model": {{modelJson}} },
+              "capabilities": { "devRoutes": false }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        await Assert.That(async () => await client.GetInfoAsync(cancellationToken))
+            .Throws<EveProtocolException>()
+            .Because(reason);
     }
 
     [Test]

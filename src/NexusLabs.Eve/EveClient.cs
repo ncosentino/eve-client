@@ -579,7 +579,6 @@ public sealed class EveClient
             int version = RequireInt32(root, "version");
             string mode = RequireString(root, "mode");
             string agentName = RequireString(agent, "name");
-            string modelId = RequireString(model, "id");
             bool developmentRoutesAvailable = RequireBoolean(capabilities, "devRoutes");
 
             if (!string.Equals(kind, "eve-agent-info", StringComparison.Ordinal)
@@ -590,6 +589,9 @@ public sealed class EveClient
                     "The eve info route returned an unsupported agent-info payload.");
             }
 
+            (string? modelId, EveAgentModelRouting routing, string? rawRouting) =
+                ParseAgentModel(model);
+
             string? description = agent.TryGetProperty("description", out JsonElement descriptionValue)
                 && descriptionValue.ValueKind == JsonValueKind.String
                     ? descriptionValue.GetString()
@@ -597,6 +599,8 @@ public sealed class EveClient
             return new EveAgentInfo(
                 agentName,
                 modelId,
+                routing,
+                rawRouting,
                 mode,
                 version,
                 developmentRoutesAvailable,
@@ -609,6 +613,61 @@ public sealed class EveClient
                 "The eve info route returned invalid JSON.",
                 exception);
         }
+    }
+
+    // eve 0.33.0 replaced the concrete model object with a union: a static model carries an id
+    // and gateway or external routing, while a dynamic model reports only routing.kind
+    // "dynamic" and must not carry an id or endpoint. Routing was optional before 0.33.0, so an
+    // id alone stays valid and only an absent id requires the dynamic discriminator.
+    private static (string? ModelId, EveAgentModelRouting Routing, string? RawRouting)
+        ParseAgentModel(JsonElement model)
+    {
+        string? rawRouting = null;
+        if (model.TryGetProperty("routing", out JsonElement routing))
+        {
+            if (routing.ValueKind != JsonValueKind.Object)
+            {
+                throw new EveProtocolException(
+                    "The eve agent model routing must be an object.");
+            }
+
+            rawRouting = RequireString(routing, "kind");
+        }
+
+        EveAgentModelRouting projected = rawRouting switch
+        {
+            "gateway" => EveAgentModelRouting.Gateway,
+            "external" => EveAgentModelRouting.External,
+            "dynamic" => EveAgentModelRouting.Dynamic,
+            _ => EveAgentModelRouting.Unknown,
+        };
+        bool hasId = model.TryGetProperty("id", out _);
+
+        if (projected == EveAgentModelRouting.Dynamic)
+        {
+            if (hasId)
+            {
+                throw new EveProtocolException(
+                    "An eve dynamic agent model must not report a model identifier.");
+            }
+
+            if (model.TryGetProperty("endpoint", out _))
+            {
+                throw new EveProtocolException(
+                    "An eve dynamic agent model must not report a model endpoint.");
+            }
+
+            return (null, projected, rawRouting);
+        }
+
+        if (!hasId)
+        {
+            throw new EveProtocolException(
+                "The eve agent model is missing string property 'id' and did not report " +
+                "dynamic routing.");
+        }
+
+        return (RequireString(model, "id"), projected, rawRouting);
     }
 
     private static JsonElement RequireObject(JsonElement parent, string propertyName)

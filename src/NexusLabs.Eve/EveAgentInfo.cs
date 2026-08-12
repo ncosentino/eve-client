@@ -9,7 +9,9 @@ public sealed record EveAgentInfo
 {
     internal EveAgentInfo(
         string agentName,
-        string modelId,
+        string? modelId,
+        EveAgentModelRouting modelRouting,
+        string? rawModelRouting,
         string mode,
         int version,
         bool developmentRoutesAvailable,
@@ -18,6 +20,8 @@ public sealed record EveAgentInfo
     {
         AgentName = agentName;
         ModelId = modelId;
+        ModelRouting = modelRouting;
+        RawModelRouting = rawModelRouting;
         Mode = mode;
         Version = version;
         DevelopmentRoutesAvailable = developmentRoutesAvailable;
@@ -31,9 +35,27 @@ public sealed record EveAgentInfo
     public string AgentName { get; }
 
     /// <summary>
-    /// Gets the configured model identifier.
+    /// Gets the configured model identifier, or <see langword="null"/> when the agent selects
+    /// its model dynamically.
     /// </summary>
-    public string ModelId { get; }
+    /// <remarks>
+    /// eve <c>0.33.0</c> reports a dynamic model as
+    /// <see cref="EveAgentModelRouting.Dynamic"/> with no identifier, rather than through a
+    /// placeholder. This value is <see langword="null"/> exactly when
+    /// <see cref="ModelRouting"/> is <see cref="EveAgentModelRouting.Dynamic"/>.
+    /// </remarks>
+    public string? ModelId { get; }
+
+    /// <summary>
+    /// Gets how the agent resolves the model it calls.
+    /// </summary>
+    public EveAgentModelRouting ModelRouting { get; }
+
+    /// <summary>
+    /// Gets the routing kind exactly as the agent reported it, or <see langword="null"/> when
+    /// the agent reported no routing.
+    /// </summary>
+    public string? RawModelRouting { get; }
 
     /// <summary>
     /// Gets the runtime mode, either <c>development</c> or <c>production</c>.
