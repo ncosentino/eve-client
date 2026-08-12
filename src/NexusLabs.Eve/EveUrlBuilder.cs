@@ -9,9 +9,12 @@ internal static class EveUrlBuilder
         string routePath,
         IReadOnlyDictionary<string, string>? routeQuery = null)
     {
-        string normalizedRoute = routePath.StartsWith("/", StringComparison.Ordinal)
-            ? routePath
-            : $"/{routePath}";
+        string[] routeParts = routePath.Split('?', 2);
+        string routeWithoutQuery = routeParts[0];
+        string embeddedQuery = routeParts.Length == 2 ? routeParts[1] : string.Empty;
+        string normalizedRoute = routeWithoutQuery.StartsWith("/", StringComparison.Ordinal)
+            ? routeWithoutQuery
+            : $"/{routeWithoutQuery}";
 
         if (IsAbsoluteUrl(host)
             && Uri.TryCreate(host, UriKind.Absolute, out Uri? absoluteHost))
@@ -21,7 +24,9 @@ internal static class EveUrlBuilder
                 Path = $"{TrimTrailingSlash(absoluteHost.AbsolutePath)}{normalizedRoute}",
                 Fragment = string.Empty,
             };
-            builder.Query = FormatQuery(MergeQuery(ParseQuery(absoluteHost.Query), routeQuery));
+            List<KeyValuePair<string, string>> absoluteQuery = ParseQuery(absoluteHost.Query);
+            absoluteQuery.AddRange(ParseQuery(embeddedQuery));
+            builder.Query = FormatQuery(MergeQuery(absoluteQuery, routeQuery));
             return builder.Uri;
         }
 
@@ -30,6 +35,7 @@ internal static class EveUrlBuilder
         string basePath = TrimTrailingSlash(parts[0]);
         List<KeyValuePair<string, string>> query = ParseQuery(
             parts.Length == 2 ? parts[1] : string.Empty);
+        query.AddRange(ParseQuery(embeddedQuery));
         string formattedQuery = FormatQuery(MergeQuery(query, routeQuery));
         return new Uri($"{basePath}{normalizedRoute}{PrefixQuery(formattedQuery)}", UriKind.Relative);
     }

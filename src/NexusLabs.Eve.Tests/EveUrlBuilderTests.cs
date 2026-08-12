@@ -39,4 +39,65 @@ public sealed class EveUrlBuilderTests
 
         await Assert.That(uri.OriginalString).IsEqualTo("/eve/v1/health");
     }
+
+    [Test]
+    public async Task Create_PreservesEmbeddedRouteQueryForAbsoluteHost()
+    {
+        Uri uri = EveUrlBuilder.Create(
+            "https://agent.example.com",
+            "/eve/v1/callback/tok_1?code=ok&state=xyz");
+
+        await Assert.That(uri.ToString()).IsEqualTo(
+            "https://agent.example.com/eve/v1/callback/tok_1?code=ok&state=xyz");
+    }
+
+    [Test]
+    public async Task Create_PreservesEmbeddedRouteQueryForRelativeProxyPrefix()
+    {
+        Uri uri = EveUrlBuilder.Create("/api", "/eve/v1/callback/tok_1?code=ok");
+
+        await Assert.That(uri.OriginalString).IsEqualTo(
+            "/api/eve/v1/callback/tok_1?code=ok");
+    }
+
+    [Test]
+    public async Task Create_MergesHostQueryAheadOfEmbeddedRouteQuery()
+    {
+        Uri uri = EveUrlBuilder.Create(
+            "https://agent.example.com/api?token=secret",
+            "/eve/v1/callback/tok_1?code=ok");
+
+        await Assert.That(uri.ToString()).IsEqualTo(
+            "https://agent.example.com/api/eve/v1/callback/tok_1?token=secret&code=ok");
+    }
+
+    [Test]
+    public async Task Create_ExplicitQueryReplacesEmbeddedRouteQuery()
+    {
+        Uri uri = EveUrlBuilder.Create(
+            "https://agent.example.com",
+            "/eve/v1/callback/tok_1?code=embedded&state=xyz",
+            new Dictionary<string, string>
+            {
+                ["code"] = "explicit",
+            });
+
+        await Assert.That(uri.ToString()).IsEqualTo(
+            "https://agent.example.com/eve/v1/callback/tok_1?code=explicit&state=xyz");
+    }
+
+    [Test]
+    public async Task Create_ExplicitQueryReplacesEmbeddedRouteQueryForRelativeProxyPrefix()
+    {
+        Uri uri = EveUrlBuilder.Create(
+            "/api",
+            "/eve/v1/session/session_1/stream?startIndex=0",
+            new Dictionary<string, string>
+            {
+                ["startIndex"] = "7",
+            });
+
+        await Assert.That(uri.OriginalString).IsEqualTo(
+            "/api/eve/v1/session/session_1/stream?startIndex=7");
+    }
 }
