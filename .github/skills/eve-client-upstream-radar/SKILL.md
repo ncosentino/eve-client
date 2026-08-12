@@ -100,7 +100,9 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
    its inventory/report paths and counts, then finish immediately. The
    deterministic script has already written the complete report; do not read
    the full skill, fetch PR bodies, inspect diffs, or rewrite the report.
-   Neither status is possible while `BehavioralEvidenceCount` is nonzero.
+   Behavioral evidence shares the fingerprint scheme, so an evidence commit
+   that already has a tracking issue stops the run as cheaply as a tracked path
+   candidate. Only untracked work reaches `AnalysisRequired`.
 7. If `preflight.Status` is `AnalysisRequired`, continue with
    `preflight.InventoryPath`.
 8. Path filtering is only the first signal for remaining work. Review every
