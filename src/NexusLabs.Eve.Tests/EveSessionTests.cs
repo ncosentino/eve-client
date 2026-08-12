@@ -204,6 +204,135 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    [Arguments(EveTurnPolicy.Queue, "queue")]
+    [Arguments(EveTurnPolicy.Steer, "steer")]
+    public async Task SendAsync_SendsTurnPolicyOnExistingSession(
+        EveTurnPolicy turnPolicy,
+        string expected,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await session.SendAsync(
+            EveMessageContent.FromText("Steer me"),
+            new EveTurnOptions { TurnPolicy = turnPolicy },
+            cancellationToken);
+
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(body.RootElement.GetProperty("turnPolicy").GetString())
+            .IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task SendAsync_OmitsTurnPolicyWhenUnspecified(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await session.SendAsync("No policy", cancellationToken);
+
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(body.RootElement.TryGetProperty("turnPolicy", out _))
+            .IsFalse()
+            .Because("eve applies its own default when the client sends no policy.");
+    }
+
+    [Test]
+    public async Task SendAsync_OmitsTurnPolicyWhenCreatingSession(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        await session.SendAsync(
+            EveMessageContent.FromText("First"),
+            new EveTurnOptions { TurnPolicy = EveTurnPolicy.Queue },
+            cancellationToken);
+
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session");
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(body.RootElement.TryGetProperty("turnPolicy", out _))
+            .IsFalse()
+            .Because("A creating turn has no active turn to steer.");
+    }
+
+    [Test]
+    public async Task SendAsync_SendsTurnPolicyOnSecondTurnOfCreatedSession(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        EveSession session = CreateClient(transport, 1024).CreateSession();
+        EveTurnOptions options = new() { TurnPolicy = EveTurnPolicy.Queue };
+
+        EveMessageResponse first = await session.SendAsync(
+            EveMessageContent.FromText("First"),
+            options,
+            cancellationToken);
+        await first.GetOutcomeAsync(cancellationToken);
+        await session.SendAsync(
+            EveMessageContent.FromText("Second"),
+            options,
+            cancellationToken);
+
+        using JsonDocument created = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(created.RootElement.TryGetProperty("turnPolicy", out _)).IsFalse();
+        using JsonDocument continued = JsonDocument.Parse(handler.Calls[2].Body!);
+        await Assert.That(continued.RootElement.GetProperty("turnPolicy").GetString())
+            .IsEqualTo("queue")
+            .Because("The same options object continues an existing session on the second turn.");
+    }
+
+    [Test]
+    public async Task RespondAsync_OmitsTurnPolicy(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await session.RespondAsync(
+            [new EveInputResponse("approval_1", "approve")],
+            new EveTurnOptions { TurnPolicy = EveTurnPolicy.Steer },
+            cancellationToken);
+
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(body.RootElement.TryGetProperty("turnPolicy", out _))
+            .IsFalse()
+            .Because("A pure input response carries no message to steer with.");
+    }
+
+    [Test]
+    public async Task SendAsync_RejectsUndefinedTurnPolicy(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await Assert.That(async () => await session.SendAsync(
+                EveMessageContent.FromText("Bad policy"),
+                new EveTurnOptions { TurnPolicy = (EveTurnPolicy)99 },
+                cancellationToken))
+            .Throws<ArgumentException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task RequestHeadersProvider_ScopesBootstrapHeaderByRequestKind(
         CancellationToken cancellationToken)
     {

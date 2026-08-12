@@ -42,4 +42,15 @@ public sealed record EveTurnOptions
     /// Gets the reconnect policy for this turn's event stream.
     /// </summary>
     public EveStreamReconnectPolicy? StreamReconnectPolicy { get; init; }
+
+    /// <summary>
+    /// Gets how eve handles this message when the session already has an active turn.
+    /// </summary>
+    /// <remarks>
+    /// This applies only to a message sent to an existing session. It is omitted when the turn
+    /// creates the session, because a new session has no active turn, and when the turn carries
+    /// only input responses, matching the upstream client. Leaving this unset sends no policy, so
+    /// eve <c>0.33.0</c> and later steer the active turn.
+    /// </remarks>
+    public EveTurnPolicy? TurnPolicy { get; init; }
 }

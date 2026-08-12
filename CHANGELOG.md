@@ -16,6 +16,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   unchanged, the stream event vocabulary is identical, and `url.js` is the only file in
   the upstream client surface that changed. No consumer action is required beyond running
   a `0.32.0` agent if desired.
+- **eve `0.33.0` changes the default meaning of an overlapping send.** A message that
+  reaches a session with an active turn now cancels and replaces that turn instead of
+  waiting for it. The request format did not change, so nothing fails loudly. Set
+  `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to restore the earlier behavior.
+
+### Added
+
+- `EveTurnOptions.TurnPolicy` selects how eve handles a message sent to a session that
+  already has an active turn. `EveTurnPolicy.Queue` waits for the active turn and
+  `EveTurnPolicy.Steer` replaces it. The field is serialized only for a message
+  continuing an existing session, and is omitted when creating a session and when a turn
+  carries only input responses, matching the upstream client.
 
 ### Fixed
 

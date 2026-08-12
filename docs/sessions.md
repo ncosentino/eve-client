@@ -43,6 +43,30 @@ EveSession resumed = client.AttachSession(sessionId);
 EveSession rewound = client.AttachSession(sessionId, streamIndex: 12);
 ```
 
+## Overlapping sends
+
+A message that reaches a session which already has an active turn is governed by
+a delivery policy. eve `0.33.0` changed the server-side default from waiting to
+steering, so an overlapping send now cancels the active turn and replaces it.
+
+!!! warning "eve 0.33.0 steers by default"
+    Sending no policy means eve `0.33.0` and later cancel the active turn. Set
+    `TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier
+    wait-for-completion behavior. Nothing fails loudly, because the request
+    format did not change.
+
+```csharp
+EveMessageResponse response = await session.SendAsync(
+    EveMessageContent.FromText("Actually, summarize it instead."),
+    new EveTurnOptions { TurnPolicy = EveTurnPolicy.Queue },
+    cancellationToken);
+```
+
+The policy is sent only for a message continuing an existing session. It is
+omitted when the turn creates the session, because a new session has no active
+turn, and when the turn carries only input responses. Awaiting each turn before
+sending the next one never overlaps, so sequential callers are unaffected.
+
 ## Clear session context
 
 !!! note "Control operations require identifier-addressed routes"

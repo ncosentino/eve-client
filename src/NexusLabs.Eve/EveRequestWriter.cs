@@ -7,7 +7,8 @@ internal static class EveRequestWriter
 {
     internal static byte[] WriteMessageTurn(
         EveMessageContent message,
-        EveTurnOptions? options)
+        EveTurnOptions? options,
+        bool existingSession)
     {
         ArgumentNullException.ThrowIfNull(message);
         ValidateOptions(options);
@@ -18,7 +19,10 @@ internal static class EveRequestWriter
                 writer.WritePropertyName("message");
                 message.Json.WriteTo(writer);
             },
-            options);
+            options,
+            // eve accepts a delivery policy only for a message sent to an existing session. A
+            // creating turn has no active turn to steer, and an input response carries no message.
+            existingSession ? options?.TurnPolicy : null);
     }
 
     internal static byte[] WriteResponseTurn(
@@ -58,7 +62,8 @@ internal static class EveRequestWriter
 
                 writer.WriteEndArray();
             },
-            options);
+            options,
+            null);
     }
 
     internal static byte[] WriteCancel(string turnId)
@@ -76,7 +81,10 @@ internal static class EveRequestWriter
 
     // Only the caller's chosen payload is serialized, so eve 0.31.0's rejection of a body
     // carrying both message and inputResponses cannot be triggered by this client.
-    private static byte[] Write(Action<Utf8JsonWriter> writePayload, EveTurnOptions? options)
+    private static byte[] Write(
+        Action<Utf8JsonWriter> writePayload,
+        EveTurnOptions? options,
+        EveTurnPolicy? turnPolicy)
     {
         ArrayBufferWriter<byte> buffer = new();
         using (Utf8JsonWriter writer = new(buffer))
@@ -96,11 +104,27 @@ internal static class EveRequestWriter
                 outputSchema.WriteTo(writer);
             }
 
+            if (turnPolicy is EveTurnPolicy policy)
+            {
+                writer.WriteString("turnPolicy", ToWireValue(policy));
+            }
+
             writer.WriteEndObject();
         }
 
         return buffer.WrittenSpan.ToArray();
     }
+
+    private static string ToWireValue(EveTurnPolicy turnPolicy) =>
+        turnPolicy switch
+        {
+            EveTurnPolicy.Queue => "queue",
+            EveTurnPolicy.Steer => "steer",
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(turnPolicy),
+                turnPolicy,
+                "The eve turn policy is not a defined value."),
+        };
 
     private static void ValidateOptions(EveTurnOptions? options)
     {
@@ -109,6 +133,14 @@ internal static class EveRequestWriter
         {
             throw new ArgumentException(
                 "The eve output schema must be a JSON object.",
+                nameof(options));
+        }
+
+        if (options?.TurnPolicy is EveTurnPolicy turnPolicy
+            && turnPolicy is not (EveTurnPolicy.Queue or EveTurnPolicy.Steer))
+        {
+            throw new ArgumentException(
+                "The eve turn policy is not a defined value.",
                 nameof(options));
         }
     }
