@@ -33,6 +33,18 @@ detail.>
 the exact paths and symbols searched when the capability is absent. Explain
 why raw JSON or an existing abstraction does not already provide parity.>
 
+## Verification status
+
+<Required. Separate what was read from source from what was inferred.>
+
+- **Verified from committed source:** <what was read, and at which revisions>
+- **Not executed:** <any behavior asserted but never run, and what would prove
+  it; write "None" when everything asserted was executed>
+
+<When the change alters a default, also state the resolved default before and
+after, cite the terminating constant, and say whether a .NET caller can restore
+the previous behavior today.>
+
 ## Acceptance criteria
 
 - [ ] The externally observable upstream behavior is represented by an

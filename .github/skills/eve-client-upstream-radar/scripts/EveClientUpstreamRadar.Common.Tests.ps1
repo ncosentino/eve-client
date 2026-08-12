@@ -235,6 +235,42 @@ Describe 'Eve client upstream radar helpers' {
             Should -BeFalse
     }
 
+    It 'treats an excluded reducer test as behavioral evidence' {
+        Test-EveRadarBehavioralEvidencePath `
+            -Path 'packages/eve/src/client/message-reducer.test.ts' |
+            Should -BeTrue
+    }
+
+    It 'does not treat an excluded reducer implementation as behavioral evidence' {
+        @(
+            'packages/eve/src/client/message-reducer.ts',
+            'packages/eve/src/client/eve-agent-store.ts',
+            'packages/eve/src/client/message-reducer-types.ts'
+        ) | ForEach-Object {
+            Test-EveRadarBehavioralEvidencePath -Path $_ | Should -BeFalse
+        }
+    }
+
+    It 'does not treat a tracked client test as behavioral evidence' {
+        Test-EveRadarBehavioralEvidencePath `
+            -Path 'packages/eve/src/client/session.test.ts' |
+            Should -BeFalse
+    }
+
+    It 'returns behavioral evidence paths for a modified reducer test' {
+        $file = ConvertFrom-EveRadarNameStatusLine `
+            -Line "M`tpackages/eve/src/client/message-reducer.test.ts"
+        @(Get-EveRadarBehavioralEvidencePaths -File $file) |
+            Should -Be @('packages/eve/src/client/message-reducer.test.ts')
+    }
+
+    It 'returns no behavioral evidence paths for an unrelated file' {
+        $file = ConvertFrom-EveRadarNameStatusLine `
+            -Line "M`tpackages/eve/src/client/session.ts"
+        @(Get-EveRadarBehavioralEvidencePaths -File $file).Count |
+            Should -Be 0
+    }
+
     It 'maps stream files to the streaming subsystem' {
         Get-EveRadarScopeHint `
             -Path 'packages/eve/src/client/open-stream.ts' |
