@@ -371,6 +371,56 @@ function Test-EveRadarExplicitlyExcludedPath {
         '(eve-agent-store|message-reducer(?:-types)?|reducer)(?:\.test)?\.ts$')
 }
 
+function Test-EveRadarBehavioralEvidencePath {
+    <#
+    .SYNOPSIS
+    Identifies an excluded client file whose tests still encode a framework-neutral contract.
+
+    .DESCRIPTION
+    The reducer and store implementations are TypeScript-only UI helpers this package never
+    ports, so they stay out of Test-EveRadarTrackedPath. Their test files are different: they
+    assert the order and interleaving of durable stream events, which is protocol behavior the
+    .NET client must interpret correctly. Such a path never makes a commit a port candidate on
+    its own, but it must never be silently dropped either.
+
+    Missing this distinction is why upstream PR 1868 was discarded with no candidate paths even
+    though it changed the contract that an input request stays answerable across a later turn.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path
+    )
+
+    $normalized = $Path.Replace('\', '/')
+    if (-not (Test-EveRadarExplicitlyExcludedPath -Path $normalized)) {
+        return $false
+    }
+
+    return $normalized -match '\.test\.ts$'
+}
+
+function Get-EveRadarBehavioralEvidencePaths {
+    <#
+    .SYNOPSIS
+    Returns every behavioral-evidence path represented by one git file record.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [psobject] $File
+    )
+
+    return @(
+        @($File.PreviousPath, $File.Path) |
+            Where-Object {
+                -not [string]::IsNullOrWhiteSpace($_) -and
+                (Test-EveRadarBehavioralEvidencePath -Path $_)
+            } |
+            Sort-Object -Unique
+    )
+}
+
 function Test-EveRadarTrackedPath {
     <#
     .SYNOPSIS

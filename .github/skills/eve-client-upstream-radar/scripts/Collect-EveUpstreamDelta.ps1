@@ -345,6 +345,11 @@ $commits = foreach ($sha in $commitShas) {
             ForEach-Object { Get-EveRadarScopeHint -Path $_ } |
             Sort-Object -Unique
     )
+    $behavioralEvidencePaths = @(
+        $files |
+            ForEach-Object { Get-EveRadarBehavioralEvidencePaths -File $_ } |
+            Sort-Object -Unique
+    )
     $pullRequestNumber = Get-EveRadarPullRequestNumber -Subject $subject
     $shaKey = $sha.Trim().ToLowerInvariant()
     $releasedInVersion = if ($releaseVersionByCommit.ContainsKey($shaKey)) {
@@ -368,14 +373,16 @@ $commits = foreach ($sha in $commitShas) {
         CommitUrl = "https://github.com/$UpstreamRepository/commit/$sha"
         ReleasedInVersion = $releasedInVersion
         CandidateByPath = @($relevantFiles).Count -gt 0
+        BehavioralEvidenceByPath = @($behavioralEvidencePaths).Count -gt 0
         ScopeHints = $scopeHints
         RelevantPaths = $relevantPaths
+        BehavioralEvidencePaths = $behavioralEvidencePaths
         Files = $files
     }
 }
 
 $result = [pscustomobject]@{
-    SchemaVersion = 3
+    SchemaVersion = 4
     GeneratedAt = [DateTimeOffset]::UtcNow.ToString('o')
     Target = [pscustomobject]@{
         Repository = $TargetRepository
@@ -399,6 +406,9 @@ $result = [pscustomobject]@{
         UnreleasedPathCandidateCount = @(
             $commits |
                 Where-Object { $_.CandidateByPath -and $null -eq $_.ReleasedInVersion }).Count
+        BehavioralEvidenceCount = @(
+            $commits |
+                Where-Object { $_.BehavioralEvidenceByPath -and -not $_.CandidateByPath }).Count
     }
     Commits = @($commits)
 }

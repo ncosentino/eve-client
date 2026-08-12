@@ -68,6 +68,14 @@ $candidateCommits = @(
         Where-Object CandidateByPath
 )
 $candidateCount = $candidateCommits.Count
+# A commit whose only client-directory footprint is an excluded implementation's test file is
+# never a port candidate, but its tests still encode durable stream ordering. Surface it for
+# analysis instead of discarding it with the implementation.
+$evidenceCommits = @(
+    $inventory.Commits |
+        Where-Object { $_.BehavioralEvidenceByPath -and -not $_.CandidateByPath }
+)
+$evidenceCount = $evidenceCommits.Count
 $sourceCandidates = @(
     $candidateCommits |
         ForEach-Object {
@@ -132,10 +140,10 @@ $trackedCandidates = @(
 )
 $untrackedCandidateCount = $sourceCandidates.Count - $trackedCandidates.Count
 $reportPath = $null
-$status = if ($candidateCount -eq 0) {
+$status = if ($candidateCount -eq 0 -and $evidenceCount -eq 0) {
     'NoCandidates'
 }
-elseif ($untrackedCandidateCount -eq 0) {
+elseif ($untrackedCandidateCount -eq 0 -and $evidenceCount -eq 0) {
     'NoUntrackedCandidates'
 }
 else {
@@ -185,9 +193,14 @@ if ($status -ne 'AnalysisRequired') {
         }
         $shortSha = $commit.Sha.Substring(0, 12)
         $subject = $commit.Subject.Replace('|', '\|')
+        $reason = if ($commit.BehavioralEvidenceByPath) {
+            'Behavioral evidence only; reviewed without a tracked port path'
+        }
+        else {
+            'No tracked client or protocol path changed'
+        }
         $lines.Add(
-            "| [$shortSha]($($commit.CommitUrl)) | $subject | " +
-            'No tracked client or protocol path changed |')
+            "| [$shortSha]($($commit.CommitUrl)) | $subject | $reason |")
     }
     if ($trackedCandidates.Count -gt 0) {
         $lines.Add('')
@@ -209,6 +222,7 @@ if ($status -ne 'AnalysisRequired') {
     $lines.Add('|---|---:|')
     $lines.Add("| Upstream commits | $($inventory.Delta.CommitCount) |")
     $lines.Add("| Path candidates | $candidateCount |")
+    $lines.Add("| Behavioral-evidence commits | $evidenceCount |")
     $lines.Add(
         '| Path candidates not yet in a published eve release | ' +
         "$($inventory.Delta.UnreleasedPathCandidateCount) |")
@@ -229,7 +243,7 @@ if ($status -ne 'AnalysisRequired') {
 
 $preflightPath = Join-Path $runDirectory 'preflight.json'
 $result = [pscustomobject]@{
-    SchemaVersion = 2
+    SchemaVersion = 3
     Status = $status
     RunDirectory = [System.IO.Path]::GetFullPath($runDirectory)
     InventoryPath = [System.IO.Path]::GetFullPath($inventoryPath)
@@ -246,6 +260,21 @@ $result = [pscustomobject]@{
     UpstreamHeadCommit = $inventory.Upstream.HeadCommit
     UpstreamCommitCount = [int] $inventory.Delta.CommitCount
     PathCandidateCount = $candidateCount
+    BehavioralEvidenceCount = $evidenceCount
+    BehavioralEvidenceCommits = @(
+        $evidenceCommits |
+            ForEach-Object {
+                [pscustomobject]@{
+                    Sha = $_.Sha
+                    Subject = $_.Subject
+                    PullRequestNumber = $_.PullRequestNumber
+                    PullRequestUrl = $_.PullRequestUrl
+                    CommitUrl = $_.CommitUrl
+                    ReleasedInVersion = $_.ReleasedInVersion
+                    BehavioralEvidencePaths = $_.BehavioralEvidencePaths
+                }
+            }
+    )
     UnreleasedPathCandidateCount = [int] $inventory.Delta.UnreleasedPathCandidateCount
     SourceCandidateCount = $sourceCandidates.Count
     TrackedCandidateCount = $trackedCandidates.Count
