@@ -7,6 +7,29 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.32.x`, message-stream protocol `21`. The
+  compatibility target moved to eve `0.32.0`; `EveProtocol.MinimumEveVersion` still
+  declares `0.31.0` as the floor.
+- **eve `0.32.0` is not a breaking release for this package.** Every session route is
+  unchanged, the stream event vocabulary is identical, and `url.js` is the only file in
+  the upstream client surface that changed. No consumer action is required beyond running
+  a `0.32.0` agent if desired.
+
+### Fixed
+
+- Query strings embedded in a route path are preserved as URL search parameters instead of
+  being percent-encoded into the path for an absolute host, or producing a second query
+  delimiter for a relative host. Explicit parameters replace same-named embedded ones,
+  matching eve `0.32.0`. No route this client constructs carries an embedded query, so the
+  defect was unreachable through the public API.
+
+### Changed
+
+- The compatibility reference moved to eve `0.32.0`. The pinned CI fixture runs that
+  release, which also raises its `ai` peer dependency to `7.0.58`.
+
 ## [0.1.0-alpha.4] - 2026-08-09
 
 ### Compatibility
