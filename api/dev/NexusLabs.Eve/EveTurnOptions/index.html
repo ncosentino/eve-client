@@ -1112,6 +1112,18 @@ Never populate this collection directly from untrusted inbound headers.</p>
 </code></pre></div>
 <h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
 <p><a href="../EveStreamReconnectPolicy/" title="NexusLabs.Eve.EveStreamReconnectPolicy">EveStreamReconnectPolicy</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.TurnPolicy'></a></p>
+<h2 id="eveturnoptionsturnpolicy-property">EveTurnOptions.TurnPolicy Property<a class="headerlink" href="#eveturnoptionsturnpolicy-property" title="Permanent link">&para;</a></h2>
+<p>Gets how eve handles this message when the session already has an active turn.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveTurnPolicy</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TurnPolicy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="../EveTurnPolicy/" title="NexusLabs.Eve.EveTurnPolicy">EveTurnPolicy</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>This applies only to a message sent to an existing session. It is omitted when the turn
+creates the session, because a new session has no active turn, and when the turn carries
+only input responses, matching the upstream client. Leaving this unset sends no policy, so
+eve <code>0.33.0</code> and later steer the active turn.</p>
 
 
 

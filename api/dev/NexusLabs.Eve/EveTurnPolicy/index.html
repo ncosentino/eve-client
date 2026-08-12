@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/NexusLabs.Eve/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnPolicy/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>NexusLabs.Eve - NexusLabs.Eve</title>
+        <title>EveTurnPolicy - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="NexusLabs.Eve – NexusLabs.Eve" />
+  <meta property="og:title" content="EveTurnPolicy – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/NexusLabs.Eve/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnPolicy/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="NexusLabs.Eve – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveTurnPolicy – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -89,7 +89,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#nexuslabseve-namespace" class="md-skip">
+        <a href="#nexuslabseve" class="md-skip">
           Skip to content
         </a>
       
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              NexusLabs.Eve
+              EveTurnPolicy
             
           </span>
         </div>
@@ -1057,221 +1057,25 @@
   
 
 
-  <h1>NexusLabs.Eve</h1>
+  <h1>EveTurnPolicy</h1>
 
-<h2 id="nexuslabseve-namespace">NexusLabs.Eve Namespace<a class="headerlink" href="#nexuslabseve-namespace" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Classes</th>
-<th style="text-align: left;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><a href="../EveAgentInfo/" title="NexusLabs.Eve.EveAgentInfo">EveAgentInfo</a></td>
-<td style="text-align: left;">Exposes validated identity fields and the complete raw payload from <code>/eve/v1/info</code>.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveBasicAuthentication/" title="NexusLabs.Eve.EveBasicAuthentication">EveBasicAuthentication</a></td>
-<td style="text-align: left;">Supplies HTTP Basic credentials for eve requests.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveBearerAuthentication/" title="NexusLabs.Eve.EveBearerAuthentication">EveBearerAuthentication</a></td>
-<td style="text-align: left;">Supplies a bearer token for eve requests.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveCancellationOutcome/" title="NexusLabs.Eve.EveCancellationOutcome">EveCancellationOutcome</a></td>
-<td style="text-align: left;">Carries the successful response from an eve turn-cancellation request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClearOutcome/" title="NexusLabs.Eve.EveClearOutcome">EveClearOutcome</a></td>
-<td style="text-align: left;">Carries the successful response from an eve session-context clear request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClient/" title="NexusLabs.Eve.EveClient">EveClient</a></td>
-<td style="text-align: left;">Calls the stable HTTP routes exposed by one deployed eve agent.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClientContext/" title="NexusLabs.Eve.EveClientContext">EveClientContext</a></td>
-<td style="text-align: left;">Wraps ephemeral context supplied to one eve model call.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a></td>
-<td style="text-align: left;">Represents a non-successful HTTP response returned by an eve route.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClientOptions/" title="NexusLabs.Eve.EveClientOptions">EveClientOptions</a></td>
-<td style="text-align: left;">Configures an <a href="../EveClient/" title="NexusLabs.Eve.EveClient">EveClient</a> for one eve deployment.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveCompactOutcome/" title="NexusLabs.Eve.EveCompactOutcome">EveCompactOutcome</a></td>
-<td style="text-align: left;">Carries the successful response from an eve session-compaction request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveContentPart/" title="NexusLabs.Eve.EveContentPart">EveContentPart</a></td>
-<td style="text-align: left;">Wraps one AI SDK-compatible user-content part.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveHealthStatus/" title="NexusLabs.Eve.EveHealthStatus">EveHealthStatus</a></td>
-<td style="text-align: left;">Describes a ready eve deployment.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveInputOption/" title="NexusLabs.Eve.EveInputOption">EveInputOption</a></td>
-<td style="text-align: left;">Describes one selectable answer to an eve human-input request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveInputRequest/" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a></td>
-<td style="text-align: left;">Describes a question or approval that must be answered before an eve turn can continue.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveInputResponse/" title="NexusLabs.Eve.EveInputResponse">EveInputResponse</a></td>
-<td style="text-align: left;">Resolves one human-input request emitted by an eve session.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveMessageContent/" title="NexusLabs.Eve.EveMessageContent">EveMessageContent</a></td>
-<td style="text-align: left;">Wraps either a plain text message or an AI SDK-compatible user-content array.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveMessageResponse/" title="NexusLabs.Eve.EveMessageResponse">EveMessageResponse</a></td>
-<td style="text-align: left;">Exposes accepted turn metadata and its single-use event stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveProtocol/" title="NexusLabs.Eve.EveProtocol">EveProtocol</a></td>
-<td style="text-align: left;">Identifies the eve protocol revision implemented by this package.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a></td>
-<td style="text-align: left;">Represents a successful HTTP response that does not satisfy the eve protocol contract.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveRawRequestOptions/" title="NexusLabs.Eve.EveRawRequestOptions">EveRawRequestOptions</a></td>
-<td style="text-align: left;">Configures one caller-owned request sent through <a href="../EveClient/#NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,NexusLabs.Eve.EveRawRequestOptions,System.Threading.CancellationToken)" title="NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage, NexusLabs.Eve.EveRawRequestOptions, System.Threading.CancellationToken)">SendRawAsync(HttpRequestMessage, EveRawRequestOptions, CancellationToken)</a>.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveResetOutcome/" title="NexusLabs.Eve.EveResetOutcome">EveResetOutcome</a></td>
-<td style="text-align: left;">Carries the successful response from an eve session-reset request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveRetryPolicy/" title="NexusLabs.Eve.EveRetryPolicy">EveRetryPolicy</a></td>
-<td style="text-align: left;">Overrides retry and backoff settings for one stream reconnect phase.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a></td>
-<td style="text-align: left;">Tracks one eve conversation's immutable session identifier and stream cursor.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveSessionState/" title="NexusLabs.Eve.EveSessionState">EveSessionState</a></td>
-<td style="text-align: left;">Stores the serializable cursor required to resume an eve conversation and stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a></td>
-<td style="text-align: left;">Represents one event from an eve durable NDJSON session stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamEventDeduplicator/" title="NexusLabs.Eve.EveStreamEventDeduplicator">EveStreamEventDeduplicator</a></td>
-<td style="text-align: left;">Tracks which durable eve stream events have already been consumed.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamEventMetadata/" title="NexusLabs.Eve.EveStreamEventMetadata">EveStreamEventMetadata</a></td>
-<td style="text-align: left;">Carries durable metadata stamped onto an eve stream event.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamOptions/" title="NexusLabs.Eve.EveStreamOptions">EveStreamOptions</a></td>
-<td style="text-align: left;">Configures attachment to an existing eve session stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamReconnectPolicy/" title="NexusLabs.Eve.EveStreamReconnectPolicy">EveStreamReconnectPolicy</a></td>
-<td style="text-align: left;">Configures automatic reconnection for a durable eve event stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveTurnOptions/" title="NexusLabs.Eve.EveTurnOptions">EveTurnOptions</a></td>
-<td style="text-align: left;">Carries the settings shared by sending a message and responding to human input.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveTurnOutcome/" title="NexusLabs.Eve.EveTurnOutcome">EveTurnOutcome</a></td>
-<td style="text-align: left;">Aggregates the events and terminal values observed for one eve turn.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveVercelOidcAuthentication/" title="NexusLabs.Eve.EveVercelOidcAuthentication">EveVercelOidcAuthentication</a></td>
-<td style="text-align: left;">Supplies one Vercel OIDC token as both bearer and trusted-identity headers.</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Structs</th>
-<th style="text-align: left;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><a href="../EveHttpRequestContext/" title="NexusLabs.Eve.EveHttpRequestContext">EveHttpRequestContext</a></td>
-<td style="text-align: left;">Describes one HTTP request before dynamic eve headers are resolved.</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Interfaces</th>
-<th style="text-align: left;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><a href="../IEveAuthentication/" title="NexusLabs.Eve.IEveAuthentication">IEveAuthentication</a></td>
-<td style="text-align: left;">Resolves authentication headers for an eve request.</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Enums</th>
-<th style="text-align: left;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><a href="../EveCancellationStatus/" title="NexusLabs.Eve.EveCancellationStatus">EveCancellationStatus</a></td>
-<td style="text-align: left;">Describes the successful outcome of a cooperative eve turn-cancellation request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveClearStatus/" title="NexusLabs.Eve.EveClearStatus">EveClearStatus</a></td>
-<td style="text-align: left;">Describes the successful outcome of an eve session-context clear request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveCompactStatus/" title="NexusLabs.Eve.EveCompactStatus">EveCompactStatus</a></td>
-<td style="text-align: left;">Describes the successful outcome of an eve session-compaction request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveInputRequestKind/" title="NexusLabs.Eve.EveInputRequestKind">EveInputRequestKind</a></td>
-<td style="text-align: left;">Identifies the framework-owned source of an eve human-input request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveRequestKind/" title="NexusLabs.Eve.EveRequestKind">EveRequestKind</a></td>
-<td style="text-align: left;">Identifies the eve HTTP operation for which request headers are being resolved. Additional members may be added as the upstream client gains routes.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveResetStatus/" title="NexusLabs.Eve.EveResetStatus">EveResetStatus</a></td>
-<td style="text-align: left;">Describes the successful outcome of an eve session-reset request.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveStreamEventKind/" title="NexusLabs.Eve.EveStreamEventKind">EveStreamEventKind</a></td>
-<td style="text-align: left;">Identifies a known event in the eve durable message stream.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveTurnPolicy/" title="NexusLabs.Eve.EveTurnPolicy">EveTurnPolicy</a></td>
-<td style="text-align: left;">Selects how eve handles a message sent to a session that already has an active turn.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><a href="../EveTurnStatus/" title="NexusLabs.Eve.EveTurnStatus">EveTurnStatus</a></td>
-<td style="text-align: left;">Describes how an eve turn ended.</td>
-</tr>
-</tbody>
-</table>
+<h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
+<h2 id="eveturnpolicy-enum">EveTurnPolicy Enum<a class="headerlink" href="#eveturnpolicy-enum" title="Permanent link">&para;</a></h2>
+<p>Selects how eve handles a message sent to a session that already has an active turn.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="n">EveTurnPolicy</span>
+</code></pre></div>
+<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveTurnPolicy.Queue'></a></p>
+<p><code>Queue</code> 0</p>
+<p>Waits for the active turn to finish before the new message runs.</p>
+<p><a name='NexusLabs.Eve.EveTurnPolicy.Steer'></a></p>
+<p><code>Steer</code> 1</p>
+<p>Cancels the active turn and replaces it with the new message after eve durably
+buffers that message.</p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>eve <code>0.33.0</code> made <a href="./#NexusLabs.Eve.EveTurnPolicy.Steer" title="NexusLabs.Eve.EveTurnPolicy.Steer">Steer</a> the server-side default. A client that sends no
+policy therefore steers. Send <a href="./#NexusLabs.Eve.EveTurnPolicy.Queue" title="NexusLabs.Eve.EveTurnPolicy.Queue">Queue</a> to keep the wait-for-completion behavior
+that eve applied before <code>0.33.0</code>.</p>
 
 
 
