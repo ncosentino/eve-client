@@ -70,6 +70,12 @@ public sealed class EveSession
     /// eve <c>0.31.0</c> requires a turn to carry either a message or input responses, never
     /// both. Resolve pending human input with
     /// <see cref="RespondAsync(IReadOnlyList{EveInputResponse}, EveTurnOptions, CancellationToken)"/>.
+    /// <para>
+    /// When this message reaches a session that already has an active turn, eve <c>0.33.0</c> and
+    /// later cancel and replace that turn unless
+    /// <see cref="EveTurnOptions.TurnPolicy"/> is <see cref="EveTurnPolicy.Queue"/>. The policy is
+    /// sent only for a message continuing an existing session.
+    /// </para>
     /// </remarks>
     /// <param name="message">The user message.</param>
     /// <param name="options">Optional per-turn settings.</param>
@@ -82,7 +88,10 @@ public sealed class EveSession
     {
         ArgumentNullException.ThrowIfNull(message);
         return PostTurnRequestAsync(
-            EveRequestWriter.WriteMessageTurn(message, options),
+            state => EveRequestWriter.WriteMessageTurn(
+                message,
+                options,
+                state.SessionId is not null),
             options,
             false,
             cancellationToken);
@@ -129,19 +138,20 @@ public sealed class EveSession
         }
 
         return PostTurnRequestAsync(
-            EveRequestWriter.WriteResponseTurn(inputResponses, options),
+            _ => EveRequestWriter.WriteResponseTurn(inputResponses, options),
             options,
             true,
             cancellationToken);
     }
 
     private async Task<EveMessageResponse> PostTurnRequestAsync(
-        byte[] body,
+        Func<EveSessionState, byte[]> createBody,
         EveTurnOptions? options,
         bool mustDeliver,
         CancellationToken cancellationToken)
     {
         EveSessionState initialState = State;
+        byte[] body = createBody(initialState);
         AcceptedTurn acceptedTurn = await PostTurnAsync(
             options,
             mustDeliver,
