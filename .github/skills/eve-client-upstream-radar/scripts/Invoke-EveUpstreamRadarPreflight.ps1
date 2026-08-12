@@ -77,7 +77,7 @@ $evidenceCommits = @(
 )
 $evidenceCount = $evidenceCommits.Count
 $sourceCandidates = @(
-    $candidateCommits |
+    @($candidateCommits) + @($evidenceCommits) |
         ForEach-Object {
             $identity = if ($null -eq $_.PullRequestNumber) {
                 "eve-client-upstream:commit:$($_.Sha)"
@@ -138,12 +138,15 @@ $trackedCandidates = @(
         }
     }
 )
+# Behavioral evidence shares the fingerprint scheme, so an evidence commit that already has a
+# tracking issue must stop the run as cheaply as a tracked path candidate. Only untracked work
+# justifies the full analysis pass.
 $untrackedCandidateCount = $sourceCandidates.Count - $trackedCandidates.Count
 $reportPath = $null
 $status = if ($candidateCount -eq 0 -and $evidenceCount -eq 0) {
     'NoCandidates'
 }
-elseif ($untrackedCandidateCount -eq 0 -and $evidenceCount -eq 0) {
+elseif ($untrackedCandidateCount -eq 0) {
     'NoUntrackedCandidates'
 }
 else {
