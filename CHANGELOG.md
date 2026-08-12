@@ -29,6 +29,21 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   continuing an existing session, and is omitted when creating a session and when a turn
   carries only input responses, matching the upstream client.
 
+- `EveAgentInfo.ModelRouting` and `EveAgentInfo.RawModelRouting` report how an agent
+  resolves the model it calls. Agents older than eve `0.33.0` report no routing and
+  therefore project `EveAgentModelRouting.Unknown`.
+
+### Changed
+
+- **Breaking:** `EveAgentInfo.ModelId` is now nullable. It is `null` exactly when
+  `ModelRouting` is `EveAgentModelRouting.Dynamic`. eve `0.33.0` reports a dynamically
+  selected model through `routing.kind` with no identifier instead of a placeholder, and
+  agent inspection previously failed on such a payload before `Raw` became reachable.
+  Consumers that read `ModelId` into a non-nullable `string` will see a nullable warning
+  and should handle the dynamic case.
+- The compatibility reference moved to eve `0.32.0`. The pinned CI fixture runs that
+  release, which also raises its `ai` peer dependency to `7.0.58`.
+
 ### Fixed
 
 - Query strings embedded in a route path are preserved as URL search parameters instead of
@@ -36,11 +51,6 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   delimiter for a relative host. Explicit parameters replace same-named embedded ones,
   matching eve `0.32.0`. No route this client constructs carries an embedded query, so the
   defect was unreachable through the public API.
-
-### Changed
-
-- The compatibility reference moved to eve `0.32.0`. The pinned CI fixture runs that
-  release, which also raises its `ai` peer dependency to `7.0.58`.
 
 ## [0.1.0-alpha.4] - 2026-08-09
 

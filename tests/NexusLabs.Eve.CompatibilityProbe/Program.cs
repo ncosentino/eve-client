@@ -25,11 +25,24 @@ if (!health.Ok || !string.Equals(health.Status, "ready", StringComparison.Ordina
 }
 
 EveAgentInfo info = await client.GetInfoAsync(timeout.Token);
-if (string.IsNullOrWhiteSpace(info.AgentName)
-    || string.IsNullOrWhiteSpace(info.ModelId)
-    || info.Version != 1)
+if (string.IsNullOrWhiteSpace(info.AgentName) || info.Version != 1)
 {
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
+}
+
+// A dynamic model reports no identifier from eve 0.33.0 onward, so require one only when the
+// agent reports concrete routing.
+if (info.ModelRouting == EveAgentModelRouting.Dynamic)
+{
+    if (info.ModelId is not null)
+    {
+        throw new InvalidOperationException(
+            "The Eve fixture reported a dynamic model with a model identifier.");
+    }
+}
+else if (string.IsNullOrWhiteSpace(info.ModelId))
+{
+    throw new InvalidOperationException("The Eve fixture returned no model identifier.");
 }
 
 EveSession textSession = client.CreateSession();
