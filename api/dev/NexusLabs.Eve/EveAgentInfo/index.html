@@ -1097,24 +1097,45 @@
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <p><a name='NexusLabs.Eve.EveAgentInfo.ModelId'></a></p>
 <h2 id="eveagentinfomodelid-property">EveAgentInfo.ModelId Property<a class="headerlink" href="#eveagentinfomodelid-property" title="Permanent link">&para;</a></h2>
-<p>Gets the configured model identifier.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ModelId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<p>Gets the configured model identifier, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when the agent selects
+its model dynamically.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">ModelId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>eve <code>0.33.0</code> reports a dynamic model as
+<a href="../EveAgentModelRouting/#NexusLabs.Eve.EveAgentModelRouting.Dynamic" title="NexusLabs.Eve.EveAgentModelRouting.Dynamic">Dynamic</a> with no identifier, rather than through a
+placeholder. This value is <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> exactly when
+<a href="./#NexusLabs.Eve.EveAgentInfo.ModelRouting" title="NexusLabs.Eve.EveAgentInfo.ModelRouting">ModelRouting</a> is <a href="../EveAgentModelRouting/#NexusLabs.Eve.EveAgentModelRouting.Dynamic" title="NexusLabs.Eve.EveAgentModelRouting.Dynamic">Dynamic</a>.</p>
+<p><a name='NexusLabs.Eve.EveAgentInfo.ModelRouting'></a></p>
+<h2 id="eveagentinfomodelrouting-property">EveAgentInfo.ModelRouting Property<a class="headerlink" href="#eveagentinfomodelrouting-property" title="Permanent link">&para;</a></h2>
+<p>Gets how the agent resolves the model it calls.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveAgentModelRouting</span><span class="w"> </span><span class="n">ModelRouting</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
+<p><a href="../EveAgentModelRouting/" title="NexusLabs.Eve.EveAgentModelRouting">EveAgentModelRouting</a></p>
 <p><a name='NexusLabs.Eve.EveAgentInfo.Raw'></a></p>
 <h2 id="eveagentinforaw-property">EveAgentInfo.Raw Property<a class="headerlink" href="#eveagentinforaw-property" title="Permanent link">&para;</a></h2>
 <p>Gets the complete agent-info JSON payload for fields not projected by this version.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="w"> </span><span class="n">Raw</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="w"> </span><span class="n">Raw</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a></p>
+<p><a name='NexusLabs.Eve.EveAgentInfo.RawModelRouting'></a></p>
+<h2 id="eveagentinforawmodelrouting-property">EveAgentInfo.RawModelRouting Property<a class="headerlink" href="#eveagentinforawmodelrouting-property" title="Permanent link">&para;</a></h2>
+<p>Gets the routing kind exactly as the agent reported it, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when
+the agent reported no routing.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">RawModelRouting</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_7">Property Value<a class="headerlink" href="#property-value_7" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <p><a name='NexusLabs.Eve.EveAgentInfo.Version'></a></p>
 <h2 id="eveagentinfoversion-property">EveAgentInfo.Version Property<a class="headerlink" href="#eveagentinfoversion-property" title="Permanent link">&para;</a></h2>
 <p>Gets the agent-info payload schema version.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_8">Property Value<a class="headerlink" href="#property-value_8" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a></p>
 
 
