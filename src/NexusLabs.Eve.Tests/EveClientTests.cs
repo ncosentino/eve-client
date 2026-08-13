@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace NexusLabs.Eve.Tests;
 
@@ -194,6 +195,111 @@ public sealed class EveClientTests
         await Assert.That(async () => await client.GetInfoAsync(cancellationToken))
             .Throws<EveProtocolException>()
             .Because(reason);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionTwoWithRoleAwareInstructions(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {
+              "kind": "eve-agent-info",
+              "version": 2,
+              "mode": "production",
+              "agent": {
+                "name": "Role Aware Agent",
+                "model": { "id": "openai/gpt-5.5" }
+              },
+              "capabilities": { "devRoutes": false },
+              "instructions": {
+                "dynamic": [],
+                "static": [
+                  { "name": "base", "logicalPath": "a.md", "sourceKind": "file",
+                    "content": "Be terse.", "role": "system" },
+                  { "name": "extra", "logicalPath": "b.md", "sourceKind": "file",
+                    "content": "Ask first.", "role": "user" }
+                ]
+              }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveAgentInfo info = await client.GetInfoAsync(cancellationToken);
+
+        await Assert.That(info.Version)
+            .IsEqualTo(2)
+            .Because("eve 0.35.0 raised the agent-info schema version.");
+        await Assert.That(info.AgentName).IsEqualTo("Role Aware Agent");
+        JsonElement instructions = info.Raw
+            .GetProperty("instructions")
+            .GetProperty("static");
+        await Assert.That(instructions.GetArrayLength())
+            .IsEqualTo(2)
+            .Because("Static instructions became a list.");
+        await Assert.That(instructions[0].GetProperty("role").GetString()).IsEqualTo("system");
+        await Assert.That(instructions[1].GetProperty("content").GetString())
+            .IsEqualTo("Ask first.");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionOne(CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {
+              "kind": "eve-agent-info",
+              "version": 1,
+              "mode": "production",
+              "agent": { "name": "Legacy Agent", "model": { "id": "openai/gpt-5.5" } },
+              "capabilities": { "devRoutes": false },
+              "instructions": { "dynamic": [], "static": { "name": "base", "markdown": "Hi." } }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveAgentInfo info = await client.GetInfoAsync(cancellationToken);
+
+        await Assert.That(info.Version)
+            .IsEqualTo(1)
+            .Because("Agents older than eve 0.35.0 stay supported.");
+        await Assert.That(
+                info.Raw.GetProperty("instructions").GetProperty("static")
+                    .GetProperty("markdown").GetString())
+            .IsEqualTo("Hi.");
+    }
+
+    [Test]
+    [Arguments(0)]
+    [Arguments(3)]
+    public async Task GetInfoAsync_RejectsUnsupportedSchemaVersion(
+        int version,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            $$"""
+            {
+              "kind": "eve-agent-info",
+              "version": {{version}},
+              "mode": "production",
+              "agent": { "name": "Future Agent", "model": { "id": "openai/gpt-5.5" } },
+              "capabilities": { "devRoutes": false }
+            }
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        await Assert.That(async () => await client.GetInfoAsync(cancellationToken))
+            .Throws<EveProtocolException>()
+            .Because("An unknown schema version must not be parsed optimistically.");
     }
 
     [Test]

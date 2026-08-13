@@ -27,6 +27,18 @@ public static class EveProtocol
     public const string MessageStreamVersion = "21";
 
     /// <summary>
+    /// Gets the agent-info payload schema versions this package understands.
+    /// </summary>
+    /// <remarks>
+    /// eve raised the schema to <c>2</c> in <c>0.35.0</c>, where static instructions became a
+    /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role. Both
+    /// versions expose the identity fields this package projects, and the complete payload of
+    /// either remains available through <see cref="EveAgentInfo.Raw"/>. A version outside this
+    /// set is rejected rather than parsed optimistically.
+    /// </remarks>
+    public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2];
+
+    /// <summary>
     /// Gets the media type returned by eve session streams.
     /// </summary>
     public const string MessageStreamContentType = "application/x-ndjson";

@@ -582,7 +582,7 @@ public sealed class EveClient
             bool developmentRoutesAvailable = RequireBoolean(capabilities, "devRoutes");
 
             if (!string.Equals(kind, "eve-agent-info", StringComparison.Ordinal)
-                || version != 1
+                || !EveProtocol.SupportedAgentInfoVersions.Contains(version)
                 || mode is not "development" and not "production")
             {
                 throw new EveProtocolException(
