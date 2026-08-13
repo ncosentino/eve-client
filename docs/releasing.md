@@ -9,6 +9,9 @@ The complete maintainer checklist is in
 
 Releases require:
 
+- A declared compatibility baseline that already covers every eve release whose
+  parity work has merged. Advance `EveProtocol.ReferenceEveVersion` and the
+  pinned fixture together, before preparing the release.
 - A clean `main` branch matching `origin/main`.
 - Successful CI for the exact release commit.
 - A matching NBGV version, semantic version tag, and changelog section.

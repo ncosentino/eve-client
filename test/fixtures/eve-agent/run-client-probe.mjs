@@ -69,7 +69,7 @@ try {
   if (process.env.EVE_PROBE_NO_BUILD === "1") {
     probeArgs.push("--no-build");
   }
-  probeArgs.push("--", baseUrl);
+  probeArgs.push("--", baseUrl, eveVersion);
 
   const probe = spawn(
     "dotnet",

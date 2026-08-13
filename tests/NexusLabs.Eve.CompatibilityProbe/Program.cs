@@ -4,9 +4,23 @@ using System.Net;
 using NexusLabs.Eve;
 using NexusLabs.Eve.CompatibilityProbe;
 
-if (args.Length != 1 || !Uri.TryCreate(args[0], UriKind.Absolute, out Uri? baseUri))
+if (args.Length != 2 || !Uri.TryCreate(args[0], UriKind.Absolute, out Uri? baseUri))
 {
-    throw new ArgumentException("Expected one absolute Eve base URL argument.", nameof(args));
+    throw new ArgumentException(
+        "Expected an absolute Eve base URL and the running Eve version.",
+        nameof(args));
+}
+
+// The version is read from the installed package by the fixture runner, so this compares the
+// package's declared compatibility claim against the server the probe actually exercised.
+// Interpolating the constant into a success message would report the claim, not verify it.
+string runningEveVersion = args[1].Trim();
+if (!string.Equals(runningEveVersion, EveProtocol.ReferenceEveVersion, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        $"The probe ran against eve {runningEveVersion} but " +
+        $"EveProtocol.ReferenceEveVersion declares {EveProtocol.ReferenceEveVersion}. " +
+        "Advance the fixture and the declared reference together.");
 }
 
 using CancellationTokenSource timeout = new(TimeSpan.FromMinutes(2));
