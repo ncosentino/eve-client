@@ -11,19 +11,20 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0, 0.33.x, and 0.34.0 need no migration"
+!!! success "eve 0.32.0 through 0.35.0 need no migration"
     None of these releases broke the client protocol. Every session route is unchanged
-    across `0.31.0` through `0.34.0`, and the stream event vocabulary only grew: `0.34.0`
-    added `approval.candidate` and `approval.settled`, and removed nothing. A `0.31.x`
-    deployment can move anywhere in that range without changing this package, and this
-    package treats `0.31.0` through `0.34.x` as one supported range. The only hard
-    boundary remains eve `0.31.0`.
+    across `0.31.0` through `0.35.0`. The stream event vocabulary only grew: `0.34.0`
+    added `approval.candidate` and `approval.settled`, `0.35.0` added none and removed
+    none. A `0.31.x` deployment can move anywhere in that range without changing this
+    package, and this package treats `0.31.0` through `0.35.x` as one supported range.
+    The only hard boundary remains eve `0.31.0`.
 
-    One behavior did change without breaking the wire format. From eve `0.33.0`, a
-    message that arrives while a turn is active cancels and replaces that turn instead of
-    waiting for it. Set `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the
-    earlier behavior. Sequential callers that await each turn are unaffected, and an
-    agent older than `0.33.0` ignores the field while already queueing.
+    Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
+    that arrives while a turn is active cancels and replaces that turn instead of waiting
+    for it; set `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier
+    behavior. From eve `0.35.0`, agent inspection returns schema version `2`; use
+    `0.1.0-alpha.6` or newer, because earlier releases of this package reject it and
+    `GetInfoAsync` throws. Sessions and streaming are unaffected on either side.
 
 ## Why a single smoke test will not catch this
 

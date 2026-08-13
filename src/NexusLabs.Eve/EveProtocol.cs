@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.34.0";
+    public const string ReferenceEveVersion = "0.35.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -24,7 +24,13 @@ public static class EveProtocol
     /// <summary>
     /// Gets the durable message-stream protocol version used by the reference client.
     /// </summary>
-    public const string MessageStreamVersion = "21";
+    /// <remarks>
+    /// This mirrors upstream's <c>EVE_MESSAGE_STREAM_VERSION</c> in
+    /// <c>packages/eve/src/protocol/message.ts</c>. Read that constant when advancing the
+    /// baseline; the value does not follow from whether the event vocabulary changed. eve
+    /// <c>0.35.0</c> raised it to <c>22</c> while adding no event type and removing none.
+    /// </remarks>
+    public const string MessageStreamVersion = "22";
 
     /// <summary>
     /// Gets the agent-info payload schema versions this package understands.
