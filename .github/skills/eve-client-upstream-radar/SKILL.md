@@ -51,8 +51,10 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
   eve-client main.
 - Never file an "investigate whether this applies" issue. Insufficient evidence
   is a drop with a report reason.
-- Never edit, commit, push, merge, release, close, or delete anything in either
-  repository.
+- The permitted GitHub writes are exactly: creating an issue, creating a label,
+  and the parity escalation in Phase 6b. Never edit an issue body or title,
+  never close or reopen an issue, and never commit, push, merge, release, or
+  delete anything in either repository.
 - Never advance the eve compatibility version or fixture.
 - Stop GitHub writes on the first failure and report completed versus pending
   actions.
@@ -415,6 +417,45 @@ gh issue create --repo ncosentino/eve-client `
 After each create, verify the issue body and labels with `gh issue view`. Stop
 the batch on the first failed create or verification.
 
+## Phase 6b - Escalate a contradicted open issue
+
+Dedup skips a source identity that already has an open issue. When the parity
+audit for that same identity concludes `already-present`, the open issue is
+asking for work the client already does. Left alone it stays open, and an
+autonomous implementation agent will build against it.
+
+Escalate only in that exact case:
+
+- Parity result is `already-present`, **and**
+- an issue carrying that fingerprint is **open**, **and**
+- no prior escalation comment exists for that fingerprint on that issue.
+
+Then:
+
+1. Ensure the `needs-parity-review` label exists, creating it if absent.
+2. Post exactly one comment stating the parity result, the upstream source
+   commit, `inventory.Target.Commit`, and the concrete evidence for
+   `already-present`. Say plainly that a human must confirm before closing.
+3. Apply `needs-parity-review`.
+4. Record the escalation in the run report.
+
+```powershell
+gh issue comment <number> --repo ncosentino/eve-client --body-file <body-path>
+gh issue edit <number> --repo ncosentino/eve-client --add-label needs-parity-review
+```
+
+Never escalate on any other parity result, never escalate a closed issue, and
+never comment twice for the same fingerprint on the same issue. Detect a prior
+escalation by searching that issue's comments for the fingerprint, which every
+escalation comment must contain.
+
+Never close, reopen, retitle, or edit the body of the contradicted issue. The
+radar states a finding; a human decides. Treat a failed comment or label write
+like any other write failure: stop and report completed versus pending actions.
+
+The reverse case, where an open issue claims a gap the audit confirms, needs no
+escalation. Dedup already skips it.
+
 ## Phase 7 - Run report
 
 Write `<run-directory>\eve-client-upstream-radar.md` with:
@@ -430,6 +471,7 @@ Write `<run-directory>\eve-client-upstream-radar.md` with:
 - Every independent verification outcome, including revisions applied and any
   issue blocked or deferred by review.
 - Every dismissal recorded to radar state, with its decision and reason.
+- Every parity escalation, with the issue number and the contradicted claim.
 - Dedup matches.
 - Created issue URLs.
 - Cap-deferred candidates.
@@ -455,6 +497,7 @@ Print the inventory and report paths plus counts for:
 - deduplicated
 - cap deferred
 - verification revisions and blocks
+- parity escalations
 
 ## Scheduled prompt
 
