@@ -327,8 +327,62 @@ Describe 'Eve client upstream radar helpers' {
             Should -BeNullOrEmpty
     }
 
-    It 'computes the stable upstream source fingerprint' {
-        Get-EveRadarFingerprint `
+    It 'orders bare eve versions' {
+        Compare-EveRadarVersion -Left '0.34.0' -Right '0.33.0' | Should -Be 1
+        Compare-EveRadarVersion -Left '0.33.0' -Right '0.34.0' | Should -Be -1
+        Compare-EveRadarVersion -Left '0.34.0' -Right '0.34.0' | Should -Be 0
+        Compare-EveRadarVersion -Left '0.9.0' -Right '0.10.0' | Should -Be -1
+        Compare-EveRadarVersion -Left '0.34.0-rc.1' -Right '0.34.0' |
+            Should -Be -1 -Because 'A prerelease precedes its release.'
+    }
+
+    It 'rejects a version it cannot compare' {
+        { Compare-EveRadarVersion -Left 'latest' -Right '0.34.0' } |
+            Should -Throw '*Cannot compare eve versions*'
+    }
+
+    It 'reports the highest fully covered release' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+            [pscustomobject]@{ Version = '0.33.0'; Resolved = $true },
+            [pscustomobject]@{ Version = '0.34.0'; Resolved = $true }
+        ) | Should -Be '0.34.0'
+    }
+
+    It 'stops at the earliest release that still has open work' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+            [pscustomobject]@{ Version = '0.33.0'; Resolved = $true },
+            [pscustomobject]@{ Version = '0.34.0'; Resolved = $false },
+            [pscustomobject]@{ Version = '0.35.0'; Resolved = $true }
+        ) |
+            Should -Be '0.33.0' `
+                -Because 'A later resolved release cannot count while an earlier one is open.'
+    }
+
+    It 'does not cover a release when one of its candidates is unresolved' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+            [pscustomobject]@{ Version = '0.33.0'; Resolved = $true },
+            [pscustomobject]@{ Version = '0.33.0'; Resolved = $false }
+        ) |
+            Should -BeNullOrEmpty `
+                -Because 'Every candidate belonging to a release must be resolved.'
+    }
+
+    It 'returns nothing when the earliest release has open work' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+            [pscustomobject]@{ Version = '0.33.0'; Resolved = $false }
+        ) | Should -BeNullOrEmpty
+    }
+
+    It 'ignores candidates that are not in a published release' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+            [pscustomobject]@{ Version = '0.34.0'; Resolved = $true },
+            [pscustomobject]@{ Version = $null; Resolved = $false }
+        ) |
+            Should -Be '0.34.0' `
+                -Because 'An unreleased upstream-main change cannot gate a published baseline.'
+    }
+
+    It 'computes the stable upstream source fingerprint' {        Get-EveRadarFingerprint `
             -SourceIdentity 'eve-client-upstream:pr:1219' |
             Should -Be 'aee12bc2b31d'
     }

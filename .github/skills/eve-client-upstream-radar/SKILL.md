@@ -96,6 +96,11 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
      footprint is the test file of an implementation this package never ports.
      Those tests assert durable stream ordering, so they are protocol evidence
      even though the implementation beside them is out of scope.
+   - Reports how far parity has actually been carried, as
+     `ImplementedThroughEveVersion` and `BaselineBehindImplementedParity`. A
+     published eve release counts as covered only when every candidate belonging
+     to it and to every earlier release is resolved, so one open candidate for an
+     earlier release holds the line back.
 
 5. If preflight collection fails, stop without creating issues.
 6. If `preflight.Status` is `NoCandidates` or `NoUntrackedCandidates`, print
@@ -116,6 +121,24 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
    contract exactly like any other candidate. Such a commit may only be dropped
    with a stated reason; it must never be discarded merely because it changed no
    tracked path.
+10. Report `BaselineBehindImplementedParity` whenever it is true, on every
+    status including the cheap ones. It means the package already implements a
+    newer eve release than it declares, which misleads consumers and cannot be
+    corrected once published. Never file an issue for it and never change the
+    declared version: this is a maintainer signal, and advancing the baseline is
+    a release decision made in the target repository.
+
+## Compute what a decision needs
+
+The radar produces the inputs to recurring maintainer decisions. When those
+inputs are already in hand, compute and report the answer instead of leaving it
+to be re-derived by whoever reads the run later. Baseline coverage is the worked
+example: the released version of every candidate and the state of its tracking
+issue were both present for months, while the question they answer was settled by
+hand at release time.
+
+Apply the same test to any new signal: if answering a question requires only data
+the run already holds, the run should state the answer and its evidence.
 
 ## Phase 1 - Resolve merged pull requests
 
@@ -461,6 +484,8 @@ escalation. Dedup already skips it.
 Write `<run-directory>\eve-client-upstream-radar.md` with:
 
 - Target main commit and declared eve baseline.
+- How far parity has been carried, and an explicit warning when the declared
+  reference lags it.
 - Upstream main commit and total delta size.
 - How many path candidates are not yet in a published eve release.
 - Every behavioral-evidence commit, the contract its changed tests encode, and
@@ -489,6 +514,7 @@ Print the inventory and report paths plus counts for:
 - path candidates
 - behavioral-evidence commits
 - previously dismissed
+- parity covered through, and whether the declared reference lags it
 - confirmed gaps
 - already present
 - out of scope
