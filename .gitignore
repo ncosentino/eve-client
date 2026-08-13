@@ -35,6 +35,9 @@ logs/
 .github/instructions/genesis/
 .claude/rules/generated/genesis/
 
+# Claude rules compiled from .github/instructions are derived artifacts
+.claude/rules/generated/
+
 # Test results
 TestResults/
 
