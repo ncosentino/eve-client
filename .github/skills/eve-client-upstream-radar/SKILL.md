@@ -276,10 +276,38 @@ Decision:
 | Open pull request | Skip as in progress |
 | Closed issue, any reason | Skip forever for this immutable upstream change |
 | Merged pull request / parity already present | Skip as implemented |
+| Recorded dismissal in radar state | Skip as already decided |
 | No match | Eligible to create |
 
 Never re-file the same upstream PR because an earlier issue was closed. A later
 upstream fix has a new PR or commit identity and therefore a new fingerprint.
+
+### Record every dismissal
+
+A candidate that becomes an issue is remembered by its fingerprint. A candidate
+that is analyzed and dismissed leaves no trace, so without a durable record it is
+re-analyzed on every later run until the baseline advances past it.
+
+Immediately after finalizing an `out-of-scope` or `already-present` result, record
+it:
+
+```powershell
+& (Join-Path $skillDir 'scripts\Record-EveRadarDismissal.ps1') `
+    -SourceIdentity '<immutable-source-identity>' `
+    -Decision '<out-of-scope|already-present>' `
+    -TargetCommit $inventory.Target.Commit `
+    -UpstreamHead $inventory.Upstream.HeadCommit `
+    -Reason '<one sentence>'
+```
+
+Only those two results may be recorded. A `gap-confirmed` result belongs in an
+issue, and `insufficient-evidence` must be revisited on the next run rather than
+cached.
+
+`out-of-scope` is a property of the immutable upstream commit alone.
+`already-present` is that commit judged against eve-client at one target commit,
+which is why the target commit is stored. Re-examine cached decisions with
+`Invoke-EveUpstreamRadarPreflight.ps1 -RecheckDismissals`.
 
 ## Phase 4 - Rank and cap
 
@@ -401,6 +429,7 @@ Write `<run-directory>\eve-client-upstream-radar.md` with:
   before and after and whether a .NET caller can restore the prior behavior.
 - Every independent verification outcome, including revisions applied and any
   issue blocked or deferred by review.
+- Every dismissal recorded to radar state, with its decision and reason.
 - Dedup matches.
 - Created issue URLs.
 - Cap-deferred candidates.
@@ -417,6 +446,7 @@ Print the inventory and report paths plus counts for:
 - upstream commits
 - path candidates
 - behavioral-evidence commits
+- previously dismissed
 - confirmed gaps
 - already present
 - out of scope
