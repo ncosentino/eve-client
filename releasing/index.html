@@ -1079,6 +1079,9 @@
 <a href="https://github.com/ncosentino/eve-client/blob/main/RELEASING.md"><code>RELEASING.md</code></a>.</p>
 <p>Releases require:</p>
 <ul>
+<li>A declared compatibility baseline that already covers every eve release whose
+  parity work has merged. Advance <code>EveProtocol.ReferenceEveVersion</code> and the
+  pinned fixture together, before preparing the release.</li>
 <li>A clean <code>main</code> branch matching <code>origin/main</code>.</li>
 <li>Successful CI for the exact release commit.</li>
 <li>A matching NBGV version, semantic version tag, and changelog section.</li>
