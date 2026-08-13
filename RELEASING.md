@@ -46,6 +46,22 @@ Cloudflare. GitHub Pages remains the fallback and archive source.
 
 ## Prepare a release
 
+First confirm the declared compatibility baseline still describes what the
+package implements:
+
+- If parity work for a newer eve release has merged since the last baseline
+  advance, advance `EveProtocol.ReferenceEveVersion` and the pinned fixture
+  first, in their own pull request.
+- Never cut a release whose declared reference is older than the protocol the
+  package actually sends and interprets. A published compatibility claim cannot
+  be corrected.
+- Before declaring a newer reference, confirm the range is non-breaking: session
+  routes unchanged, stream event vocabulary additive with nothing removed, and
+  the live probe green against that release.
+
+The compatibility probe fails when the declared reference and the installed
+fixture disagree, so the two always move together.
+
 ```powershell
 git checkout main
 git pull
