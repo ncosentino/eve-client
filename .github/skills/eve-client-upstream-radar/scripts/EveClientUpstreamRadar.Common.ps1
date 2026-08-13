@@ -419,6 +419,141 @@ function Get-EveRadarOrderedReleaseTags {
                 Prerelease)
 }
 
+function ConvertTo-EveRadarSemanticVersion {
+    <#
+    .SYNOPSIS
+    Parses a bare eve version into comparable parts, or returns null.
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $Version
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        return $null
+    }
+
+    $match = [regex]::Match(
+        $Version.Trim(),
+        '^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>[0-9A-Za-z.-]+))?$')
+    if (-not $match.Success) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        Version = $Version.Trim()
+        Major = [int] $match.Groups['major'].Value
+        Minor = [int] $match.Groups['minor'].Value
+        Patch = [int] $match.Groups['patch'].Value
+        Prerelease = if ($match.Groups['prerelease'].Success) {
+            $match.Groups['prerelease'].Value
+        }
+        else {
+            $null
+        }
+    }
+}
+
+function Compare-EveRadarVersion {
+    <#
+    .SYNOPSIS
+    Orders two bare eve versions, returning -1, 0, or 1. A prerelease sorts before its release.
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $Left,
+        [string] $Right
+    )
+
+    $leftVersion = ConvertTo-EveRadarSemanticVersion -Version $Left
+    $rightVersion = ConvertTo-EveRadarSemanticVersion -Version $Right
+    if ($null -eq $leftVersion -or $null -eq $rightVersion) {
+        throw "Cannot compare eve versions '$Left' and '$Right'."
+    }
+
+    foreach ($part in 'Major', 'Minor', 'Patch') {
+        if ($leftVersion.$part -ne $rightVersion.$part) {
+            return [Math]::Sign($leftVersion.$part - $rightVersion.$part)
+        }
+    }
+
+    if ($null -eq $leftVersion.Prerelease -and $null -eq $rightVersion.Prerelease) {
+        return 0
+    }
+
+    if ($null -eq $leftVersion.Prerelease) {
+        return 1
+    }
+
+    if ($null -eq $rightVersion.Prerelease) {
+        return -1
+    }
+
+    return [Math]::Sign(
+        [string]::CompareOrdinal($leftVersion.Prerelease, $rightVersion.Prerelease))
+}
+
+function Get-EveRadarImplementedThroughVersion {
+    <#
+    .SYNOPSIS
+    Returns the highest published eve release with no unresolved candidate at or below it.
+
+    .DESCRIPTION
+    Answers the question a release has to ask: how far has parity actually been carried?
+    A release is only fully covered when every candidate belonging to it and to every earlier
+    release is resolved, so the highest resolved version alone is not the answer. One open
+    candidate for an earlier release holds the whole line back.
+
+    Each record needs a Version and a Resolved flag. Returns null when the earliest release in
+    the delta still has unresolved work.
+    #>
+    [CmdletBinding()]
+    param(
+        [psobject[]] $Candidate
+    )
+
+    $released = @(
+        $Candidate |
+            Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace($_.Version) }
+    )
+    if ($released.Count -eq 0) {
+        return $null
+    }
+
+    # A release is covered only when every candidate belonging to it is resolved, so group first.
+    # Walking records individually would mark a version implemented while a sibling candidate for
+    # that same version is still open.
+    $byVersion = @(
+        $released |
+            Group-Object -Property Version |
+            ForEach-Object {
+                [pscustomobject]@{
+                    Version = $_.Name
+                    Resolved = @($_.Group | Where-Object { -not $_.Resolved }).Count -eq 0
+                    Parsed = ConvertTo-EveRadarSemanticVersion -Version $_.Name
+                }
+            } |
+            Where-Object { $null -ne $_.Parsed } |
+            Sort-Object `
+                @{ Expression = { $_.Parsed.Major } }, `
+                @{ Expression = { $_.Parsed.Minor } }, `
+                @{ Expression = { $_.Parsed.Patch } }, `
+                @{ Expression = { $null -ne $_.Parsed.Prerelease }; Descending = $true }, `
+                @{ Expression = { $_.Parsed.Prerelease } }
+    )
+
+    $implemented = $null
+    foreach ($release in $byVersion) {
+        if (-not $release.Resolved) {
+            break
+        }
+
+        $implemented = $release.Version
+    }
+
+    return $implemented
+}
+
 function Get-EveRadarFingerprint {
     <#
     .SYNOPSIS

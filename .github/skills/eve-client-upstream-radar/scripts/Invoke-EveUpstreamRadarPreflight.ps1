@@ -142,6 +142,7 @@ $trackedCandidates = @(
         }
     }
 )
+$trackedIdentities = @($trackedCandidates | ForEach-Object { $_.SourceIdentity })
 
 # A candidate analyzed and dismissed leaves no issue behind, so without a durable record it
 # would be re-analyzed on every run forever. Treat a recorded dismissal as tracked, matching
@@ -150,7 +151,7 @@ $radarState = Read-EveRadarState -StatePath $StatePath
 $dismissedCandidates = @(
     if (-not $RecheckDismissals) {
         foreach ($candidate in $sourceCandidates) {
-            if ($trackedCandidates.SourceIdentity -ccontains $candidate.SourceIdentity) {
+            if ($trackedIdentities -ccontains $candidate.SourceIdentity) {
                 continue
             }
 
@@ -176,6 +177,25 @@ $dismissedCandidates = @(
         }
     }
 )
+# The declared reference must never lag what parity work has actually covered, and the data to
+# answer that already exists here: each candidate's published release plus its tracking state.
+# Compute it rather than leaving it to be re-derived by hand at release time.
+$resolvedIdentities = @(
+    $trackedIdentities + @($dismissedCandidates | ForEach-Object { $_.SourceIdentity })
+)
+$implementedThrough = Get-EveRadarImplementedThroughVersion -Candidate @(
+    $sourceCandidates |
+        ForEach-Object {
+            [pscustomobject]@{
+                Version = $_.Commit.ReleasedInVersion
+                Resolved = $resolvedIdentities -ccontains $_.SourceIdentity
+            }
+        }
+)
+$referenceVersion = $inventory.Target.ReferenceEveVersion
+$baselineBehind = $null -ne $implementedThrough -and
+    (Compare-EveRadarVersion -Left $implementedThrough -Right $referenceVersion) -gt 0
+
 # Behavioral evidence shares the fingerprint scheme, so an evidence commit that already has a
 # tracking issue must stop the run as cheaply as a tracked path candidate. Only untracked work
 # justifies the full analysis pass.
@@ -224,6 +244,26 @@ if ($status -ne 'AnalysisRequired') {
         "``$($inventory.Target.ReferenceEveCommit)`` |")
     $lines.Add(
         "| vercel/eve main | ``$($inventory.Upstream.HeadCommit)`` |")
+    $lines.Add('')
+    $lines.Add('## Compatibility baseline')
+    $lines.Add('')
+    $lines.Add("- Declared reference: eve ``$referenceVersion``")
+    $lines.Add(
+        '- Parity covered through: ' + $(
+            if ($null -eq $implementedThrough) {
+                'no published release is fully covered'
+            }
+            else {
+                "eve ``$implementedThrough``"
+            }))
+    if ($baselineBehind) {
+        $lines.Add('')
+        $lines.Add(
+            "**The declared reference lags implemented parity.** Every candidate through eve " +
+            "``$implementedThrough`` is resolved while the package still declares " +
+            "``$referenceVersion``. Advance ``EveProtocol.ReferenceEveVersion`` and the pinned " +
+            'fixture together before the next release.')
+    }
     $lines.Add('')
     $lines.Add('## Path-gated upstream commits')
     $lines.Add('')
@@ -299,6 +339,8 @@ $result = [pscustomobject]@{
     }
     TargetCommit = $inventory.Target.Commit
     ReferenceEveVersion = $inventory.Target.ReferenceEveVersion
+    ImplementedThroughEveVersion = $implementedThrough
+    BaselineBehindImplementedParity = $baselineBehind
     ReferenceEveCommit = $inventory.Target.ReferenceEveCommit
     UpstreamHeadCommit = $inventory.Upstream.HeadCommit
     UpstreamCommitCount = [int] $inventory.Delta.CommitCount
