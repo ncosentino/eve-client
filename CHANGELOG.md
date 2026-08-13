@@ -23,6 +23,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
+- `EveStreamEventKind.ApprovalCandidate` and `EveStreamEventKind.ApprovalSettled` recognize
+  the `approval.candidate` and `approval.settled` events published by eve `0.34.0`, which
+  were previously reported as `Unknown`. Lifecycle payloads, including candidate outcomes,
+  optional reasons, and the optional `candidateId` correlation on authorization events, stay
+  available through raw event data so future outcome values remain readable.
 - `EveTurnOptions.TurnPolicy` selects how eve handles a message sent to a session that
   already has an active turn. `EveTurnPolicy.Queue` waits for the active turn and
   `EveTurnPolicy.Steer` replaces it. The field is serialized only for a message

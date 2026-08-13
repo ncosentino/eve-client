@@ -36,6 +36,27 @@ public enum EveStreamEventKind
     InputRequested,
 
     /// <summary>
+    /// One responder-bound approval candidate reached a lifecycle outcome.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.34.0</c> emits this for each responder attempt on an approval request, carrying
+    /// a stable candidate identifier and an outcome of <c>pending</c>, <c>rejected</c>,
+    /// <c>failed</c>, <c>timed-out</c>, or <c>stale</c>. A terminal outcome may also carry a
+    /// reason. Candidate events precede <see cref="ApprovalSettled"/> for the same request.
+    /// </remarks>
+    ApprovalCandidate,
+
+    /// <summary>
+    /// An approval request reached its terminal settlement.
+    /// </summary>
+    /// <remarks>
+    /// eve <c>0.34.0</c> emits this once per approval request with an outcome of
+    /// <c>approved</c> or <c>cancelled</c>. It follows that request's
+    /// <see cref="ApprovalCandidate"/> events.
+    /// </remarks>
+    ApprovalSettled,
+
+    /// <summary>
     /// An action produced a result.
     /// </summary>
     ActionResult,
