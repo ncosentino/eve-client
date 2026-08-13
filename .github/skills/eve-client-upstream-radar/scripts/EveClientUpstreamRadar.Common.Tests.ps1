@@ -35,8 +35,24 @@ Describe 'Eve client upstream radar helpers' {
 
         $state = Read-EveRadarState -StatePath $statePath
 
-        $state.schemaVersion | Should -Be 1
+        $state.schemaVersion | Should -Be 2
         $state.baseline | Should -BeNullOrEmpty
+        @($state.dismissals).Count | Should -Be 0
+    }
+
+    It 'upgrades a schema 1 state file without losing its baseline' {
+        $statePath = Join-Path $TestDrive 'schema1\state.json'
+        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $statePath) -Force
+        Set-Content -LiteralPath $statePath -Value (
+            '{"schemaVersion":1,"baseline":{"eveVersion":"0.32.0",' +
+            '"eveCommit":"1013aed31ee4b21d9af2ef8f7da069a6743f8af6",' +
+            '"recordedAt":"2026-08-12T12:00:29.8299605+00:00"}}')
+
+        $state = Read-EveRadarState -StatePath $statePath
+
+        $state.schemaVersion | Should -Be 2
+        $state.baseline.eveVersion | Should -Be '0.32.0'
+        @($state.dismissals).Count | Should -Be 0
     }
 
     It 'rejects an unsupported state schema version' {
@@ -45,6 +61,33 @@ Describe 'Eve client upstream radar helpers' {
 
         { Read-EveRadarState -StatePath $statePath } |
             Should -Throw '*Unsupported radar state schema version*'
+    }
+
+    It 'normalizes timestamps to invariant UTC across a read and write cycle' {
+        $statePath = Join-Path $TestDrive 'drift\state.json'
+        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $statePath) -Force
+        Set-Content -LiteralPath $statePath -Value (
+            '{"schemaVersion":2,"baseline":{"eveVersion":"0.32.0",' +
+            '"eveCommit":"1013aed31ee4b21d9af2ef8f7da069a6743f8af6",' +
+            '"recordedAt":"2026-08-12T12:00:29.8299605+00:00"},' +
+            '"dismissals":[{"sourceIdentity":"eve-client-upstream:pr:1861",' +
+            '"fingerprint":"eve-fp:8a3284b11636","decision":"out-of-scope",' +
+            '"targetCommit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
+            '"upstreamHead":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",' +
+            '"reason":"server internal",' +
+            '"recordedAt":"2026-08-13T13:51:34.9670236+00:00"}]}')
+
+        Save-EveRadarState -StatePath $statePath -State (
+            Read-EveRadarState -StatePath $statePath)
+
+        $rewritten = [System.IO.File]::ReadAllText($statePath)
+        $rewritten |
+            Should -BeLike '*2026-08-12T12:00:29.8299605+00:00*' `
+                -Because 'A read-then-write cycle must not rewrite an instant in local time.'
+        $rewritten | Should -BeLike '*2026-08-13T13:51:34.9670236+00:00*'
+        $rewritten |
+            Should -Not -BeLike '*2026-08-12T05:00:29*' `
+                -Because 'The baseline instant must not drift into this machine offset.'
     }
 
     It 'round-trips saved state through a created directory' {
@@ -65,6 +108,119 @@ Describe 'Eve client upstream radar helpers' {
         $state.baseline.eveCommit |
             Should -Be '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
         Test-Path -LiteralPath "$statePath.tmp" | Should -BeFalse
+    }
+
+    It 'records a dismissal and finds it by source identity' {
+        $state = Add-EveRadarDismissal `
+            -State ([pscustomobject]@{ schemaVersion = 2; baseline = $null; dismissals = @() }) `
+            -SourceIdentity 'eve-client-upstream:pr:1861' `
+            -Decision 'out-of-scope' `
+            -TargetCommit '2C2392E8862F921FFAD0C3FE53D4F2321E07FE66' `
+            -UpstreamHead '1CD563B3538B567BE8F8DB2B21E1B779DED5274F' `
+            -Reason 'Instrumentation callbacks, not NDJSON client events.'
+
+        $dismissal = Get-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1861'
+
+        $dismissal.decision | Should -Be 'out-of-scope'
+        $dismissal.fingerprint | Should -Be 'eve-fp:8a3284b11636'
+        $dismissal.targetCommit |
+            Should -Be '2c2392e8862f921ffad0c3fe53d4f2321e07fe66'
+        $dismissal.upstreamHead |
+            Should -Be '1cd563b3538b567be8f8db2b21e1b779ded5274f'
+    }
+
+    It 'returns null for a source identity that was never dismissed' {
+        $state = [pscustomobject]@{ schemaVersion = 2; baseline = $null; dismissals = @() }
+
+        Get-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:9999' |
+            Should -BeNullOrEmpty
+    }
+
+    It 'replaces an earlier dismissal for the same source identity' {
+        $state = [pscustomobject]@{ schemaVersion = 2; baseline = $null; dismissals = @() }
+        $state = Add-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1862' `
+            -Decision 'out-of-scope' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'first'
+        $state = Add-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1862' `
+            -Decision 'already-present' `
+            -TargetCommit 'cccccccccccccccccccccccccccccccccccccccc' `
+            -UpstreamHead 'dddddddddddddddddddddddddddddddddddddddd' `
+            -Reason 'second'
+
+        @($state.dismissals).Count | Should -Be 1
+        (Get-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1862').decision |
+            Should -Be 'already-present'
+    }
+
+    It 'rejects a parity result that must not be cached as a dismissal' {
+        {
+            Add-EveRadarDismissal `
+                -State ([pscustomobject]@{ schemaVersion = 2; baseline = $null; dismissals = @() }) `
+                -SourceIdentity 'eve-client-upstream:pr:1861' `
+                -Decision 'gap-confirmed' `
+                -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+                -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+                -Reason 'should not be cacheable'
+        } | Should -Throw
+    }
+
+    It 'round-trips dismissals through saved state' {
+        $statePath = Join-Path $TestDrive 'dismissals\state.json'
+        $state = Add-EveRadarDismissal `
+            -State ([pscustomobject]@{ schemaVersion = 2; baseline = $null; dismissals = @() }) `
+            -SourceIdentity 'eve-client-upstream:pr:1980' `
+            -Decision 'out-of-scope' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'Eval reporter callbacks are TypeScript-only.'
+
+        Save-EveRadarState -StatePath $statePath -State $state
+
+        $reloaded = Read-EveRadarState -StatePath $statePath
+        (Get-EveRadarDismissal `
+            -State $reloaded `
+            -SourceIdentity 'eve-client-upstream:pr:1980').reason |
+            Should -Be 'Eval reporter callbacks are TypeScript-only.'
+    }
+
+    It 'preserves dismissals when the baseline advances' {
+        $state = Add-EveRadarDismissal `
+            -State ([pscustomobject]@{
+                schemaVersion = 2
+                baseline = [pscustomobject]@{
+                    eveVersion = '0.32.0'
+                    eveCommit = '1013aed31ee4b21d9af2ef8f7da069a6743f8af6'
+                    recordedAt = '2026-08-12T12:00:29.8299605+00:00'
+                }
+                dismissals = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1861' `
+            -Decision 'out-of-scope' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'server internal'
+
+        $update = Update-EveRadarBaseline `
+            -State $state `
+            -Version '0.34.0' `
+            -Commit 'cccccccccccccccccccccccccccccccccccccccc'
+
+        $update.Status | Should -Be 'Advanced'
+        $update.State.schemaVersion | Should -Be 2
+        @($update.State.dismissals).Count |
+            Should -Be 1 -Because 'Advancing the baseline must not reset recorded dismissals.'
     }
 
     It 'bootstraps a baseline when no state exists' {

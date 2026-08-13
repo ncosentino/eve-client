@@ -20,6 +20,9 @@ Directory that owns durable radar run artifacts.
 .PARAMETER StatePath
 Radar-owned durable state file recording the verified upstream release baseline.
 
+.PARAMETER RecheckDismissals
+Ignores recorded dismissals so previously dismissed candidates are analyzed again.
+
 .PARAMETER SkipFetch
 Uses currently available refs and is intended only for supervised dry-run diagnostics.
 #>
@@ -37,6 +40,7 @@ param(
             -Path ([Environment]::GetFolderPath(
                 [Environment+SpecialFolder]::LocalApplicationData)) `
             -ChildPath 'eve-client-upstream-radar\state.json'),
+    [switch] $RecheckDismissals,
     [switch] $SkipFetch
 )
 
@@ -138,10 +142,45 @@ $trackedCandidates = @(
         }
     }
 )
+
+# A candidate analyzed and dismissed leaves no issue behind, so without a durable record it
+# would be re-analyzed on every run forever. Treat a recorded dismissal as tracked, matching
+# the existing rule that a closed issue is skipped for an immutable upstream change.
+$radarState = Read-EveRadarState -StatePath $StatePath
+$dismissedCandidates = @(
+    if (-not $RecheckDismissals) {
+        foreach ($candidate in $sourceCandidates) {
+            if ($trackedCandidates.SourceIdentity -ccontains $candidate.SourceIdentity) {
+                continue
+            }
+
+            $dismissal = Get-EveRadarDismissal `
+                -State $radarState `
+                -SourceIdentity $candidate.SourceIdentity
+            if ($null -ne $dismissal) {
+                [pscustomobject]@{
+                    SourceIdentity = $candidate.SourceIdentity
+                    Fingerprint = $candidate.Fingerprint
+                    Commit = $candidate.Commit.Sha
+                    Subject = $candidate.Commit.Subject
+                    Decision = Get-EveRadarJsonProperty -InputObject $dismissal -Name 'decision'
+                    TargetCommit = Get-EveRadarJsonProperty `
+                        -InputObject $dismissal `
+                        -Name 'targetCommit'
+                    Reason = Get-EveRadarJsonProperty -InputObject $dismissal -Name 'reason'
+                    RecordedAt = Get-EveRadarJsonProperty `
+                        -InputObject $dismissal `
+                        -Name 'recordedAt'
+                }
+            }
+        }
+    }
+)
 # Behavioral evidence shares the fingerprint scheme, so an evidence commit that already has a
 # tracking issue must stop the run as cheaply as a tracked path candidate. Only untracked work
 # justifies the full analysis pass.
-$untrackedCandidateCount = $sourceCandidates.Count - $trackedCandidates.Count
+$untrackedCandidateCount =
+    $sourceCandidates.Count - $trackedCandidates.Count - $dismissedCandidates.Count
 $reportPath = $null
 $status = if ($candidateCount -eq 0 -and $evidenceCount -eq 0) {
     'NoCandidates'
@@ -226,6 +265,7 @@ if ($status -ne 'AnalysisRequired') {
     $lines.Add("| Upstream commits | $($inventory.Delta.CommitCount) |")
     $lines.Add("| Path candidates | $candidateCount |")
     $lines.Add("| Behavioral-evidence commits | $evidenceCount |")
+    $lines.Add("| Previously dismissed | $($dismissedCandidates.Count) |")
     $lines.Add(
         '| Path candidates not yet in a published eve release | ' +
         "$($inventory.Delta.UnreleasedPathCandidateCount) |")
@@ -264,6 +304,9 @@ $result = [pscustomobject]@{
     UpstreamCommitCount = [int] $inventory.Delta.CommitCount
     PathCandidateCount = $candidateCount
     BehavioralEvidenceCount = $evidenceCount
+    DismissedCandidateCount = $dismissedCandidates.Count
+    DismissedCandidates = $dismissedCandidates
+    RecheckedDismissals = [bool] $RecheckDismissals
     BehavioralEvidenceCommits = @(
         $evidenceCommits |
             ForEach-Object {

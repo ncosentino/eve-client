@@ -107,6 +107,12 @@ function Read-EveRadarState {
     <#
     .SYNOPSIS
     Reads radar-owned durable state, returning empty state when none is recorded yet.
+
+    .DESCRIPTION
+    Schema 1 recorded only the baseline. Schema 2 adds dismissal records so a candidate the
+    radar analyzed and dismissed is remembered instead of being re-analyzed on every run.
+    A schema 1 file is upgraded in memory rather than rejected, because the baseline it
+    carries is still valid.
     #>
     [CmdletBinding()]
     param(
@@ -116,20 +122,43 @@ function Read-EveRadarState {
 
     if (-not (Test-Path -LiteralPath $StatePath -PathType Leaf)) {
         return [pscustomobject]@{
-            schemaVersion = 1
+            schemaVersion = 2
             baseline = $null
+            dismissals = @()
         }
     }
 
     $state = [System.IO.File]::ReadAllText($StatePath) | ConvertFrom-Json
     $schemaVersion = Get-EveRadarJsonProperty -InputObject $state -Name 'schemaVersion'
-    if ($schemaVersion -ne 1) {
+    if ($schemaVersion -notin 1, 2) {
         throw (
             "Unsupported radar state schema version '$schemaVersion' in " +
             "'$StatePath'.")
     }
 
-    return $state
+    # ConvertFrom-Json coerces an ISO timestamp into a local DateTime, so re-serializing a
+    # record that was only read would rewrite the same instant with this machine's offset and
+    # churn the file on every run. Normalize on read instead.
+    $baseline = Get-EveRadarJsonProperty -InputObject $state -Name 'baseline'
+    if ($null -ne $baseline) {
+        $baseline.recordedAt = Get-EveRadarTimestampText -Value (
+            Get-EveRadarJsonProperty -InputObject $baseline -Name 'recordedAt')
+    }
+
+    $dismissals = @(
+        (Get-EveRadarJsonProperty -InputObject $state -Name 'dismissals') |
+            Where-Object { $null -ne $_ }
+    )
+    foreach ($dismissal in $dismissals) {
+        $dismissal.recordedAt = Get-EveRadarTimestampText -Value (
+            Get-EveRadarJsonProperty -InputObject $dismissal -Name 'recordedAt')
+    }
+
+    return [pscustomobject]@{
+        schemaVersion = 2
+        baseline = $baseline
+        dismissals = $dismissals
+    }
 }
 
 function Save-EveRadarState {
@@ -156,6 +185,84 @@ function Save-EveRadarState {
         $temporaryPath,
         ($State | ConvertTo-Json -Depth 8))
     [System.IO.File]::Move($temporaryPath, $StatePath, $true)
+}
+
+function Get-EveRadarDismissal {
+    <#
+    .SYNOPSIS
+    Returns the recorded dismissal for one immutable source identity, or null.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $SourceIdentity
+    )
+
+    $dismissals = Get-EveRadarJsonProperty -InputObject $State -Name 'dismissals'
+    return @(
+        $dismissals |
+            Where-Object {
+                $null -ne $_ -and
+                (Get-EveRadarJsonProperty -InputObject $_ -Name 'sourceIdentity') -ceq
+                    $SourceIdentity
+            }
+    ) | Select-Object -First 1
+}
+
+function Add-EveRadarDismissal {
+    <#
+    .SYNOPSIS
+    Records that one immutable upstream source identity was analyzed and dismissed.
+
+    .DESCRIPTION
+    An out-of-scope decision is a property of the immutable upstream commit alone. An
+    already-present decision is that commit judged against eve-client at one target commit,
+    so the target commit is recorded to keep the decision auditable and recheckable.
+    Re-recording the same source identity replaces the earlier record rather than appending.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $SourceIdentity,
+        [Parameter(Mandatory)]
+        [ValidateSet('out-of-scope', 'already-present')]
+        [string] $Decision,
+        [Parameter(Mandatory)]
+        [string] $TargetCommit,
+        [Parameter(Mandatory)]
+        [string] $UpstreamHead,
+        [Parameter(Mandatory)]
+        [string] $Reason,
+        [DateTimeOffset] $RecordedAt = [DateTimeOffset]::UtcNow
+    )
+
+    $existing = @(
+        (Get-EveRadarJsonProperty -InputObject $State -Name 'dismissals') |
+            Where-Object {
+                $null -ne $_ -and
+                (Get-EveRadarJsonProperty -InputObject $_ -Name 'sourceIdentity') -cne
+                    $SourceIdentity
+            }
+    )
+    $record = [pscustomobject]@{
+        sourceIdentity = $SourceIdentity
+        fingerprint = "eve-fp:$(Get-EveRadarFingerprint -SourceIdentity $SourceIdentity)"
+        decision = $Decision
+        targetCommit = $TargetCommit.Trim().ToLowerInvariant()
+        upstreamHead = $UpstreamHead.Trim().ToLowerInvariant()
+        reason = $Reason
+        recordedAt = Get-EveRadarTimestampText -Value $RecordedAt
+    }
+
+    return [pscustomobject]@{
+        schemaVersion = 2
+        baseline = Get-EveRadarJsonProperty -InputObject $State -Name 'baseline'
+        dismissals = @($existing + $record)
+    }
 }
 
 function Update-EveRadarBaseline {
@@ -212,16 +319,22 @@ function Update-EveRadarBaseline {
         $baselineRecordedAt = Get-EveRadarTimestampText -Value $RecordedAt
     }
 
+    # A baseline advance never invalidates a recorded dismissal: both are keyed to immutable
+    # upstream identities. Carry them forward so advancing does not silently reset them.
     return [pscustomobject]@{
         Status = $status
         Commit = $normalizedCommit
         State = [pscustomobject]@{
-            schemaVersion = 1
+            schemaVersion = 2
             baseline = [pscustomobject]@{
                 eveVersion = $Version
                 eveCommit = $normalizedCommit
                 recordedAt = $baselineRecordedAt
             }
+            dismissals = @(
+                (Get-EveRadarJsonProperty -InputObject $State -Name 'dismissals') |
+                    Where-Object { $null -ne $_ }
+            )
         }
     }
 }
