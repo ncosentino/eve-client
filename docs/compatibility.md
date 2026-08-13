@@ -6,7 +6,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| 0.1.0-alpha.4+ | 0.32.0 | 21 | Primary compatibility target |
+| 0.1.0-alpha.5+ | 0.34.0 | 21 | Primary compatibility target |
+| 0.1.0-alpha.4 | 0.32.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4+ | 0.31.0 | 21 | Minimum supported release |
 | 0.1.0-alpha.3 | 0.29.4 | 20 | Final release for eve 0.29.x-0.30.x |
 | 0.1.0-alpha.3 | 0.27.6 | 19 | Tolerated by that release, not gated by CI |
@@ -45,7 +46,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.32.0` fixture with a deterministic
+The repository contains a pinned eve `0.34.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the

@@ -11,12 +11,19 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 needs no migration"
-    eve `0.32.0` introduced no client-protocol break. Every session route is unchanged, the
-    stream event vocabulary is identical, and only one file in the upstream client surface
-    changed. A `0.31.x` deployment can move to `0.32.0` without touching this package, and
-    this package treats `0.31.0` through `0.32.x` as one supported range. The only
+!!! success "eve 0.32.0, 0.33.x, and 0.34.0 need no migration"
+    None of these releases broke the client protocol. Every session route is unchanged
+    across `0.31.0` through `0.34.0`, and the stream event vocabulary only grew: `0.34.0`
+    added `approval.candidate` and `approval.settled`, and removed nothing. A `0.31.x`
+    deployment can move anywhere in that range without changing this package, and this
+    package treats `0.31.0` through `0.34.x` as one supported range. The only hard
     boundary remains eve `0.31.0`.
+
+    One behavior did change without breaking the wire format. From eve `0.33.0`, a
+    message that arrives while a turn is active cancels and replaces that turn instead of
+    waiting for it. Set `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the
+    earlier behavior. Sequential callers that await each turn are unaffected, and an
+    agent older than `0.33.0` ignores the field while already queueing.
 
 ## Why a single smoke test will not catch this
 

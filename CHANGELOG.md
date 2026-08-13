@@ -9,17 +9,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.32.x`, message-stream protocol `21`. The
-  compatibility target moved to eve `0.32.0`; `EveProtocol.MinimumEveVersion` still
+- **Supported eve versions:** `0.31.0` through `0.34.x`, message-stream protocol `21`. The
+  compatibility target moved to eve `0.34.0`; `EveProtocol.MinimumEveVersion` still
   declares `0.31.0` as the floor.
-- **eve `0.32.0` is not a breaking release for this package.** Every session route is
-  unchanged, the stream event vocabulary is identical, and `url.js` is the only file in
-  the upstream client surface that changed. No consumer action is required beyond running
-  a `0.32.0` agent if desired.
+- **Nothing between eve `0.32.0` and `0.34.0` breaks this package.** Every session route is
+  unchanged across that range and the stream event vocabulary only grew, adding
+  `approval.candidate` and `approval.settled` in `0.34.0` and removing nothing. Verified
+  against a real eve `0.34.0` agent by the compatibility probe.
 - **eve `0.33.0` changes the default meaning of an overlapping send.** A message that
   reaches a session with an active turn now cancels and replaces that turn instead of
   waiting for it. The request format did not change, so nothing fails loudly. Set
   `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to restore the earlier behavior.
+  An agent older than `0.33.0` ignores the field and already queues, so the setting is
+  safe on every supported version.
 
 ### Added
 
@@ -46,8 +48,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   agent inspection previously failed on such a payload before `Raw` became reachable.
   Consumers that read `ModelId` into a non-nullable `string` will see a nullable warning
   and should handle the dynamic case.
-- The compatibility reference moved to eve `0.32.0`. The pinned CI fixture runs that
-  release, which also raises its `ai` peer dependency to `7.0.58`.
+- The compatibility reference moved to eve `0.34.0`. The pinned CI fixture runs that
+  release; its `ai` peer dependency requirement is satisfied by the existing `7.0.58` pin.
 
 ### Fixed
 
