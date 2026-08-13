@@ -134,6 +134,8 @@ public sealed record EveStreamEvent
             "message.received" => EveStreamEventKind.MessageReceived,
             "actions.requested" => EveStreamEventKind.ActionsRequested,
             "input.requested" => EveStreamEventKind.InputRequested,
+            "approval.candidate" => EveStreamEventKind.ApprovalCandidate,
+            "approval.settled" => EveStreamEventKind.ApprovalSettled,
             "action.result" => EveStreamEventKind.ActionResult,
             "action.partial" => EveStreamEventKind.ActionPartial,
             "subagent.called" => EveStreamEventKind.SubagentCalled,

@@ -87,6 +87,91 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
+    [Arguments("pending")]
+    [Arguments("rejected")]
+    [Arguments("failed")]
+    [Arguments("timed-out")]
+    [Arguments("stale")]
+    public async Task Parse_RecognizesApprovalCandidateOutcomes(string outcome)
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            $$$"""{"type":"approval.candidate","data":{"candidateId":"cand_1","outcome":"{{{outcome}}}","requestId":"approval_1","responderPrincipalId":"user_1","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ApprovalCandidate);
+        await Assert.That(streamEvent.Type).IsEqualTo("approval.candidate");
+        await Assert.That(streamEvent.Data.GetProperty("outcome").GetString()).IsEqualTo(outcome);
+        await Assert.That(streamEvent.Data.GetProperty("candidateId").GetString())
+            .IsEqualTo("cand_1");
+        await Assert.That(streamEvent.IsCurrentTurnBoundary)
+            .IsFalse()
+            .Because("An approval candidate never ends a turn.");
+    }
+
+    [Test]
+    public async Task Parse_OmitsApprovalCandidateReasonWhenAbsent()
+    {
+        EveStreamEvent withReason = EveStreamEvent.Parse(
+            """{"type":"approval.candidate","data":{"candidateId":"cand_1","outcome":"rejected","reason":"responder declined","requestId":"approval_1","responderPrincipalId":"user_1","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent withoutReason = EveStreamEvent.Parse(
+            """{"type":"approval.candidate","data":{"candidateId":"cand_1","outcome":"pending","requestId":"approval_1","responderPrincipalId":"user_1","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(withReason.Data.GetProperty("reason").GetString())
+            .IsEqualTo("responder declined");
+        await Assert.That(withoutReason.Data.TryGetProperty("reason", out _))
+            .IsFalse()
+            .Because("An absent reason stays absent in the raw payload.");
+    }
+
+    [Test]
+    [Arguments("approved")]
+    [Arguments("cancelled")]
+    public async Task Parse_RecognizesApprovalSettledOutcomes(string outcome)
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            $$$"""{"type":"approval.settled","data":{"outcome":"{{{outcome}}}","requestId":"approval_1","responderPrincipalId":"user_1","sequence":4,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ApprovalSettled);
+        await Assert.That(streamEvent.Type).IsEqualTo("approval.settled");
+        await Assert.That(streamEvent.Data.GetProperty("outcome").GetString()).IsEqualTo(outcome);
+        await Assert.That(streamEvent.Data.GetProperty("requestId").GetString())
+            .IsEqualTo("approval_1");
+        await Assert.That(streamEvent.IsCurrentTurnBoundary)
+            .IsFalse()
+            .Because("An approval settlement never ends a turn.");
+    }
+
+    [Test]
+    public async Task Parse_KeepsApprovalLifecycleKindsDistinct()
+    {
+        EveStreamEvent candidate = EveStreamEvent.Parse(
+            """{"type":"approval.candidate","data":{"candidateId":"cand_1","outcome":"pending","requestId":"approval_1","responderPrincipalId":"user_1","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent settled = EveStreamEvent.Parse(
+            """{"type":"approval.settled","data":{"outcome":"approved","requestId":"approval_1","responderPrincipalId":"user_1","sequence":4,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent inputRequested = EveStreamEvent.Parse(
+            """{"type":"input.requested","data":{"requests":[],"sequence":2,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(candidate.Kind).IsNotEqualTo(settled.Kind);
+        await Assert.That(candidate.Kind).IsNotEqualTo(inputRequested.Kind);
+        await Assert.That(settled.Kind).IsNotEqualTo(inputRequested.Kind);
+    }
+
+    [Test]
+    public async Task Parse_PreservesAuthorizationCandidateCorrelation()
+    {
+        EveStreamEvent correlated = EveStreamEvent.Parse(
+            """{"type":"authorization.required","data":{"candidateId":"cand_1","connectionName":"github","sequence":5,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent uncorrelated = EveStreamEvent.Parse(
+            """{"type":"authorization.required","data":{"connectionName":"github","sequence":5,"stepIndex":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(correlated.Kind).IsEqualTo(EveStreamEventKind.AuthorizationRequired);
+        await Assert.That(correlated.Data.GetProperty("candidateId").GetString())
+            .IsEqualTo("cand_1");
+        await Assert.That(uncorrelated.Data.TryGetProperty("candidateId", out _))
+            .IsFalse()
+            .Because("An absent candidate correlation stays absent.");
+    }
+
+    [Test]
     public async Task Deduplicator_DropsReplayedEventAndKeepsRetriedEmission()
     {
         EveStreamEventDeduplicator deduplicator = new();

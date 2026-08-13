@@ -2295,6 +2295,47 @@ public sealed class EveSessionTests
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
 
+    [Test]
+    public async Task SendAsync_RetainsApprovalLifecycleEventsInTurnOrder(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"input.requested","data":{"requests":[{"requestId":"approval_1","prompt":"Approve?","kind":"tool-approval","options":[{"id":"approve","label":"Approve"}]}],"sequence":1,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"approval.candidate","data":{"candidateId":"cand_1","outcome":"stale","requestId":"approval_1","responderPrincipalId":"user_1","sequence":2,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"approval.candidate","data":{"candidateId":"cand_2","outcome":"pending","requestId":"approval_1","responderPrincipalId":"user_2","sequence":3,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"approval.settled","data":{"outcome":"approved","requestId":"approval_1","responderPrincipalId":"user_2","sequence":4,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"authorization.required","data":{"candidateId":"cand_2","connectionName":"github","sequence":5,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Done.","sequence":6,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport, 1024).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Approve it", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        EveStreamEventKind[] lifecycle = outcome.Events
+            .Select(streamEvent => streamEvent.Kind)
+            .Where(kind => kind
+                is EveStreamEventKind.ApprovalCandidate
+                or EveStreamEventKind.ApprovalSettled)
+            .ToArray();
+        await Assert.That(lifecycle).IsEquivalentTo(new[]
+        {
+            EveStreamEventKind.ApprovalCandidate,
+            EveStreamEventKind.ApprovalCandidate,
+            EveStreamEventKind.ApprovalSettled,
+        }).Because("Candidate events precede settlement for the same request.");
+        await Assert.That(outcome.Message)
+            .IsEqualTo("Done.")
+            .Because("Lifecycle events must not disturb message aggregation.");
+        await Assert.That(outcome.InputRequests.Count)
+            .IsEqualTo(1)
+            .Because("Lifecycle events must not disturb input-request aggregation.");
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+    }
+
     private static HttpResponseMessage StreamResponse(params string[] events) =>
         new(HttpStatusCode.OK)
         {
