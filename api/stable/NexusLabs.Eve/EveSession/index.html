@@ -405,6 +405,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../../../../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migration
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -735,6 +754,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -751,10 +797,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
         
           
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
             
   
   
@@ -772,8 +818,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_10">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -896,10 +942,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   
@@ -917,8 +963,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1199,6 +1245,10 @@ Accepted turn metadata and its single-use event stream.</p>
 <p>eve <code>0.31.0</code> requires a turn to carry either a message or input responses, never
 both. Resolve pending human input with
 <a href="./#NexusLabs.Eve.EveSession.RespondAsync(System.Collections.Generic.IReadOnlyList_NexusLabs.Eve.EveInputResponse_,NexusLabs.Eve.EveTurnOptions,System.Threading.CancellationToken)" title="NexusLabs.Eve.EveSession.RespondAsync(System.Collections.Generic.IReadOnlyList\&lt;NexusLabs.Eve.EveInputResponse&gt;, NexusLabs.Eve.EveTurnOptions, System.Threading.CancellationToken)">RespondAsync(IReadOnlyList&lt;EveInputResponse&gt;, EveTurnOptions, CancellationToken)</a>.</p>
+<p>When this message reaches a session that already has an active turn, eve <code>0.33.0</code> and
+later cancel and replace that turn unless
+<a href="../EveTurnOptions/#NexusLabs.Eve.EveTurnOptions.TurnPolicy" title="NexusLabs.Eve.EveTurnOptions.TurnPolicy">TurnPolicy</a> is <a href="../EveTurnPolicy/#NexusLabs.Eve.EveTurnPolicy.Queue" title="NexusLabs.Eve.EveTurnPolicy.Queue">Queue</a>. The policy is
+sent only for a message continuing an existing session.</p>
 <p><a name='NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveMessageContent,System.Threading.CancellationToken)'></a></p>
 <h2 id="evesessionsendasyncevemessagecontent-cancellationtoken-method">EveSession.SendAsync(EveMessageContent, CancellationToken) Method<a class="headerlink" href="#evesessionsendasyncevemessagecontent-cancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Sends a user turn carrying attachments or multi-part content.</p>
