@@ -7,6 +7,20 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- Agent inspection accepts the eve `0.35.0` agent-info payload. eve raised the schema to
+  version `2`, where static instructions became a list whose entries carry `content` and a
+  `system` or `user` role, and this package rejected any version but `1`. `GetInfoAsync`
+  therefore threw against every `0.35.0` agent before `Raw` became reachable. Sessions,
+  streaming, and control operations were unaffected.
+
+### Added
+
+- `EveProtocol.SupportedAgentInfoVersions` lists the agent-info schema versions this
+  package understands. A version outside the set is still rejected rather than parsed
+  optimistically.
+
 ## [0.1.0-alpha.5] - 2026-08-13
 
 ### Compatibility

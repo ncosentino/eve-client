@@ -39,7 +39,8 @@ if (!health.Ok || !string.Equals(health.Status, "ready", StringComparison.Ordina
 }
 
 EveAgentInfo info = await client.GetInfoAsync(timeout.Token);
-if (string.IsNullOrWhiteSpace(info.AgentName) || info.Version != 1)
+if (string.IsNullOrWhiteSpace(info.AgentName)
+    || !EveProtocol.SupportedAgentInfoVersions.Contains(info.Version))
 {
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
 }
