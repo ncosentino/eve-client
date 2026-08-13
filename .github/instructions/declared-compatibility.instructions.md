@@ -31,6 +31,12 @@ Before declaring a newer reference, confirm the range is non-breaking from
 upstream source: session routes unchanged, stream event vocabulary additive with
 nothing removed, and the live probe green against that release.
 
+Read every declared protocol value from the upstream constant that owns it rather
+than inferring it. The message-stream version is declared by
+`EVE_MESSAGE_STREAM_VERSION` in `packages/eve/src/protocol/message.ts`, and it does
+not follow from whether the event vocabulary changed: eve `0.35.0` raised it while
+adding no event type and removing none.
+
 The minimum supported version is a separate decision. Raising it drops support
 for servers that still work, so change it only when a protocol break makes them
 genuinely unusable.

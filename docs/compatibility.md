@@ -6,8 +6,9 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| 0.1.0-alpha.5+ | 0.34.0 | 21 | Primary compatibility target |
-| 0.1.0-alpha.4 | 0.32.0 | 21 | Previous compatibility target |
+| 0.1.0-alpha.6+ | 0.35.0 | 22 | Primary compatibility target |
+| 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
+| 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
 | 0.1.0-alpha.4+ | 0.31.0 | 21 | Minimum supported release |
 | 0.1.0-alpha.3 | 0.29.4 | 20 | Final release for eve 0.29.x-0.30.x |
 | 0.1.0-alpha.3 | 0.27.6 | 19 | Tolerated by that release, not gated by CI |
@@ -46,7 +47,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.34.0` fixture with a deterministic
+The repository contains a pinned eve `0.35.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
@@ -65,6 +66,15 @@ Stream protocol `21` adds `action.partial`, emitted for each non-terminal snapsh
 yielded by an async-generator tool. `EveStreamEventKind.ActionPartial` recognizes it, and
 the terminal `action.result` continues to carry the value exposed to the model. Treat
 partial snapshots as provisional display state and never as a final tool result.
+
+## Run trace context
+
+Stream protocol `22` adds an optional `trace` object to `session.started` and
+`turn.started`, carrying the W3C `traceId`, `spanId`, and `traceFlags` for correlating a
+run with an external observability backend. It added no event type and removed none.
+The field is available through `EveStreamEvent.Data` rather than projected, so an
+unrecognized future field on the same object stays readable. An agent older than eve
+`0.35.0` omits it entirely.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override

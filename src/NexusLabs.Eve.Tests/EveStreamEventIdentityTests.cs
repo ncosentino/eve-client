@@ -172,6 +172,39 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
+    public async Task Parse_PreservesRunTraceContextWhenPresent()
+    {
+        EveStreamEvent sessionStarted = EveStreamEvent.Parse(
+            """{"type":"session.started","data":{"runtime":{"modelId":"openai/gpt-5.5"},"trace":{"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","traceFlags":1}}}""");
+        EveStreamEvent turnStarted = EveStreamEvent.Parse(
+            """{"type":"turn.started","data":{"sequence":0,"turnId":"turn_1","trace":{"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","traceFlags":1}}}""");
+
+        await Assert.That(sessionStarted.Kind).IsEqualTo(EveStreamEventKind.SessionStarted);
+        await Assert.That(
+                sessionStarted.Data.GetProperty("trace").GetProperty("traceId").GetString())
+            .IsEqualTo("4bf92f3577b34da6a3ce929d0e0e4736");
+        await Assert.That(turnStarted.Kind).IsEqualTo(EveStreamEventKind.TurnStarted);
+        await Assert.That(turnStarted.Data.GetProperty("trace").GetProperty("spanId").GetString())
+            .IsEqualTo("00f067aa0ba902b7");
+        await Assert.That(turnStarted.Data.GetProperty("trace").GetProperty("traceFlags").GetInt32())
+            .IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Parse_TreatsAbsentRunTraceContextAsAbsent()
+    {
+        EveStreamEvent sessionStarted = EveStreamEvent.Parse(
+            """{"type":"session.started","data":{"runtime":{"modelId":"openai/gpt-5.5"}}}""");
+        EveStreamEvent turnStarted = EveStreamEvent.Parse(
+            """{"type":"turn.started","data":{"sequence":0,"turnId":"turn_1"}}""");
+
+        await Assert.That(sessionStarted.Data.TryGetProperty("trace", out _))
+            .IsFalse()
+            .Because("An agent older than eve 0.35.0 emits no trace context.");
+        await Assert.That(turnStarted.Data.TryGetProperty("trace", out _)).IsFalse();
+    }
+
+    [Test]
     public async Task Deduplicator_DropsReplayedEventAndKeepsRetriedEmission()
     {
         EveStreamEventDeduplicator deduplicator = new();

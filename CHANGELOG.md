@@ -7,6 +7,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.35.x`, message-stream protocol `22`. The
+  compatibility target moved to eve `0.35.0`; `EveProtocol.MinimumEveVersion` still
+  declares `0.31.0` as the floor.
+- **eve `0.35.0` breaks agent inspection on earlier releases of this package.** It returns
+  agent-info schema version `2`, which `0.1.0-alpha.5` and earlier reject, so `GetInfoAsync`
+  throws. Sessions, streaming, and control operations are unaffected. Use `0.1.0-alpha.6`
+  or newer against a `0.35.0` agent.
+- **eve `0.35.0` is otherwise additive.** Session routes are unchanged and the stream event
+  vocabulary added and removed nothing; the protocol version moved to `22` for the new
+  optional run trace context.
+
 ### Fixed
 
 - Agent inspection accepts the eve `0.35.0` agent-info payload. eve raised the schema to
@@ -20,6 +33,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `EveProtocol.SupportedAgentInfoVersions` lists the agent-info schema versions this
   package understands. A version outside the set is still rejected rather than parsed
   optimistically.
+
+### Changed
+
+- `EveProtocol.MessageStreamVersion` moves to `22`, and the compatibility reference and
+  pinned fixture move to eve `0.35.0`. The value mirrors upstream's
+  `EVE_MESSAGE_STREAM_VERSION`; eve raised it for the new optional run trace context on
+  `session.started` and `turn.started`, which stays available through
+  `EveStreamEvent.Data` rather than being projected.
 
 ## [0.1.0-alpha.5] - 2026-08-13
 
