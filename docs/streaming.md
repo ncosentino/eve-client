@@ -47,6 +47,44 @@ await foreach (EveStreamEvent streamEvent in
 Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.
 
+## Approval lifecycle
+
+eve `0.34.0` publishes the durable lifecycle of a human approval request. Each
+responder attempt arrives as `approval.candidate`
+(`EveStreamEventKind.ApprovalCandidate`) with a stable `candidateId` and an
+`outcome` of `pending`, `rejected`, `failed`, `timed-out`, or `stale`. A terminal
+candidate outcome may carry a `reason`. The request's terminal result arrives once
+as `approval.settled` (`EveStreamEventKind.ApprovalSettled`) with an `outcome` of
+`approved` or `cancelled`.
+
+```csharp
+await foreach (EveStreamEvent streamEvent in
+    response.WithCancellation(cancellationToken))
+{
+    switch (streamEvent.Kind)
+    {
+        case EveStreamEventKind.ApprovalCandidate:
+            TrackCandidate(
+                streamEvent.Data.GetProperty("candidateId").GetString(),
+                streamEvent.Data.GetProperty("outcome").GetString());
+            break;
+        case EveStreamEventKind.ApprovalSettled:
+            SettleRequest(
+                streamEvent.Data.GetProperty("requestId").GetString(),
+                streamEvent.Data.GetProperty("outcome").GetString());
+            break;
+    }
+}
+```
+
+Candidate events precede settlement for the same `requestId`. Neither event ends a
+turn, and neither changes how `EveTurnOutcome` aggregates messages, results, or
+input requests. Outcome values are read from raw data rather than projected to an
+enum, so a future outcome added upstream is still readable.
+
+An agent older than eve `0.34.0` never emits these events. Because the client maps
+by wire type, they simply do not appear.
+
 ## Durable event identity
 
 Stream protocol version 20 stamps every persisted event with a stable
