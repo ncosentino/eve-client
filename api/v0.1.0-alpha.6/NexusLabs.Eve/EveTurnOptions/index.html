@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/stable/NexusLabs.Eve/EveProtocol/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/v0.1.0-alpha.6/NexusLabs.Eve/EveTurnOptions/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>EveProtocol - NexusLabs.Eve</title>
+        <title>EveTurnOptions - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="EveProtocol – NexusLabs.Eve" />
+  <meta property="og:title" content="EveTurnOptions – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/stable/NexusLabs.Eve/EveProtocol/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/v0.1.0-alpha.6/NexusLabs.Eve/EveTurnOptions/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EveProtocol – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveTurnOptions – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EveProtocol
+              EveTurnOptions
             
           </span>
         </div>
@@ -892,7 +892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../" class="md-nav__link">
+      <a href="../../../stable/" class="md-nav__link">
         
   
   
@@ -1057,81 +1057,73 @@
   
 
 
-  <h1>EveProtocol</h1>
+  <h1>EveTurnOptions</h1>
 
 <h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
-<h2 id="eveprotocol-class">EveProtocol Class<a class="headerlink" href="#eveprotocol-class" title="Permanent link">&para;</a></h2>
-<p>Identifies the eve protocol revision implemented by this package.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EveProtocol</span>
+<h2 id="eveturnoptions-class">EveTurnOptions Class<a class="headerlink" href="#eveturnoptions-class" title="Permanent link">&para;</a></h2>
+<p>Carries the settings shared by sending a message and responding to human input.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">record</span><span class="w"> </span><span class="n">EveTurnOptions</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">IEquatable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveTurnOptions</span><span class="o">&gt;</span>
 </code></pre></div>
-<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> → EveProtocol</p>
-<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveProtocol.MessageStreamContentType'></a></p>
-<h2 id="eveprotocolmessagestreamcontenttype-field">EveProtocol.MessageStreamContentType Field<a class="headerlink" href="#eveprotocolmessagestreamcontenttype-field" title="Permanent link">&para;</a></h2>
-<p>Gets the media type returned by eve session streams.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamContentType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;application/x-ndjson&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value">Field Value<a class="headerlink" href="#field-value" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p><a name='NexusLabs.Eve.EveProtocol.MessageStreamVersion'></a></p>
-<h2 id="eveprotocolmessagestreamversion-field">EveProtocol.MessageStreamVersion Field<a class="headerlink" href="#eveprotocolmessagestreamversion-field" title="Permanent link">&para;</a></h2>
-<p>Gets the durable message-stream protocol version used by the reference client.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;22&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value_1">Field Value<a class="headerlink" href="#field-value_1" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> → EveTurnOptions</p>
+<p>Implements <a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">System.IEquatable&lt;</a><a href="./" title="NexusLabs.Eve.EveTurnOptions">EveTurnOptions</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">&gt;</a></p>
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
-<p>This mirrors upstream's <code>EVE_MESSAGE_STREAM_VERSION</code> in
-<code>packages/eve/src/protocol/message.ts</code>. Read that constant when advancing the
-baseline; the value does not follow from whether the event vocabulary changed. eve
-<code>0.35.0</code> raised it to <code>22</code> while adding no event type and removing none.</p>
-<p><a name='NexusLabs.Eve.EveProtocol.MinimumEveVersion'></a></p>
-<h2 id="eveprotocolminimumeveversion-field">EveProtocol.MinimumEveVersion Field<a class="headerlink" href="#eveprotocolminimumeveversion-field" title="Permanent link">&para;</a></h2>
-<p>Gets the oldest eve release this package can talk to.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MinimumEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.31.0&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value_2">Field Value<a class="headerlink" href="#field-value_2" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
-<p>eve <code>0.31.0</code> moved session control operations to identifier-addressed routes and
-removed continuation tokens from the client protocol. Those routes do not exist on an
-earlier server, so this package cannot be used against one. Use <code>0.1.0-alpha.3</code> for
-an eve <code>0.29.x</code> or <code>0.30.x</code> agent.</p>
-<p><a name='NexusLabs.Eve.EveProtocol.ReferenceEveVersion'></a></p>
-<h2 id="eveprotocolreferenceeveversion-field">EveProtocol.ReferenceEveVersion Field<a class="headerlink" href="#eveprotocolreferenceeveversion-field" title="Permanent link">&para;</a></h2>
-<p>Gets the upstream TypeScript package version used as the compatibility reference.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.35.0&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value_3">Field Value<a class="headerlink" href="#field-value_3" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p><a name='NexusLabs.Eve.EveProtocol.SessionIdHeaderName'></a></p>
-<h2 id="eveprotocolsessionidheadername-field">EveProtocol.SessionIdHeaderName Field<a class="headerlink" href="#eveprotocolsessionidheadername-field" title="Permanent link">&para;</a></h2>
-<p>Gets the response header that carries the assigned eve session identifier.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">SessionIdHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;x-eve-session-id&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value_4">Field Value<a class="headerlink" href="#field-value_4" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<p><a name='NexusLabs.Eve.EveProtocol.VercelTrustedOidcTokenHeaderName'></a></p>
-<h2 id="eveprotocolverceltrustedoidctokenheadername-field">EveProtocol.VercelTrustedOidcTokenHeaderName Field<a class="headerlink" href="#eveprotocolverceltrustedoidctokenheadername-field" title="Permanent link">&para;</a></h2>
-<p>Gets the Vercel header used to present a trusted OIDC identity-provider token.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">VercelTrustedOidcTokenHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;x-vercel-trusted-oidc-idp-token&quot;</span><span class="p">;</span>
-</code></pre></div>
-<h4 id="field-value_5">Field Value<a class="headerlink" href="#field-value_5" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p>eve <code>0.31.0</code> requires a turn to carry either a message or input responses, never both,
+so the payload is supplied to <a href="../EveSession/#NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveMessageContent,NexusLabs.Eve.EveTurnOptions,System.Threading.CancellationToken)" title="NexusLabs.Eve.EveSession.SendAsync(NexusLabs.Eve.EveMessageContent, NexusLabs.Eve.EveTurnOptions, System.Threading.CancellationToken)">SendAsync(EveMessageContent, EveTurnOptions, CancellationToken)</a>
+or <a href="../EveSession/#NexusLabs.Eve.EveSession.RespondAsync(System.Collections.Generic.IReadOnlyList_NexusLabs.Eve.EveInputResponse_,NexusLabs.Eve.EveTurnOptions,System.Threading.CancellationToken)" title="NexusLabs.Eve.EveSession.RespondAsync(System.Collections.Generic.IReadOnlyList\&lt;NexusLabs.Eve.EveInputResponse&gt;, NexusLabs.Eve.EveTurnOptions, System.Threading.CancellationToken)">RespondAsync(IReadOnlyList&lt;EveInputResponse&gt;, EveTurnOptions, CancellationToken)</a>
+directly. Keeping it off this type makes the rejected combination impossible to express.</p>
 <h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveProtocol.SupportedAgentInfoVersions'></a></p>
-<h2 id="eveprotocolsupportedagentinfoversions-property">EveProtocol.SupportedAgentInfoVersions Property<a class="headerlink" href="#eveprotocolsupportedagentinfoversions-property" title="Permanent link">&para;</a></h2>
-<p>Gets the agent-info payload schema versions this package understands.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SupportedAgentInfoVersions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<p><a name='NexusLabs.Eve.EveTurnOptions.ClientContext'></a></p>
+<h2 id="eveturnoptionsclientcontext-property">EveTurnOptions.ClientContext Property<a class="headerlink" href="#eveturnoptionsclientcontext-property" title="Permanent link">&para;</a></h2>
+<p>Gets ephemeral context used only for this model call.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveClientContext</span><span class="o">?</span><span class="w"> </span><span class="n">ClientContext</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
-<p>eve raised the schema to <code>2</code> in <code>0.35.0</code>, where static instructions became a
-list whose entries carry <code>content</code> and a <code>system</code> or <code>user</code> role. Both
-versions expose the identity fields this package projects, and the complete payload of
-either remains available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>. A version outside this
-set is rejected rather than parsed optimistically.</p>
+<p><a href="../EveClientContext/" title="NexusLabs.Eve.EveClientContext">EveClientContext</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.Headers'></a></p>
+<h2 id="eveturnoptionsheaders-property">EveTurnOptions.Headers Property<a class="headerlink" href="#eveturnoptionsheaders-property" title="Permanent link">&para;</a></h2>
+<p>Gets headers that apply to this POST and its stream reconnects.
+These values override non-protected client-level headers but cannot replace
+authentication-owned or otherwise protected headers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyDictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="kt">string</span><span class="o">&gt;?</span><span class="w"> </span><span class="n">Headers</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">System.Collections.Generic.IReadOnlyDictionary&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">,</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.OutputSchema'></a></p>
+<h2 id="eveturnoptionsoutputschema-property">EveTurnOptions.OutputSchema Property<a class="headerlink" href="#eveturnoptionsoutputschema-property" title="Permanent link">&para;</a></h2>
+<p>Gets the optional JSON Schema that the turn's structured result must satisfy.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="o">&gt;</span><span class="w"> </span><span class="n">OutputSchema</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.ProtectedHeaderOverrides'></a></p>
+<h2 id="eveturnoptionsprotectedheaderoverrides-property">EveTurnOptions.ProtectedHeaderOverrides Property<a class="headerlink" href="#eveturnoptionsprotectedheaderoverrides-property" title="Permanent link">&para;</a></h2>
+<p>Gets explicit overrides for protected headers on this POST and its stream reconnects.
+Every name must also appear in
+<a href="../EveClientOptions/#NexusLabs.Eve.EveClientOptions.AllowedProtectedHeaderOverrides" title="NexusLabs.Eve.EveClientOptions.AllowedProtectedHeaderOverrides">AllowedProtectedHeaderOverrides</a>.
+Never populate this collection directly from untrusted inbound headers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyDictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="kt">string</span><span class="o">&gt;?</span><span class="w"> </span><span class="n">ProtectedHeaderOverrides</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">System.Collections.Generic.IReadOnlyDictionary&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">,</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlydictionary-2" title="System.Collections.Generic.IReadOnlyDictionary`2">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.StreamReconnectPolicy'></a></p>
+<h2 id="eveturnoptionsstreamreconnectpolicy-property">EveTurnOptions.StreamReconnectPolicy Property<a class="headerlink" href="#eveturnoptionsstreamreconnectpolicy-property" title="Permanent link">&para;</a></h2>
+<p>Gets the reconnect policy for this turn's event stream.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamReconnectPolicy</span><span class="o">?</span><span class="w"> </span><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
+<p><a href="../EveStreamReconnectPolicy/" title="NexusLabs.Eve.EveStreamReconnectPolicy">EveStreamReconnectPolicy</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOptions.TurnPolicy'></a></p>
+<h2 id="eveturnoptionsturnpolicy-property">EveTurnOptions.TurnPolicy Property<a class="headerlink" href="#eveturnoptionsturnpolicy-property" title="Permanent link">&para;</a></h2>
+<p>Gets how eve handles this message when the session already has an active turn.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveTurnPolicy</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TurnPolicy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="../EveTurnPolicy/" title="NexusLabs.Eve.EveTurnPolicy">EveTurnPolicy</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>This applies only to a message sent to an existing session. It is omitted when the turn
+creates the session, because a new session has no active turn, and when the turn carries
+only input responses, matching the upstream client. Leaving this unset sends no policy, so
+eve <code>0.33.0</code> and later steer the active turn.</p>
 
 
 
