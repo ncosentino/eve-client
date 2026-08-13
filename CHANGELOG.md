@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-08-13
+
 ### Compatibility
 
 - **Supported eve versions:** `0.31.0` through `0.34.x`, message-stream protocol `21`. The
@@ -35,7 +37,6 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `EveTurnPolicy.Steer` replaces it. The field is serialized only for a message
   continuing an existing session, and is omitted when creating a session and when a turn
   carries only input responses, matching the upstream client.
-
 - `EveAgentInfo.ModelRouting` and `EveAgentInfo.RawModelRouting` report how an agent
   resolves the model it calls. Agents older than eve `0.33.0` report no routing and
   therefore project `EveAgentModelRouting.Unknown`.
@@ -224,7 +225,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.4...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.5...HEAD
+[0.1.0-alpha.5]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.4...v0.1.0-alpha.5
 [0.1.0-alpha.4]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.3...v0.1.0-alpha.4
 [0.1.0-alpha.3]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
