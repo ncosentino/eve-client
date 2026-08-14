@@ -64,7 +64,17 @@ $updated = Add-EveRadarDismissal `
     -Reason $Reason
 Save-EveRadarState -StatePath $StatePath -State $updated
 
-$recorded = Get-EveRadarDismissal -State $updated -SourceIdentity $SourceIdentity
+$persisted = Read-EveRadarState -StatePath $StatePath
+$recorded = Get-EveRadarDismissal -State $persisted -SourceIdentity $SourceIdentity
+if ($null -eq $recorded) {
+    throw "Dismissal '$SourceIdentity' was not present after writing '$StatePath'."
+}
+if ((Get-EveRadarJsonProperty -InputObject $recorded -Name 'decision') -cne $Decision -or
+    (Get-EveRadarJsonProperty -InputObject $recorded -Name 'targetCommit') -cne
+        $TargetCommit.Trim().ToLowerInvariant()) {
+    throw "Dismissal '$SourceIdentity' did not persist the requested decision."
+}
+
 [pscustomobject]@{
     SourceIdentity = $SourceIdentity
     Fingerprint = Get-EveRadarJsonProperty -InputObject $recorded -Name 'fingerprint'

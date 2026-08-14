@@ -35,9 +35,10 @@ Describe 'Eve client upstream radar helpers' {
 
         $state = Read-EveRadarState -StatePath $statePath
 
-        $state.schemaVersion | Should -Be 2
+        $state.schemaVersion | Should -Be 3
         $state.baseline | Should -BeNullOrEmpty
         @($state.dismissals).Count | Should -Be 0
+        @($state.splitManifests).Count | Should -Be 0
     }
 
     It 'upgrades a schema 1 state file without losing its baseline' {
@@ -50,9 +51,10 @@ Describe 'Eve client upstream radar helpers' {
 
         $state = Read-EveRadarState -StatePath $statePath
 
-        $state.schemaVersion | Should -Be 2
+        $state.schemaVersion | Should -Be 3
         $state.baseline.eveVersion | Should -Be '0.32.0'
         @($state.dismissals).Count | Should -Be 0
+        @($state.splitManifests).Count | Should -Be 0
     }
 
     It 'rejects an unsupported state schema version' {
@@ -75,7 +77,13 @@ Describe 'Eve client upstream radar helpers' {
             '"targetCommit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
             '"upstreamHead":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",' +
             '"reason":"server internal",' +
-            '"recordedAt":"2026-08-13T13:51:34.9670236+00:00"}]}')
+            '"recordedAt":"2026-08-13T13:51:34.9670236+00:00"}],' +
+            '"splitManifests":[{"sourceIdentity":"eve-client-upstream:pr:1806",' +
+            '"childSourceIdentities":["eve-client-upstream:pr:1806:first",' +
+            '"eve-client-upstream:pr:1806:second"],' +
+            '"targetCommit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
+            '"upstreamHead":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",' +
+            '"recordedAt":"2026-08-13T15:00:00.0000000+00:00"}]}')
 
         Save-EveRadarState -StatePath $statePath -State (
             Read-EveRadarState -StatePath $statePath)
@@ -85,6 +93,7 @@ Describe 'Eve client upstream radar helpers' {
             Should -BeLike '*2026-08-12T12:00:29.8299605+00:00*' `
                 -Because 'A read-then-write cycle must not rewrite an instant in local time.'
         $rewritten | Should -BeLike '*2026-08-13T13:51:34.9670236+00:00*'
+        $rewritten | Should -BeLike '*2026-08-13T15:00:00.0000000+00:00*'
         $rewritten |
             Should -Not -BeLike '*2026-08-12T05:00:29*' `
                 -Because 'The baseline instant must not drift into this machine offset.'
@@ -107,6 +116,7 @@ Describe 'Eve client upstream radar helpers' {
         $state.baseline.eveVersion | Should -Be '0.31.3'
         $state.baseline.eveCommit |
             Should -Be '8e0bd60cd49246706a7ebdb8f7c84c3683048970'
+        $state.schemaVersion | Should -Be 3
         Test-Path -LiteralPath "$statePath.tmp" | Should -BeFalse
     }
 
@@ -195,6 +205,213 @@ Describe 'Eve client upstream radar helpers' {
             Should -Be 'Eval reporter callbacks are TypeScript-only.'
     }
 
+    It 'records and resolves a complete split manifest' {
+        $state = Add-EveRadarSplitManifest `
+            -State ([pscustomobject]@{
+                schemaVersion = 3
+                baseline = $null
+                dismissals = @()
+                splitManifests = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        $state = Add-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806:first-topic' `
+            -Decision 'already-present' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'already projected'
+        $issues = @(
+            [pscustomobject]@{
+                number = 91
+                url = 'https://github.com/ncosentino/eve-client/issues/91'
+                state = 'CLOSED'
+                stateReason = 'COMPLETED'
+                labels = @(
+                    [pscustomobject]@{
+                        name = 'eve-fp:' + (
+                            Get-EveRadarFingerprint `
+                                -SourceIdentity (
+                                    'eve-client-upstream:pr:1806:second-topic'))
+                    })
+            })
+
+        $resolution = Get-EveRadarSplitResolution `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -Issue $issues
+
+        $resolution.Resolved | Should -BeTrue
+        $resolution.Implemented | Should -BeTrue
+        @($resolution.Children).Count | Should -Be 2
+        @($resolution.Children | Where-Object Resolution -EQ 'already-present').Count |
+            Should -Be 1
+        @($resolution.Children | Where-Object Resolution -EQ 'issue').Count |
+            Should -Be 1
+    }
+
+    It 'keeps a split candidate unresolved until every child is resolved' {
+        $state = Add-EveRadarSplitManifest `
+            -State ([pscustomobject]@{
+                schemaVersion = 3
+                baseline = $null
+                dismissals = @()
+                splitManifests = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        $state = Add-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806:first-topic' `
+            -Decision 'out-of-scope' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'runtime only'
+
+        $resolution = Get-EveRadarSplitResolution `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806'
+
+        $resolution.Resolved | Should -BeFalse
+        @($resolution.Children | Where-Object { -not $_.Resolved }).SourceIdentity |
+            Should -Be @('eve-client-upstream:pr:1806:second-topic')
+    }
+
+    It 'rechecks a split candidate whose resolution depends on dismissals' {
+        $state = Add-EveRadarSplitManifest `
+            -State ([pscustomobject]@{
+                schemaVersion = 3
+                baseline = $null
+                dismissals = @()
+                splitManifests = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        foreach ($child in @(
+            'eve-client-upstream:pr:1806:first-topic',
+            'eve-client-upstream:pr:1806:second-topic')) {
+            $state = Add-EveRadarDismissal `
+                -State $state `
+                -SourceIdentity $child `
+                -Decision 'already-present' `
+                -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+                -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+                -Reason 'already projected'
+        }
+
+        $resolution = Get-EveRadarSplitResolution `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -IgnoreDismissals
+
+        $resolution.Resolved | Should -BeFalse
+        @($resolution.Children | Where-Object { -not $_.Resolved }).Count |
+            Should -Be 2
+    }
+
+    It 'deduplicates an open split issue without counting it as implemented' {
+        $state = Add-EveRadarSplitManifest `
+            -State ([pscustomobject]@{
+                schemaVersion = 3
+                baseline = $null
+                dismissals = @()
+                splitManifests = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        $state = Add-EveRadarDismissal `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806:first-topic' `
+            -Decision 'already-present' `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
+            -Reason 'already projected'
+        $issues = @(
+            [pscustomobject]@{
+                number = 91
+                state = 'OPEN'
+                stateReason = $null
+                labels = @(
+                    [pscustomobject]@{
+                        name = 'eve-fp:' + (
+                            Get-EveRadarFingerprint `
+                                -SourceIdentity (
+                                    'eve-client-upstream:pr:1806:second-topic'))
+                    })
+            })
+
+        $resolution = Get-EveRadarSplitResolution `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -Issue $issues
+
+        $resolution.Resolved | Should -BeTrue
+        $resolution.Implemented | Should -BeFalse
+    }
+
+    It 'round-trips split manifests through saved state' {
+        $statePath = Join-Path $TestDrive 'split-manifests\state.json'
+        $state = Add-EveRadarSplitManifest `
+            -State ([pscustomobject]@{
+                schemaVersion = 3
+                baseline = $null
+                dismissals = @()
+                splitManifests = @()
+            }) `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' `
+            -UpstreamHead 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' `
+            -RecordedAt ([DateTimeOffset]::Parse('2026-08-14T12:00:00Z'))
+
+        Save-EveRadarState -StatePath $statePath -State $state
+
+        $reloaded = Read-EveRadarState -StatePath $statePath
+        $manifest = Get-EveRadarSplitManifest `
+            -State $reloaded `
+            -SourceIdentity 'eve-client-upstream:pr:1806'
+        @($manifest.childSourceIdentities).Count | Should -Be 2
+        $manifest.targetCommit |
+            Should -Be 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        $manifest.recordedAt |
+            Should -Be '2026-08-14T12:00:00.0000000+00:00'
+    }
+
+    It 'rejects an incomplete split manifest' {
+        {
+            Add-EveRadarSplitManifest `
+                -State ([pscustomobject]@{
+                    schemaVersion = 3
+                    baseline = $null
+                    dismissals = @()
+                    splitManifests = @()
+                }) `
+                -SourceIdentity 'eve-client-upstream:pr:1806' `
+                -ChildSourceIdentity @('eve-client-upstream:pr:1806:only-topic') `
+                -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+                -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        } | Should -Throw '*at least two*'
+    }
+
     It 'preserves dismissals when the baseline advances' {
         $state = Add-EveRadarDismissal `
             -State ([pscustomobject]@{
@@ -211,6 +428,14 @@ Describe 'Eve client upstream radar helpers' {
             -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
             -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' `
             -Reason 'server internal'
+        $state = Add-EveRadarSplitManifest `
+            -State $state `
+            -SourceIdentity 'eve-client-upstream:pr:1806' `
+            -ChildSourceIdentity @(
+                'eve-client-upstream:pr:1806:first-topic',
+                'eve-client-upstream:pr:1806:second-topic') `
+            -TargetCommit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' `
+            -UpstreamHead 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
 
         $update = Update-EveRadarBaseline `
             -State $state `
@@ -218,9 +443,11 @@ Describe 'Eve client upstream radar helpers' {
             -Commit 'cccccccccccccccccccccccccccccccccccccccc'
 
         $update.Status | Should -Be 'Advanced'
-        $update.State.schemaVersion | Should -Be 2
+        $update.State.schemaVersion | Should -Be 3
         @($update.State.dismissals).Count |
             Should -Be 1 -Because 'Advancing the baseline must not reset recorded dismissals.'
+        @($update.State.splitManifests).Count |
+            Should -Be 1 -Because 'Advancing the baseline must not reset split manifests.'
     }
 
     It 'bootstraps a baseline when no state exists' {
@@ -380,6 +607,25 @@ Describe 'Eve client upstream radar helpers' {
         ) |
             Should -Be '0.34.0' `
                 -Because 'An unreleased upstream-main change cannot gate a published baseline.'
+    }
+
+    It 'covers releases with no client candidates before the first open gap' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+                [pscustomobject]@{ Version = '0.37.1'; Resolved = $false }
+        ) -PublishedVersion @(
+                '0.36.0',
+                '0.37.0',
+                '0.37.1',
+                '0.38.0'
+        ) -FloorVersion '0.35.0' |
+                Should -Be '0.37.0'
+    }
+
+    It 'keeps the declared floor when the first later release has open work' {
+        Get-EveRadarImplementedThroughVersion -Candidate @(
+                [pscustomobject]@{ Version = '0.36.0'; Resolved = $false }
+        ) -PublishedVersion @('0.36.0') -FloorVersion '0.35.0' |
+                Should -Be '0.35.0'
     }
 
     It 'computes the stable upstream source fingerprint' {        Get-EveRadarFingerprint `
