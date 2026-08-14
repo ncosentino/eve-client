@@ -1026,6 +1026,105 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task ActiveTurnStream_OmittedIdleLimitSurvivesPastDefaultBudget(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        for (int connection = 0; connection < 6; connection++)
+        {
+            handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse()));
+        }
+
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Wait past the idle budget"),
+            new EveTurnOptions
+            {
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(2);
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(handler.Calls.Count).IsEqualTo(8);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 2,
+        });
+    }
+
+    [Test]
+    public async Task SessionStream_OmittedIdleLimitRetainsFiniteBudget(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        for (int connection = 0; connection < 6; connection++)
+        {
+            handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse()));
+        }
+
+        EveSessionState initialState = new()
+        {
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(transport).CreateSession(initialState);
+
+        IReadOnlyList<EveStreamEvent> events = await CollectAsync(
+            session.StreamAsync(
+                new EveStreamOptions
+                {
+                    ReconnectPolicy = ZeroDelayReconnectPolicy(),
+                },
+                cancellationToken),
+            cancellationToken);
+
+        await Assert.That(events.Count).IsEqualTo(0);
+        await Assert.That(handler.Calls.Count).IsEqualTo(6);
+        await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task ActiveTurnStream_ExplicitIdleLimitRemainsFinite(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        for (int connection = 0; connection < 3; connection++)
+        {
+            handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse()));
+        }
+
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Use a finite idle budget"),
+            new EveTurnOptions
+            {
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(idleMaxAttempts: 2),
+            },
+            cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(0);
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Completed);
+        await Assert.That(handler.Calls.Count).IsEqualTo(4);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+        });
+    }
+
+    [Test]
     public async Task OversizedTurnEvent_FailsWithoutReconnect(
         CancellationToken cancellationToken)
     {
@@ -2268,7 +2367,8 @@ public sealed class EveSessionTests
                 MaxStreamEventBytes = maximumEventBytes,
             });
 
-    private static EveStreamReconnectPolicy ZeroDelayReconnectPolicy() =>
+    private static EveStreamReconnectPolicy ZeroDelayReconnectPolicy(
+        int? idleMaxAttempts = null) =>
         new()
         {
             StreamOpenRetry = new EveRetryPolicy
@@ -2279,6 +2379,7 @@ public sealed class EveSessionTests
             StreamIdleRetry = new EveRetryPolicy
             {
                 BaseDelay = TimeSpan.Zero,
+                MaxAttempts = idleMaxAttempts,
                 MaxDelay = TimeSpan.Zero,
             },
         };

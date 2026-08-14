@@ -137,8 +137,12 @@ Known wire types map to `EveStreamEventKind`; the original `Type` and `Data` JSO
 always preserved so newer eve events remain consumable before this package adds a
 stronger projection.
 
-The default reconnect policy mirrors the TypeScript client. A relay that owns cursor
-recovery can disable it:
+The default reconnect policy mirrors the TypeScript client. Active `SendAsync` and
+`RespondAsync` responses reconnect until a turn boundary or caller cancellation,
+while manually attached `StreamAsync` reads retain a finite idle budget. Set
+`StreamIdleRetry.MaxAttempts` to bound an active response explicitly.
+
+A relay that owns cursor recovery can disable reconnection:
 
 ```csharp
 EveMessageResponse response = await session.SendAsync(
