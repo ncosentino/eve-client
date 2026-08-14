@@ -121,8 +121,12 @@ with the session cursor instead.
 ## Reconnection
 
 The default policy follows a durable stream from the next absolute event index.
-Progress resets the idle retry budget, preventing a long-running active turn
-from being abandoned.
+`SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
+reaches a session boundary or the caller cancels consumption. Manually attached
+`StreamAsync` reads retain a finite idle reconnect budget.
+
+Set `EveStreamReconnectPolicy.StreamIdleRetry.MaxAttempts` to give an active
+response an explicit finite budget. Progress resets any finite idle budget.
 
 Disable reconnection when a proxy owns cursor recovery:
 

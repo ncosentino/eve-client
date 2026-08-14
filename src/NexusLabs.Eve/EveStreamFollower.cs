@@ -25,13 +25,14 @@ internal static class EveStreamFollower
         string sessionId,
         int initialStartIndex,
         bool follow,
+        EveStreamFollowMode mode,
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         EveStreamReconnectPolicy? configuredPolicy,
         int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy);
+        ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy, mode);
         int startIndex = initialStartIndex;
         TimeSpan reconnectDelay = policy.Idle.BaseDelay;
         int idleReconnects = 0;
@@ -110,7 +111,8 @@ internal static class EveStreamFollower
                 yield break;
             }
 
-            if (!deliveredEvent
+            if (policy.EnforceIdleAttemptLimit
+                && !deliveredEvent
                 && !initialConnection
                 && ++idleReconnects >= policy.Idle.MaxAttempts)
             {
@@ -352,16 +354,21 @@ internal static class EveStreamFollower
     }
 
     private static ResolvedReconnectPolicy ResolvePolicy(
-        EveStreamReconnectPolicy? configuredPolicy)
+        EveStreamReconnectPolicy? configuredPolicy,
+        EveStreamFollowMode mode)
     {
         if (configuredPolicy is { Reconnect: false })
         {
             return new ResolvedReconnectPolicy(
                 new ResolvedRetryPolicy(TimeSpan.FromMilliseconds(250), 1, TimeSpan.FromSeconds(5)),
                 new ResolvedRetryPolicy(TimeSpan.FromMilliseconds(250), 0, TimeSpan.FromSeconds(4)),
+                true,
                 new HashSet<HttpStatusCode>(DefaultRetryableStatusCodes));
         }
 
+        bool enforceIdleAttemptLimit =
+            mode == EveStreamFollowMode.SessionStream
+            || configuredPolicy?.StreamIdleRetry?.MaxAttempts is not null;
         return new ResolvedReconnectPolicy(
             ResolveRetryPolicy(
                 configuredPolicy?.StreamOpenRetry,
@@ -373,6 +380,7 @@ internal static class EveStreamFollower
                 TimeSpan.FromMilliseconds(250),
                 5,
                 TimeSpan.FromSeconds(4)),
+            enforceIdleAttemptLimit,
             configuredPolicy?.RetryableStatusCodes is null
                 ? new HashSet<HttpStatusCode>(DefaultRetryableStatusCodes)
                 : new HashSet<HttpStatusCode>(configuredPolicy.RetryableStatusCodes));
@@ -455,5 +463,6 @@ internal static class EveStreamFollower
     private sealed record ResolvedReconnectPolicy(
         ResolvedRetryPolicy Open,
         ResolvedRetryPolicy Idle,
+        bool EnforceIdleAttemptLimit,
         HashSet<HttpStatusCode> RetryableStatusCodes);
 }

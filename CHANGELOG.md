@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- Active `SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
+  reaches a session boundary or the caller cancels consumption. Manually attached
+  `StreamAsync` reads and explicitly configured idle-attempt limits retain their finite
+  budgets.
+
 ## [0.1.0-alpha.6] - 2026-08-13
 
 ### Compatibility
