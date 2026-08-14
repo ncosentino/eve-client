@@ -1283,8 +1283,11 @@ past its capacity. Callers that retain nothing per event should bound their read
 with the session cursor instead.</p>
 <h2 id="reconnection">Reconnection<a class="headerlink" href="#reconnection" title="Permanent link">&para;</a></h2>
 <p>The default policy follows a durable stream from the next absolute event index.
-Progress resets the idle retry budget, preventing a long-running active turn
-from being abandoned.</p>
+<code>SendAsync</code> and <code>RespondAsync</code> responses keep reconnecting until the current turn
+reaches a session boundary or the caller cancels consumption. Manually attached
+<code>StreamAsync</code> reads retain a finite idle reconnect budget.</p>
+<p>Set <code>EveStreamReconnectPolicy.StreamIdleRetry.MaxAttempts</code> to give an active
+response an explicit finite budget. Progress resets any finite idle budget.</p>
 <p>Disable reconnection when a proxy owns cursor recovery:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
 </code></pre></div>
