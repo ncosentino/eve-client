@@ -21,7 +21,7 @@ cooperative cancellation, session context clear, session reset, manual session c
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
 This package requires Vercel `eve` **0.31.0 or newer** and cannot talk to an earlier
-server. The compatibility target is `eve` **0.35.0**. eve `0.31.0` moved session control
+server. The compatibility target is `eve` **0.38.1**. eve `0.31.0` moved session control
 operations to identifier-addressed routes and removed continuation tokens from the client
 protocol, so there is no fallback path to an older agent — pin `0.1.0-alpha.3` for an eve
 `0.29.x` or `0.30.x` deployment. eve is still a preview, so pin and test compatible
@@ -178,9 +178,14 @@ Once a turn is accepted, cancellation can be requested before its stream settles
 EveMessageResponse response = await session.SendAsync(
     "Run the long operation.",
     cancellationToken);
-EveCancellationOutcome cancellation = await session.CancelAsync(cancellationToken);
-EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+Task<EveTurnOutcome> outcomeTask = response.GetOutcomeAsync(cancellationToken);
+EveCancellationOutcome cancellation = await response.CancelAsync(cancellationToken);
+EveTurnOutcome outcome = await outcomeTask;
 ```
+
+Start consuming the response before awaiting cancellation so it can identify and guard
+the exact turn. Use `session.CancelAsync(turnId, cancellationToken)` when working from an
+attached session and an already observed turn identifier.
 
 Continue consuming the stream after cancellation to observe `turn.cancelled` followed
 by `session.waiting` and to advance the cursor.
@@ -197,7 +202,7 @@ following `session.waiting` boundary before sending another turn:
 EveClearOutcome clear = await session.ClearAsync(cancellationToken);
 ```
 
-Context clear is covered by contract tests and by the pinned `0.35.0` fixture.
+Context clear is covered by contract tests and by the pinned `0.38.1` fixture.
 
 `ResetAsync` retires the durable session instead of only stopping the active turn:
 
