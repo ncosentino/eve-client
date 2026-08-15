@@ -1200,7 +1200,7 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.38.1</td>
+<td style="text-align: right;">0.38.3</td>
 <td style="text-align: right;">22</td>
 <td>Development compatibility target</td>
 </tr>
@@ -1290,7 +1290,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.38.1</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.38.3</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
@@ -1315,14 +1315,15 @@ unrecognized future field on the same object stays readable. An agent older than
 <code>0.35.0</code> omits it entirely.</p>
 <h2 id="eve-0371-and-038x">Eve 0.37.1 and 0.38.x<a class="headerlink" href="#eve-0371-and-038x" title="Permanent link">&para;</a></h2>
 <p>The framework-neutral session routes used by this package, agent-info schema version <code>2</code>,
-and message-stream protocol version <code>22</code> remain unchanged through eve <code>0.38.1</code>.</p>
+and message-stream protocol version <code>22</code> remain unchanged through eve <code>0.38.3</code>.</p>
 <p>eve <code>0.37.1</code> changed active response lifetime and added metadata to existing
 subagent and authorization events. Active <code>SendAsync</code> and <code>RespondAsync</code> responses now
 reconnect until a turn boundary or caller cancellation, while raw event data preserves
 the child-stream path plus optional background-task receipt and authorization attempt ID.</p>
 <p>eve <code>0.38.0</code> added response-scoped exact-turn cancellation to the TypeScript client.
 <code>EveMessageResponse.CancelAsync</code> provides the same coordination over the existing guarded
-cancel route. eve <code>0.38.1</code> adds no further framework-neutral client requirement.</p>
+cancel route. eve <code>0.38.1</code> through <code>0.38.3</code> add no further framework-neutral client
+requirement.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
