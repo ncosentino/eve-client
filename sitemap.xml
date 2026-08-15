@@ -2,246 +2,246 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/attachments-and-input/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/authentication/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/building/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/compatibility/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/errors/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/getting-started/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/migration/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/releasing/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/sessions/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/streaming/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/structured-output/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveAgentInfo/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveAgentModelRouting/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveBasicAuthentication/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveBearerAuthentication/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveCancellationOutcome/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveCancellationStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClearOutcome/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClearStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClient/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClientContext/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClientException/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveClientOptions/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveCompactOutcome/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveCompactStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveContentPart/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveHealthStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveHttpRequestContext/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputOption/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequest/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputRequestKind/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputResponse/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveMessageContent/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveMessageResponse/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveProtocol/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveProtocolException/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveRawRequestOptions/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveRequestKind/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveResetOutcome/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveResetStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveRetryPolicy/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSession/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveSessionState/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEvent/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEventDeduplicator/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEventKind/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamEventMetadata/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamOptions/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveStreamReconnectPolicy/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnOptions/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnOutcome/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnPolicy/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveTurnStatus/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveVercelOidcAuthentication/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/IEveAuthentication/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/NexusLabs.Eve/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/stable/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
 </urlset>

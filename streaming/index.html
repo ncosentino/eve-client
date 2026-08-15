@@ -730,6 +730,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cancel-the-exact-response-turn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancel the exact response turn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#attach-to-an-existing-stream" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1291,27 +1302,46 @@ response an explicit finite budget. Progress resets any finite idle budget.</p>
 <p>Disable reconnection when a proxy owns cursor recovery:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
 </code></pre></div>
+<h2 id="cancel-the-exact-response-turn">Cancel the exact response turn<a class="headerlink" href="#cancel-the-exact-response-turn" title="Permanent link">&para;</a></h2>
+<p>Start consuming a response before requesting cancellation. <code>CancelAsync</code> waits
+for that response's <code>turn.started</code>, sends its turn identifier as a guard, and
+keeps stream consumption attached through the durable boundary:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="s">&quot;Run the long operation.&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">Task</span><span class="o">&lt;</span><span class="n">EveTurnOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">outcomeTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">GetOutcomeAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">EveCancellationOutcome</span><span class="w"> </span><span class="n">cancellation</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">CancelAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">EveTurnOutcome</span><span class="w"> </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">outcomeTask</span><span class="p">;</span>
+</code></pre></div>
+<p>Concurrent calls share one in-flight cancellation request. The first call's
+token controls that request; later callers can cancel only their own wait. A
+failed request can be retried while the turn remains active, and a settled
+response returns <code>NoActiveTurn</code> without another HTTP request. Use
+<code>session.CancelAsync(turnId, cancellationToken)</code> when only an attached session
+and an observed turn identifier are available.</p>
 <h2 id="attach-to-an-existing-stream">Attach to an existing stream<a class="headerlink" href="#attach-to-an-existing-stream" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">{</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.</p>
 <h2 id="bounded-catch-up-reads">Bounded catch-up reads<a class="headerlink" href="#bounded-catch-up-reads" title="Permanent link">&para;</a></h2>
 <p>Set <code>Follow = false</code> to read everything recorded through the durable tail
 observed when the stream opens, then stop instead of waiting for future events:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">{</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">{</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>The first bounded request sends <code>includeTailIndex=1</code> and the server answers with
 the <code>x-eve-stream-tail-index</code> response header. That first tail is an immutable
@@ -1327,10 +1357,10 @@ never reported the header, so bounded reads against that release fail.</p>
 <h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
 <p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
 behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="p">{</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">};</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;https://agent.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="p">{</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="p">};</span>
 </code></pre></div>
 <p>The limit applies to one raw NDJSON line before trimming, excluding its line ending.
 An oversized event throws <code>EveProtocolException</code> without including the rejected
