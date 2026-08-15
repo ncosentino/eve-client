@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.38.1";
+    public const string ReferenceEveVersion = "0.38.3";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -29,7 +29,7 @@ public static class EveProtocol
     /// <c>packages/eve/src/protocol/message.ts</c>. Read that constant when advancing the
     /// baseline; the value does not follow from whether the event vocabulary changed. eve
     /// <c>0.35.0</c> raised it to <c>22</c> while adding no event type and removing none. The
-    /// value remains <c>22</c> through eve <c>0.38.1</c>.
+    /// value remains <c>22</c> through eve <c>0.38.3</c>.
     /// </remarks>
     public const string MessageStreamVersion = "22";
 
@@ -39,7 +39,7 @@ public static class EveProtocol
     /// <remarks>
     /// eve raised the schema to <c>2</c> in <c>0.35.0</c>, where static instructions became a
     /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role. The
-    /// schema remains version <c>2</c> through eve <c>0.38.1</c>. Both versions expose the
+    /// schema remains version <c>2</c> through eve <c>0.38.3</c>. Both versions expose the
     /// identity fields this package projects, and the complete payload of either remains
     /// available through <see cref="EveAgentInfo.Raw"/>. A version outside this set is rejected
     /// rather than parsed optimistically.

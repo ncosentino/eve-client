@@ -11,11 +11,11 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 through 0.38.1 need no migration"
+!!! success "eve 0.32.0 through 0.38.3 need no migration"
     None of these releases broke the framework-neutral client protocol. The core session
-    routes used by this package are unchanged across `0.31.0` through `0.38.1`.
+    routes used by this package are unchanged across `0.31.0` through `0.38.3`.
     `0.34.0` added `approval.candidate` and `approval.settled`; later releases through
-    `0.38.1` remove no stream event type and add only additive fields to existing events.
+    `0.38.3` remove no stream event type and add only additive fields to existing events.
     A `0.31.x` deployment can move anywhere in that range without changing this package,
     and this package treats `0.31.0` through `0.38.x` as one supported range. The only
     hard boundary remains eve `0.31.0`.
