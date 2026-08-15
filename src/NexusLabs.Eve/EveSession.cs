@@ -167,7 +167,9 @@ public sealed class EveSession
                 initialState,
                 options,
                 cancellationToken,
-                streamCancellationToken));
+                streamCancellationToken),
+            (turnId, cancelCancellationToken) =>
+                CancelAsync(turnId, cancelCancellationToken));
     }
 
     /// <summary>
