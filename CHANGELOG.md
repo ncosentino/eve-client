@@ -10,10 +10,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Compatibility
 
 - **Supported eve versions:** `0.31.0` through `0.38.x`, message-stream protocol `22`.
-  The compatibility target and pinned fixture move to eve `0.38.1`; the minimum remains
+  The compatibility target and pinned fixture move to eve `0.38.3`; the minimum remains
   eve `0.31.0`.
 - The core session routes, agent-info schema version `2`, and stream protocol version `22`
-  remain compatible from eve `0.35.0` through `0.38.1`. Existing subagent and
+  remain compatible from eve `0.35.0` through `0.38.3`. Existing subagent and
   authorization events gain additive raw fields, and no stream event type is removed.
 
 ### Added

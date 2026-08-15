@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.38.1 | 22 | Development compatibility target |
+| Unreleased | 0.38.3 | 22 | Development compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
@@ -48,7 +48,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.38.1` fixture with a deterministic
+The repository contains a pinned eve `0.38.3` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
@@ -80,7 +80,7 @@ unrecognized future field on the same object stays readable. An agent older than
 ## Eve 0.37.1 and 0.38.x
 
 The framework-neutral session routes used by this package, agent-info schema version `2`,
-and message-stream protocol version `22` remain unchanged through eve `0.38.1`.
+and message-stream protocol version `22` remain unchanged through eve `0.38.3`.
 
 eve `0.37.1` changed active response lifetime and added metadata to existing
 subagent and authorization events. Active `SendAsync` and `RespondAsync` responses now
@@ -89,7 +89,8 @@ the child-stream path plus optional background-task receipt and authorization at
 
 eve `0.38.0` added response-scoped exact-turn cancellation to the TypeScript client.
 `EveMessageResponse.CancelAsync` provides the same coordination over the existing guarded
-cancel route. eve `0.38.1` adds no further framework-neutral client requirement.
+cancel route. eve `0.38.1` through `0.38.3` add no further framework-neutral client
+requirement.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
