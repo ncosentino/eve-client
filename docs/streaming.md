@@ -121,14 +121,42 @@ with the session cursor instead.
 ## Reconnection
 
 The default policy follows a durable stream from the next absolute event index.
-Progress resets the idle retry budget, preventing a long-running active turn
-from being abandoned.
+`SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
+reaches a session boundary or the caller cancels consumption. Manually attached
+`StreamAsync` reads retain a finite idle reconnect budget.
+
+Set `EveStreamReconnectPolicy.StreamIdleRetry.MaxAttempts` to give an active
+response an explicit finite budget. Progress resets any finite idle budget.
 
 Disable reconnection when a proxy owns cursor recovery:
 
 ```csharp
 StreamReconnectPolicy = EveStreamReconnectPolicy.Disabled;
 ```
+
+## Cancel the exact response turn
+
+Start consuming a response before requesting cancellation. `CancelAsync` waits
+for that response's `turn.started`, sends its turn identifier as a guard, and
+keeps stream consumption attached through the durable boundary:
+
+```csharp
+EveMessageResponse response = await session.SendAsync(
+    "Run the long operation.",
+    cancellationToken);
+Task<EveTurnOutcome> outcomeTask = response.GetOutcomeAsync(cancellationToken);
+
+EveCancellationOutcome cancellation =
+    await response.CancelAsync(cancellationToken);
+EveTurnOutcome outcome = await outcomeTask;
+```
+
+Concurrent calls share one in-flight cancellation request. The first call's
+token controls that request; later callers can cancel only their own wait. A
+failed request can be retried while the turn remains active, and a settled
+response returns `NoActiveTurn` without another HTTP request. Use
+`session.CancelAsync(turnId, cancellationToken)` when only an attached session
+and an observed turn identifier are available.
 
 ## Attach to an existing stream
 

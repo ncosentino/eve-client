@@ -7,6 +7,29 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.38.x`, message-stream protocol `22`.
+  The compatibility target and pinned fixture move to eve `0.38.3`; the minimum remains
+  eve `0.31.0`.
+- The core session routes, agent-info schema version `2`, and stream protocol version `22`
+  remain compatible from eve `0.35.0` through `0.38.3`. Existing subagent and
+  authorization events gain additive raw fields, and no stream event type is removed.
+
+### Added
+
+- `EveMessageResponse.CancelAsync` waits for its response stream to identify the exact
+  turn, sends a guarded cancellation request, shares concurrent calls while preserving
+  per-caller wait cancellation, and allows retry after a failed request while stream
+  consumption continues through settlement.
+
+### Fixed
+
+- Active `SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
+  reaches a session boundary or the caller cancels consumption. Manually attached
+  `StreamAsync` reads and explicitly configured idle-attempt limits retain their finite
+  budgets.
+
 ## [0.1.0-alpha.6] - 2026-08-13
 
 ### Compatibility

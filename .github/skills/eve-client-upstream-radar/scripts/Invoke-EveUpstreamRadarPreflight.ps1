@@ -119,13 +119,9 @@ if ($sourceCandidates.Count -gt 0) {
 
 $trackedCandidates = @(
     foreach ($candidate in $sourceCandidates) {
-        $match = @(
-            $issues |
-                Where-Object {
-                    @($_.labels | ForEach-Object { $_.name }) -contains
-                        $candidate.Fingerprint
-                }
-        ) | Select-Object -First 1
+        $match = Get-EveRadarIssueByFingerprint `
+            -Issue $issues `
+            -Fingerprint $candidate.Fingerprint
         if ($null -ne $match) {
             [pscustomobject]@{
                 SourceIdentity = $candidate.SourceIdentity
@@ -143,6 +139,14 @@ $trackedCandidates = @(
     }
 )
 $trackedIdentities = @($trackedCandidates | ForEach-Object { $_.SourceIdentity })
+$implementedIssueIdentities = @(
+    $trackedCandidates |
+        Where-Object {
+            $_.IssueState -eq 'CLOSED' -and
+            $_.IssueStateReason -eq 'COMPLETED'
+        } |
+        ForEach-Object { $_.SourceIdentity }
+)
 
 # A candidate analyzed and dismissed leaves no issue behind, so without a durable record it
 # would be re-analyzed on every run forever. Treat a recorded dismissal as tracked, matching
@@ -177,30 +181,88 @@ $dismissedCandidates = @(
         }
     }
 )
+$directlyResolvedIdentities = @(
+    $trackedIdentities +
+        @($dismissedCandidates | ForEach-Object { $_.SourceIdentity })
+)
+$splitCandidateResolutions = @(
+    foreach ($candidate in $sourceCandidates) {
+        if ($directlyResolvedIdentities -ccontains $candidate.SourceIdentity) {
+            continue
+        }
+
+        $resolution = Get-EveRadarSplitResolution `
+            -State $radarState `
+            -SourceIdentity $candidate.SourceIdentity `
+            -Issue $issues `
+            -IgnoreDismissals:$RecheckDismissals
+        if ($null -ne $resolution) {
+            [pscustomobject]@{
+                SourceIdentity = $candidate.SourceIdentity
+                Fingerprint = $candidate.Fingerprint
+                PullRequestNumber = $candidate.Commit.PullRequestNumber
+                Commit = $candidate.Commit.Sha
+                Subject = $candidate.Commit.Subject
+                ReleasedInVersion = $candidate.Commit.ReleasedInVersion
+                Resolved = $resolution.Resolved
+                Implemented = $resolution.Implemented
+                TargetCommit = $resolution.TargetCommit
+                UpstreamHead = $resolution.UpstreamHead
+                RecordedAt = $resolution.RecordedAt
+                Children = $resolution.Children
+            }
+        }
+    }
+)
+$resolvedSplitCandidates = @(
+    $splitCandidateResolutions |
+        Where-Object Resolved
+)
+$implementedSplitCandidates = @(
+    $splitCandidateResolutions |
+        Where-Object Implemented
+)
 # The declared reference must never lag what parity work has actually covered, and the data to
 # answer that already exists here: each candidate's published release plus its tracking state.
 # Compute it rather than leaving it to be re-derived by hand at release time.
 $resolvedIdentities = @(
-    $trackedIdentities + @($dismissedCandidates | ForEach-Object { $_.SourceIdentity })
+    @(
+        $directlyResolvedIdentities +
+            @($resolvedSplitCandidates | ForEach-Object { $_.SourceIdentity })
+    ) |
+        Sort-Object -Unique
 )
+$implementedIdentities = @(
+    @(
+        $implementedIssueIdentities +
+            @($dismissedCandidates | ForEach-Object { $_.SourceIdentity }) +
+            @($implementedSplitCandidates | ForEach-Object { $_.SourceIdentity })
+    ) |
+        Sort-Object -Unique
+)
+$referenceVersion = $inventory.Target.ReferenceEveVersion
 $implementedThrough = Get-EveRadarImplementedThroughVersion -Candidate @(
     $sourceCandidates |
         ForEach-Object {
             [pscustomobject]@{
                 Version = $_.Commit.ReleasedInVersion
-                Resolved = $resolvedIdentities -ccontains $_.SourceIdentity
+                Resolved = $implementedIdentities -ccontains $_.SourceIdentity
             }
         }
-)
-$referenceVersion = $inventory.Target.ReferenceEveVersion
+) -PublishedVersion @(
+    $inventory.Commits |
+        ForEach-Object { $_.ReleasedInVersion }
+) -FloorVersion $referenceVersion
 $baselineBehind = $null -ne $implementedThrough -and
     (Compare-EveRadarVersion -Left $implementedThrough -Right $referenceVersion) -gt 0
 
 # Behavioral evidence shares the fingerprint scheme, so an evidence commit that already has a
 # tracking issue must stop the run as cheaply as a tracked path candidate. Only untracked work
 # justifies the full analysis pass.
-$untrackedCandidateCount =
-    $sourceCandidates.Count - $trackedCandidates.Count - $dismissedCandidates.Count
+$untrackedCandidateCount = @(
+    $sourceCandidates |
+        Where-Object { $resolvedIdentities -cnotcontains $_.SourceIdentity }
+).Count
 $reportPath = $null
 $status = if ($candidateCount -eq 0 -and $evidenceCount -eq 0) {
     'NoCandidates'
@@ -228,9 +290,9 @@ if ($status -ne 'AnalysisRequired') {
     }
     else {
         $lines.Add(
-            'Every framework-neutral path candidate already has an immutable upstream ' +
-            'fingerprint on a target issue. No repeat parity analysis or GitHub writes ' +
-            'were required.')
+            'Every framework-neutral source candidate already has a target issue or a ' +
+            'complete durable decision. No repeat parity analysis or GitHub writes were ' +
+            'required.')
     }
     $lines.Add('')
     $lines.Add('## Compared revisions')
@@ -260,7 +322,7 @@ if ($status -ne 'AnalysisRequired') {
         $lines.Add('')
         $lines.Add(
             "**The declared reference lags implemented parity.** Every candidate through eve " +
-            "``$implementedThrough`` is resolved while the package still declares " +
+            "``$implementedThrough`` is implemented or dismissed while the package declares " +
             "``$referenceVersion``. Advance ``EveProtocol.ReferenceEveVersion`` and the pinned " +
             'fixture together before the next release.')
     }
@@ -297,6 +359,29 @@ if ($status -ne 'AnalysisRequired') {
                 "$($tracked.IssueTitle.Replace('|', '\|')) |")
         }
     }
+    if ($resolvedSplitCandidates.Count -gt 0) {
+        $lines.Add('')
+        $lines.Add('## Resolved split candidates')
+        $lines.Add('')
+        $lines.Add('| Source | Children | Resolution |')
+        $lines.Add('|---|---:|---|')
+        foreach ($split in $resolvedSplitCandidates) {
+            $issueCount = @(
+                $split.Children |
+                    Where-Object Resolution -EQ 'issue'
+            ).Count
+            $dismissalCount = $split.Children.Count - $issueCount
+            $implementation = if ($split.Implemented) {
+                'implemented'
+            }
+            else {
+                'tracked'
+            }
+            $lines.Add(
+                "| ``$($split.SourceIdentity)`` | $($split.Children.Count) | " +
+                "$issueCount issue, $dismissalCount dismissal; $implementation |")
+        }
+    }
     $lines.Add('')
     $lines.Add('## Decision counts')
     $lines.Add('')
@@ -306,6 +391,7 @@ if ($status -ne 'AnalysisRequired') {
     $lines.Add("| Path candidates | $candidateCount |")
     $lines.Add("| Behavioral-evidence commits | $evidenceCount |")
     $lines.Add("| Previously dismissed | $($dismissedCandidates.Count) |")
+    $lines.Add("| Resolved split candidates | $($resolvedSplitCandidates.Count) |")
     $lines.Add(
         '| Path candidates not yet in a published eve release | ' +
         "$($inventory.Delta.UnreleasedPathCandidateCount) |")
@@ -326,7 +412,7 @@ if ($status -ne 'AnalysisRequired') {
 
 $preflightPath = Join-Path $runDirectory 'preflight.json'
 $result = [pscustomobject]@{
-    SchemaVersion = 3
+    SchemaVersion = 4
     Status = $status
     RunDirectory = [System.IO.Path]::GetFullPath($runDirectory)
     InventoryPath = [System.IO.Path]::GetFullPath($inventoryPath)
@@ -348,6 +434,11 @@ $result = [pscustomobject]@{
     BehavioralEvidenceCount = $evidenceCount
     DismissedCandidateCount = $dismissedCandidates.Count
     DismissedCandidates = $dismissedCandidates
+    ResolvedSplitCandidateCount = $resolvedSplitCandidates.Count
+    ResolvedSplitCandidates = $resolvedSplitCandidates
+    ImplementedSplitCandidateCount = $implementedSplitCandidates.Count
+    ImplementedSplitCandidates = $implementedSplitCandidates
+    SplitCandidateResolutions = $splitCandidateResolutions
     RecheckedDismissals = [bool] $RecheckDismissals
     BehavioralEvidenceCommits = @(
         $evidenceCommits |
@@ -372,7 +463,7 @@ $result = [pscustomobject]@{
 
 [System.IO.File]::WriteAllText(
     $preflightPath,
-    ($result | ConvertTo-Json -Depth 5),
+    ($result | ConvertTo-Json -Depth 7),
     [System.Text.UTF8Encoding]::new($false))
 
 return $result

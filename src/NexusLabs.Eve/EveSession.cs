@@ -167,7 +167,9 @@ public sealed class EveSession
                 initialState,
                 options,
                 cancellationToken,
-                streamCancellationToken));
+                streamCancellationToken),
+            (turnId, cancelCancellationToken) =>
+                CancelAsync(turnId, cancelCancellationToken));
     }
 
     /// <summary>
@@ -529,6 +531,7 @@ public sealed class EveSession
                 acceptedTurn.SessionId,
                 startIndex,
                 true,
+                EveStreamFollowMode.ActiveTurnResponse,
                 options?.Headers,
                 options?.ProtectedHeaderOverrides,
                 options?.StreamReconnectPolicy,
@@ -568,6 +571,7 @@ public sealed class EveSession
                 initialState.SessionId!,
                 startIndex,
                 follow,
+                EveStreamFollowMode.SessionStream,
                 null,
                 null,
                 reconnectPolicy,

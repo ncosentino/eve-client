@@ -86,6 +86,9 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
      `%LOCALAPPDATA%\eve-client-upstream-radar\state.json`, failing when a
      published tag moved, and advancing the record when the declared version
      changes.
+   - Uses complete split manifests from the same state file to treat a split
+     parent as resolved only when every topic-qualified child has an issue or
+     recorded dismissal. One resolved child never hides an unresolved sibling.
    - Updates a radar-owned partial clone of `vercel/eve`.
    - Enumerates every commit from that baseline through upstream main.
    - Resolves each commit's `ReleasedInVersion`: the lowest published
@@ -99,8 +102,9 @@ safety ceiling, not only a default. Reject `--skip-fetch` with
    - Reports how far parity has actually been carried, as
      `ImplementedThroughEveVersion` and `BaselineBehindImplementedParity`. A
      published eve release counts as covered only when every candidate belonging
-     to it and to every earlier release is resolved, so one open candidate for an
-     earlier release holds the line back.
+     to it and to every earlier release is implemented or dismissed. An open
+     tracking issue deduplicates analysis but does not count as implementation,
+     so one open candidate for an earlier release holds the line back.
 
 5. If preflight collection fails, stop without creating issues.
 6. If `preflight.Status` is `NoCandidates` or `NoUntrackedCandidates`, print
@@ -276,6 +280,25 @@ eve-client-upstream:pr:<number>
 eve-client-upstream:pr:<number>:<topic-slug>   # split PR only
 eve-client-upstream:commit:<full-sha>          # direct commit only
 ```
+
+When one pull request or direct commit was split into multiple topic-qualified
+identities, record the complete child set after all parity results and slugs are
+final:
+
+```powershell
+& (Join-Path $skillDir 'scripts\Record-EveRadarSplitManifest.ps1') `
+    -SourceIdentity 'eve-client-upstream:pr:<number>' `
+    -ChildSourceIdentity @(
+        'eve-client-upstream:pr:<number>:<first-topic>',
+        'eve-client-upstream:pr:<number>:<second-topic>') `
+    -TargetCommit $inventory.Target.Commit `
+    -UpstreamHead $inventory.Upstream.HeadCommit
+```
+
+The manifest is a completeness boundary, not a dismissal. Recording it early is
+safe: preflight still requires every listed child to resolve through an issue
+fingerprint or dismissal before it skips the parent. Never infer completeness
+from a prefix search over whatever child records happen to exist.
 
 Compute:
 
@@ -495,6 +518,8 @@ Write `<run-directory>\eve-client-upstream-radar.md` with:
   before and after and whether a .NET caller can restore the prior behavior.
 - Every independent verification outcome, including revisions applied and any
   issue blocked or deferred by review.
+- Every split manifest recorded to radar state, including its parent and full
+  child identity set.
 - Every dismissal recorded to radar state, with its decision and reason.
 - Every parity escalation, with the issue number and the contradicted claim.
 - Dedup matches.
@@ -514,6 +539,7 @@ Print the inventory and report paths plus counts for:
 - path candidates
 - behavioral-evidence commits
 - previously dismissed
+- resolved split candidates
 - parity covered through, and whether the declared reference lags it
 - confirmed gaps
 - already present

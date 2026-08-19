@@ -11,20 +11,23 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 through 0.35.0 need no migration"
-    None of these releases broke the client protocol. Every session route is unchanged
-    across `0.31.0` through `0.35.0`. The stream event vocabulary only grew: `0.34.0`
-    added `approval.candidate` and `approval.settled`, `0.35.0` added none and removed
-    none. A `0.31.x` deployment can move anywhere in that range without changing this
-    package, and this package treats `0.31.0` through `0.35.x` as one supported range.
-    The only hard boundary remains eve `0.31.0`.
+!!! success "eve 0.32.0 through 0.38.3 need no migration"
+    None of these releases broke the framework-neutral client protocol. The core session
+    routes used by this package are unchanged across `0.31.0` through `0.38.3`.
+    `0.34.0` added `approval.candidate` and `approval.settled`; later releases through
+    `0.38.3` remove no stream event type and add only additive fields to existing events.
+    A `0.31.x` deployment can move anywhere in that range without changing this package,
+    and this package treats `0.31.0` through `0.38.x` as one supported range. The only
+    hard boundary remains eve `0.31.0`.
 
     Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
     that arrives while a turn is active cancels and replaces that turn instead of waiting
     for it; set `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier
     behavior. From eve `0.35.0`, agent inspection returns schema version `2`; use
     `0.1.0-alpha.6` or newer, because earlier releases of this package reject it and
-    `GetInfoAsync` throws. Sessions and streaming are unaffected on either side.
+    `GetInfoAsync` throws. From eve `0.37.1`, active response streams remain connected
+    until a turn boundary by default. From eve `0.38.0`, response-scoped cancellation
+    targets the exact observed turn. These later changes require no deployment migration.
 
 ## Why a single smoke test will not catch this
 

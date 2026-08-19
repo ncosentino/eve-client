@@ -93,9 +93,7 @@ await foreach (EveStreamEvent streamEvent in cancellationResponse.WithCancellati
 
     if (cancellation is null && streamEvent.Kind == EveStreamEventKind.TurnStarted)
     {
-        string turnId = streamEvent.Data.GetProperty("turnId").GetString()
-            ?? throw new InvalidOperationException("turn.started did not contain a turn ID.");
-        cancellation = await cancellationSession.CancelAsync(turnId, timeout.Token);
+        cancellation = await cancellationResponse.CancelAsync(timeout.Token);
     }
 }
 

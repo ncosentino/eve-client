@@ -109,10 +109,10 @@ function Read-EveRadarState {
     Reads radar-owned durable state, returning empty state when none is recorded yet.
 
     .DESCRIPTION
-    Schema 1 recorded only the baseline. Schema 2 adds dismissal records so a candidate the
-    radar analyzed and dismissed is remembered instead of being re-analyzed on every run.
-    A schema 1 file is upgraded in memory rather than rejected, because the baseline it
-    carries is still valid.
+    Schema 1 recorded only the baseline. Schema 2 adds dismissal records. Schema 3 adds
+    split manifests so preflight can prove that every topic-qualified child of one upstream
+    source has been resolved. Older files are upgraded in memory rather than rejected because
+    the state they carry is still valid.
     #>
     [CmdletBinding()]
     param(
@@ -122,15 +122,16 @@ function Read-EveRadarState {
 
     if (-not (Test-Path -LiteralPath $StatePath -PathType Leaf)) {
         return [pscustomobject]@{
-            schemaVersion = 2
+            schemaVersion = 3
             baseline = $null
             dismissals = @()
+            splitManifests = @()
         }
     }
 
     $state = [System.IO.File]::ReadAllText($StatePath) | ConvertFrom-Json
     $schemaVersion = Get-EveRadarJsonProperty -InputObject $state -Name 'schemaVersion'
-    if ($schemaVersion -notin 1, 2) {
+    if ($schemaVersion -notin 1, 2, 3) {
         throw (
             "Unsupported radar state schema version '$schemaVersion' in " +
             "'$StatePath'.")
@@ -154,10 +155,20 @@ function Read-EveRadarState {
             Get-EveRadarJsonProperty -InputObject $dismissal -Name 'recordedAt')
     }
 
+    $splitManifests = @(
+        (Get-EveRadarJsonProperty -InputObject $state -Name 'splitManifests') |
+            Where-Object { $null -ne $_ }
+    )
+    foreach ($manifest in $splitManifests) {
+        $manifest.recordedAt = Get-EveRadarTimestampText -Value (
+            Get-EveRadarJsonProperty -InputObject $manifest -Name 'recordedAt')
+    }
+
     return [pscustomobject]@{
-        schemaVersion = 2
+        schemaVersion = 3
         baseline = $baseline
         dismissals = $dismissals
+        splitManifests = $splitManifests
     }
 }
 
@@ -259,9 +270,248 @@ function Add-EveRadarDismissal {
     }
 
     return [pscustomobject]@{
-        schemaVersion = 2
+        schemaVersion = 3
         baseline = Get-EveRadarJsonProperty -InputObject $State -Name 'baseline'
         dismissals = @($existing + $record)
+        splitManifests = @(
+            (Get-EveRadarJsonProperty -InputObject $State -Name 'splitManifests') |
+                Where-Object { $null -ne $_ }
+        )
+    }
+}
+
+function Get-EveRadarSplitManifest {
+    <#
+    .SYNOPSIS
+    Returns the complete child-identity manifest for one split upstream source, or null.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $SourceIdentity
+    )
+
+    $manifests = Get-EveRadarJsonProperty -InputObject $State -Name 'splitManifests'
+    return @(
+        $manifests |
+            Where-Object {
+                $null -ne $_ -and
+                (Get-EveRadarJsonProperty -InputObject $_ -Name 'sourceIdentity') -ceq
+                    $SourceIdentity
+            }
+    ) | Select-Object -First 1
+}
+
+function Add-EveRadarSplitManifest {
+    <#
+    .SYNOPSIS
+    Records the complete topic-qualified child identities for one split upstream source.
+
+    .DESCRIPTION
+    A manifest does not resolve the parent by itself. Preflight resolves the parent only when
+    every listed child has either a fingerprinted target issue or a recorded dismissal.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $SourceIdentity,
+        [Parameter(Mandatory)]
+        [string[]] $ChildSourceIdentity,
+        [Parameter(Mandatory)]
+        [string] $TargetCommit,
+        [Parameter(Mandatory)]
+        [string] $UpstreamHead,
+        [DateTimeOffset] $RecordedAt = [DateTimeOffset]::UtcNow
+    )
+
+    if ($SourceIdentity -notmatch
+        '^eve-client-upstream:(?:pr:\d+|commit:[0-9a-fA-F]{40})$') {
+        throw "Split manifest source identity '$SourceIdentity' is not an unsplit identity."
+    }
+
+    $children = @($ChildSourceIdentity | Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_)
+    })
+    if ($children.Count -lt 2) {
+        throw 'A split manifest must contain at least two child source identities.'
+    }
+
+    $prefix = "${SourceIdentity}:"
+    $seen = [System.Collections.Generic.HashSet[string]]::new(
+        [StringComparer]::Ordinal)
+    $normalizedChildren = [System.Collections.Generic.List[string]]::new()
+    foreach ($child in $children) {
+        $normalizedChild = $child.Trim()
+        if (-not $normalizedChild.StartsWith($prefix, [StringComparison]::Ordinal)) {
+            throw (
+                "Split child source identity '$normalizedChild' does not belong to " +
+                "'$SourceIdentity'.")
+        }
+
+        $slug = $normalizedChild.Substring($prefix.Length)
+        if ($slug -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$') {
+            throw "Split child source identity '$normalizedChild' has an invalid topic slug."
+        }
+
+        if (-not $seen.Add($normalizedChild)) {
+            throw "Split manifest contains duplicate child identity '$normalizedChild'."
+        }
+
+        $normalizedChildren.Add($normalizedChild)
+    }
+
+    $existing = @(
+        (Get-EveRadarJsonProperty -InputObject $State -Name 'splitManifests') |
+            Where-Object {
+                $null -ne $_ -and
+                (Get-EveRadarJsonProperty -InputObject $_ -Name 'sourceIdentity') -cne
+                    $SourceIdentity
+            }
+    )
+    $record = [pscustomobject]@{
+        sourceIdentity = $SourceIdentity
+        childSourceIdentities = @($normalizedChildren)
+        targetCommit = $TargetCommit.Trim().ToLowerInvariant()
+        upstreamHead = $UpstreamHead.Trim().ToLowerInvariant()
+        recordedAt = Get-EveRadarTimestampText -Value $RecordedAt
+    }
+
+    return [pscustomobject]@{
+        schemaVersion = 3
+        baseline = Get-EveRadarJsonProperty -InputObject $State -Name 'baseline'
+        dismissals = @(
+            (Get-EveRadarJsonProperty -InputObject $State -Name 'dismissals') |
+                Where-Object { $null -ne $_ }
+        )
+        splitManifests = @($existing + $record)
+    }
+}
+
+function Get-EveRadarIssueByFingerprint {
+    <#
+    .SYNOPSIS
+    Returns the first target issue carrying one immutable radar fingerprint.
+    #>
+    [CmdletBinding()]
+    param(
+        [psobject[]] $Issue,
+        [Parameter(Mandatory)]
+        [string] $Fingerprint
+    )
+
+    return @(
+        $Issue |
+            Where-Object {
+                @(
+                    (Get-EveRadarJsonProperty -InputObject $_ -Name 'labels') |
+                        ForEach-Object {
+                            Get-EveRadarJsonProperty -InputObject $_ -Name 'name'
+                        }
+                ) -contains $Fingerprint
+            }
+    ) | Select-Object -First 1
+}
+
+function Test-EveRadarIssueImplemented {
+    <#
+    .SYNOPSIS
+    Returns whether a fingerprinted issue represents completed implementation work.
+    #>
+    [CmdletBinding()]
+    param(
+        $Issue
+    )
+
+    if ($null -eq $Issue) {
+        return $false
+    }
+
+    return (
+        (Get-EveRadarJsonProperty -InputObject $Issue -Name 'state') -eq 'CLOSED' -and
+        (Get-EveRadarJsonProperty -InputObject $Issue -Name 'stateReason') -eq 'COMPLETED')
+}
+
+function Get-EveRadarSplitResolution {
+    <#
+    .SYNOPSIS
+    Resolves every child in a split manifest against target issues and durable dismissals.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $State,
+        [Parameter(Mandatory)]
+        [string] $SourceIdentity,
+        [psobject[]] $Issue,
+        [switch] $IgnoreDismissals
+    )
+
+    $manifest = Get-EveRadarSplitManifest `
+        -State $State `
+        -SourceIdentity $SourceIdentity
+    if ($null -eq $manifest) {
+        return $null
+    }
+
+    $children = @(
+        foreach ($childIdentity in @(
+            Get-EveRadarJsonProperty `
+                -InputObject $manifest `
+                -Name 'childSourceIdentities'
+        )) {
+            $fingerprint = "eve-fp:$(Get-EveRadarFingerprint -SourceIdentity $childIdentity)"
+            $matchedIssue = Get-EveRadarIssueByFingerprint `
+                -Issue $Issue `
+                -Fingerprint $fingerprint
+            $issueImplemented = Test-EveRadarIssueImplemented -Issue $matchedIssue
+            $dismissal = if ($IgnoreDismissals) {
+                $null
+            }
+            else {
+                Get-EveRadarDismissal `
+                    -State $State `
+                    -SourceIdentity $childIdentity
+            }
+
+            [pscustomobject]@{
+                SourceIdentity = $childIdentity
+                Fingerprint = $fingerprint
+                Resolved = $null -ne $matchedIssue -or $null -ne $dismissal
+                Implemented = $issueImplemented -or $null -ne $dismissal
+                Resolution = if ($null -ne $matchedIssue) {
+                    'issue'
+                }
+                elseif ($null -ne $dismissal) {
+                    Get-EveRadarJsonProperty -InputObject $dismissal -Name 'decision'
+                }
+                else {
+                    'unresolved'
+                }
+                IssueNumber = Get-EveRadarJsonProperty `
+                    -InputObject $matchedIssue `
+                    -Name 'number'
+                IssueUrl = Get-EveRadarJsonProperty `
+                    -InputObject $matchedIssue `
+                    -Name 'url'
+                Reason = Get-EveRadarJsonProperty `
+                    -InputObject $dismissal `
+                    -Name 'reason'
+            }
+        }
+    )
+
+    return [pscustomobject]@{
+        SourceIdentity = $SourceIdentity
+        TargetCommit = Get-EveRadarJsonProperty -InputObject $manifest -Name 'targetCommit'
+        UpstreamHead = Get-EveRadarJsonProperty -InputObject $manifest -Name 'upstreamHead'
+        RecordedAt = Get-EveRadarJsonProperty -InputObject $manifest -Name 'recordedAt'
+        Resolved = @($children | Where-Object { -not $_.Resolved }).Count -eq 0
+        Implemented = @($children | Where-Object { -not $_.Implemented }).Count -eq 0
+        Children = $children
     }
 }
 
@@ -325,7 +575,7 @@ function Update-EveRadarBaseline {
         Status = $status
         Commit = $normalizedCommit
         State = [pscustomobject]@{
-            schemaVersion = 2
+            schemaVersion = 3
             baseline = [pscustomobject]@{
                 eveVersion = $Version
                 eveCommit = $normalizedCommit
@@ -333,6 +583,10 @@ function Update-EveRadarBaseline {
             }
             dismissals = @(
                 (Get-EveRadarJsonProperty -InputObject $State -Name 'dismissals') |
+                    Where-Object { $null -ne $_ }
+            )
+            splitManifests = @(
+                (Get-EveRadarJsonProperty -InputObject $State -Name 'splitManifests') |
                     Where-Object { $null -ne $_ }
             )
         }
@@ -504,33 +758,44 @@ function Get-EveRadarImplementedThroughVersion {
     release is resolved, so the highest resolved version alone is not the answer. One open
     candidate for an earlier release holds the whole line back.
 
-    Each record needs a Version and a Resolved flag. Returns null when the earliest release in
-    the delta still has unresolved work.
+    Each candidate record needs a Version and a Resolved flag. PublishedVersion supplies every
+    release in the delta, including versions with no client candidate. FloorVersion is the
+    already-declared compatibility baseline and remains the answer when the first later release
+    still has unresolved work.
     #>
     [CmdletBinding()]
     param(
-        [psobject[]] $Candidate
+        [psobject[]] $Candidate,
+        [string[]] $PublishedVersion,
+        [string] $FloorVersion
     )
 
     $released = @(
         $Candidate |
             Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace($_.Version) }
     )
-    if ($released.Count -eq 0) {
-        return $null
-    }
 
-    # A release is covered only when every candidate belonging to it is resolved, so group first.
-    # Walking records individually would mark a version implemented while a sibling candidate for
-    # that same version is still open.
+    $versions = @(
+        @($PublishedVersion) +
+            @($released | ForEach-Object { $_.Version }) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            Sort-Object -Unique
+    )
     $byVersion = @(
-        $released |
-            Group-Object -Property Version |
+        $versions |
             ForEach-Object {
+                $version = $_
+                $versionCandidates = @(
+                    $released |
+                        Where-Object Version -EQ $version
+                )
                 [pscustomobject]@{
-                    Version = $_.Name
-                    Resolved = @($_.Group | Where-Object { -not $_.Resolved }).Count -eq 0
-                    Parsed = ConvertTo-EveRadarSemanticVersion -Version $_.Name
+                    Version = $version
+                    Resolved = @(
+                        $versionCandidates |
+                            Where-Object { -not $_.Resolved }
+                    ).Count -eq 0
+                    Parsed = ConvertTo-EveRadarSemanticVersion -Version $version
                 }
             } |
             Where-Object { $null -ne $_.Parsed } |
@@ -542,8 +807,23 @@ function Get-EveRadarImplementedThroughVersion {
                 @{ Expression = { $_.Parsed.Prerelease } }
     )
 
-    $implemented = $null
+    $implemented = if ([string]::IsNullOrWhiteSpace($FloorVersion)) {
+        $null
+    }
+    else {
+        if ($null -eq (ConvertTo-EveRadarSemanticVersion -Version $FloorVersion)) {
+            throw "Cannot use eve version '$FloorVersion' as the parity floor."
+        }
+
+        $FloorVersion
+    }
+
     foreach ($release in $byVersion) {
+        if ($null -ne $implemented -and
+            (Compare-EveRadarVersion -Left $release.Version -Right $implemented) -le 0) {
+            continue
+        }
+
         if (-not $release.Resolved) {
             break
         }
