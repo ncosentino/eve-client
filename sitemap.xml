@@ -141,6 +141,14 @@
          <lastmod>2026-08-19</lastmod>
     </url>
     <url>
+         <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputResolution/</loc>
+         <lastmod>2026-08-19</lastmod>
+    </url>
+    <url>
+         <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputResolutionOutcome/</loc>
+         <lastmod>2026-08-19</lastmod>
+    </url>
+    <url>
          <loc>https://www.devleader.ca/projects/eve-client/api/dev/NexusLabs.Eve/EveInputResponse/</loc>
          <lastmod>2026-08-19</lastmod>
     </url>

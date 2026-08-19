@@ -838,6 +838,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#resolved-human-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolved human input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1200,8 +1211,8 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.38.3</td>
-<td style="text-align: right;">22</td>
+<td style="text-align: right;">0.39.1</td>
+<td style="text-align: right;">23</td>
 <td>Development compatibility target</td>
 </tr>
 <tr>
@@ -1290,7 +1301,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.38.3</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.39.1</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
@@ -1324,6 +1335,16 @@ the child-stream path plus optional background-task receipt and authorization at
 <code>EveMessageResponse.CancelAsync</code> provides the same coordination over the existing guarded
 cancel route. eve <code>0.38.1</code> through <code>0.38.3</code> add no further framework-neutral client
 requirement.</p>
+<h2 id="resolved-human-input">Resolved human input<a class="headerlink" href="#resolved-human-input" title="Permanent link">&para;</a></h2>
+<p>Stream protocol <code>23</code>, introduced by eve <code>0.39.1</code>, adds <code>input.resolved</code> after the
+server accepts a pending human-input batch and before the resumed <code>step.started</code>.
+<code>EveStreamEventKind.InputResolved</code> recognizes the event, and
+<code>EveTurnOutcome.InputResolutions</code> projects every request kind, terminal outcome,
+optional accepted response, and original <code>turnId</code>, <code>stepIndex</code>, and <code>sequence</code>.</p>
+<p>The known outcomes are <code>Answered</code>, <code>Approved</code>, <code>Denied</code>, <code>Ignored</code>, and <code>Invalid</code>.
+Future values remain available through <code>RawOutcome</code>, while the complete resolution
+object remains available through <code>Raw</code>. A resolution without a response is authoritative
+and is not dropped.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>

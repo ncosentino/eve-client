@@ -1076,7 +1076,7 @@
 <p><a name='NexusLabs.Eve.EveProtocol.MessageStreamVersion'></a></p>
 <h2 id="eveprotocolmessagestreamversion-field">EveProtocol.MessageStreamVersion Field<a class="headerlink" href="#eveprotocolmessagestreamversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the durable message-stream protocol version used by the reference client.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"22"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"23"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_1">Field Value<a class="headerlink" href="#field-value_1" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1085,7 +1085,7 @@
 <code>packages/eve/src/protocol/message.ts</code>. Read that constant when advancing the
 baseline; the value does not follow from whether the event vocabulary changed. eve
 <code>0.35.0</code> raised it to <code>22</code> while adding no event type and removing none. The
-value remains <code>22</code> through eve <code>0.38.3</code>.</p>
+<code>0.39.1</code> raised it to <code>23</code> for durable <code>input.resolved</code> events.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.MinimumEveVersion'></a></p>
 <h2 id="eveprotocolminimumeveversion-field">EveProtocol.MinimumEveVersion Field<a class="headerlink" href="#eveprotocolminimumeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the oldest eve release this package can talk to.</p>
@@ -1101,7 +1101,7 @@ an eve <code>0.29.x</code> or <code>0.30.x</code> agent.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.ReferenceEveVersion'></a></p>
 <h2 id="eveprotocolreferenceeveversion-field">EveProtocol.ReferenceEveVersion Field<a class="headerlink" href="#eveprotocolreferenceeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the upstream TypeScript package version used as the compatibility reference.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.38.3"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.39.1"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_3">Field Value<a class="headerlink" href="#field-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1130,7 +1130,7 @@ an eve <code>0.29.x</code> or <code>0.30.x</code> agent.</p>
 <h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
 <p>eve raised the schema to <code>2</code> in <code>0.35.0</code>, where static instructions became a
 list whose entries carry <code>content</code> and a <code>system</code> or <code>user</code> role. The
-schema remains version <code>2</code> through eve <code>0.38.3</code>. Both versions expose the
+schema remains version <code>2</code> through eve <code>0.39.1</code>. Both versions expose the
 identity fields this package projects, and the complete payload of either remains
 available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>. A version outside this set is rejected
 rather than parsed optimistically.</p>
