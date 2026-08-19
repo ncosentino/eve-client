@@ -241,6 +241,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         JsonElement? data = null;
         string? message = null;
         List<EveInputRequest> inputRequests = [];
+        List<EveInputResolution> inputResolutions = [];
 
         foreach (EveStreamEvent streamEvent in events)
         {
@@ -273,6 +274,9 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 case EveStreamEventKind.InputRequested:
                     AddInputRequests(streamEvent.Data, inputRequests);
                     break;
+                case EveStreamEventKind.InputResolved:
+                    AddInputResolutions(streamEvent.Data, inputResolutions);
+                    break;
             }
         }
 
@@ -289,7 +293,14 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             _ => EveTurnStatus.Completed,
         };
 
-        return new EveTurnOutcome(data, message, events, inputRequests, sessionId, status);
+        return new EveTurnOutcome(
+            data,
+            message,
+            events,
+            inputRequests,
+            inputResolutions,
+            sessionId,
+            status);
     }
 
     private static void AddInputRequests(
@@ -373,6 +384,149 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             "session-limit" => EveInputRequestKind.SessionLimit,
             _ => EveInputRequestKind.Unknown,
         };
+
+    private static void AddInputResolutions(
+        JsonElement data,
+        ICollection<EveInputResolution> inputResolutions)
+    {
+        if (!data.TryGetProperty("resolutions", out JsonElement resolutions)
+            || resolutions.ValueKind != JsonValueKind.Array)
+        {
+            throw new EveProtocolException(
+                "An input.resolved event did not contain a resolutions array.");
+        }
+
+        string turnId = RequireEventString(data, "turnId", "input.resolved");
+        int stepIndex = RequireEventInt32(data, "stepIndex", "input.resolved");
+        int sequence = RequireEventInt32(data, "sequence", "input.resolved");
+        for (int resolutionIndex = 0;
+            resolutionIndex < resolutions.GetArrayLength();
+            resolutionIndex++)
+        {
+            JsonElement resolution = resolutions[resolutionIndex];
+            if (resolution.ValueKind != JsonValueKind.Object)
+            {
+                throw new EveProtocolException(
+                    "An input.resolved resolution must be an object.");
+            }
+
+            string requestId = RequireEventString(
+                resolution,
+                "requestId",
+                "input.resolved resolution");
+            string rawKind = RequireEventString(
+                resolution,
+                "kind",
+                "input.resolved resolution");
+            string rawOutcome = RequireEventString(
+                resolution,
+                "outcome",
+                "input.resolved resolution");
+            EveInputResponse? response = ReadInputResolutionResponse(resolution);
+            inputResolutions.Add(new EveInputResolution(
+                requestId,
+                ResolveInputRequestKind(rawKind),
+                rawKind,
+                ResolveInputResolutionOutcome(rawOutcome),
+                rawOutcome,
+                response,
+                turnId,
+                stepIndex,
+                sequence,
+                resolution));
+        }
+    }
+
+    private static EveInputResponse? ReadInputResolutionResponse(JsonElement resolution)
+    {
+        if (!resolution.TryGetProperty("response", out JsonElement response))
+        {
+            return null;
+        }
+
+        if (response.ValueKind != JsonValueKind.Object)
+        {
+            throw new EveProtocolException(
+                "An input.resolved response must be an object.");
+        }
+
+        string requestId = RequireEventString(
+            response,
+            "requestId",
+            "input.resolved response");
+        if (string.IsNullOrWhiteSpace(requestId))
+        {
+            throw new EveProtocolException(
+                "An input.resolved response requestId cannot be empty.");
+        }
+
+        return new EveInputResponse(
+            requestId,
+            OptionalEventString(response, "optionId", "input.resolved response"),
+            OptionalEventString(response, "text", "input.resolved response"));
+    }
+
+    private static EveInputResolutionOutcome ResolveInputResolutionOutcome(string rawOutcome) =>
+        rawOutcome switch
+        {
+            "answered" => EveInputResolutionOutcome.Answered,
+            "approved" => EveInputResolutionOutcome.Approved,
+            "denied" => EveInputResolutionOutcome.Denied,
+            "ignored" => EveInputResolutionOutcome.Ignored,
+            "invalid" => EveInputResolutionOutcome.Invalid,
+            _ => EveInputResolutionOutcome.Unknown,
+        };
+
+    private static string RequireEventString(
+        JsonElement parent,
+        string propertyName,
+        string context)
+    {
+        if (!parent.TryGetProperty(propertyName, out JsonElement value)
+            || value.ValueKind != JsonValueKind.String
+            || value.GetString() is not string result)
+        {
+            throw new EveProtocolException(
+                $"An {context} value is missing string property '{propertyName}'.");
+        }
+
+        return result;
+    }
+
+    private static int RequireEventInt32(
+        JsonElement parent,
+        string propertyName,
+        string context)
+    {
+        if (!parent.TryGetProperty(propertyName, out JsonElement value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out int result))
+        {
+            throw new EveProtocolException(
+                $"An {context} value is missing integer property '{propertyName}'.");
+        }
+
+        return result;
+    }
+
+    private static string? OptionalEventString(
+        JsonElement parent,
+        string propertyName,
+        string context)
+    {
+        if (!parent.TryGetProperty(propertyName, out JsonElement value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            throw new EveProtocolException(
+                $"An {context} property '{propertyName}' must be a string.");
+        }
+
+        return value.GetString();
+    }
 
     private static string RequireString(JsonElement parent, string propertyName)
     {

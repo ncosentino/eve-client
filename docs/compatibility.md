@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.38.3 | 22 | Development compatibility target |
+| Unreleased | 0.39.1 | 23 | Development compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
@@ -48,7 +48,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.38.3` fixture with a deterministic
+The repository contains a pinned eve `0.39.1` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, session context clear, and session reset through the
@@ -91,6 +91,19 @@ eve `0.38.0` added response-scoped exact-turn cancellation to the TypeScript cli
 `EveMessageResponse.CancelAsync` provides the same coordination over the existing guarded
 cancel route. eve `0.38.1` through `0.38.3` add no further framework-neutral client
 requirement.
+
+## Resolved human input
+
+Stream protocol `23`, introduced by eve `0.39.1`, adds `input.resolved` after the
+server accepts a pending human-input batch and before the resumed `step.started`.
+`EveStreamEventKind.InputResolved` recognizes the event, and
+`EveTurnOutcome.InputResolutions` projects every request kind, terminal outcome,
+optional accepted response, and original `turnId`, `stepIndex`, and `sequence`.
+
+The known outcomes are `Answered`, `Approved`, `Denied`, `Ignored`, and `Invalid`.
+Future values remain available through `RawOutcome`, while the complete resolution
+object remains available through `Raw`. A resolution without a response is authoritative
+and is not dropped.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override

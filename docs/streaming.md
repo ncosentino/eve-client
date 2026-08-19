@@ -85,6 +85,27 @@ enum, so a future outcome added upstream is still readable.
 An agent older than eve `0.34.0` never emits these events. Because the client maps
 by wire type, they simply do not appear.
 
+## Resolved human input
+
+eve `0.39.1` emits `input.resolved` after accepting pending human input and before
+the resumed `step.started`. Aggregate a response to read the authoritative outcomes:
+
+```csharp
+EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+foreach (EveInputResolution resolution in outcome.InputResolutions)
+{
+    Console.WriteLine(
+        $"{resolution.RequestId}: {resolution.Outcome} at " +
+        $"{resolution.TurnId}/{resolution.StepIndex}/{resolution.Sequence}");
+}
+```
+
+`Response` contains the accepted option or text when one exists. It is `null` for
+authoritative response-less outcomes such as `Ignored`. Unknown request kinds and
+outcomes project as `Unknown` while `RawKind`, `RawOutcome`, and `Raw` preserve the
+wire values.
+
 ## Durable event identity
 
 Stream protocol version 20 stamps every persisted event with a stable
