@@ -149,9 +149,13 @@ public sealed class EveStreamEventIdentityTests
             """{"type":"approval.settled","data":{"outcome":"approved","requestId":"approval_1","responderPrincipalId":"user_1","sequence":4,"stepIndex":0,"turnId":"turn_1"}}""");
         EveStreamEvent inputRequested = EveStreamEvent.Parse(
             """{"type":"input.requested","data":{"requests":[],"sequence":2,"stepIndex":0,"turnId":"turn_1"}}""");
+        EveStreamEvent inputResolved = EveStreamEvent.Parse(
+            """{"type":"input.resolved","data":{"resolutions":[],"sequence":2,"stepIndex":0,"turnId":"turn_1"}}""");
 
         await Assert.That(candidate.Kind).IsNotEqualTo(settled.Kind);
         await Assert.That(candidate.Kind).IsNotEqualTo(inputRequested.Kind);
+        await Assert.That(inputResolved.Kind).IsEqualTo(EveStreamEventKind.InputResolved);
+        await Assert.That(inputResolved.Kind).IsNotEqualTo(inputRequested.Kind);
         await Assert.That(settled.Kind).IsNotEqualTo(inputRequested.Kind);
     }
 

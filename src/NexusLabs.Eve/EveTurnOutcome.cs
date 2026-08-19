@@ -13,6 +13,7 @@ public sealed record EveTurnOutcome
         string? message,
         IReadOnlyList<EveStreamEvent> events,
         IReadOnlyList<EveInputRequest> inputRequests,
+        IReadOnlyList<EveInputResolution> inputResolutions,
         string sessionId,
         EveTurnStatus status)
     {
@@ -20,6 +21,7 @@ public sealed record EveTurnOutcome
         Message = message;
         Events = events;
         InputRequests = inputRequests;
+        InputResolutions = inputResolutions;
         SessionId = sessionId;
         Status = status;
     }
@@ -43,6 +45,11 @@ public sealed record EveTurnOutcome
     /// Gets all human-input requests emitted during the turn.
     /// </summary>
     public IReadOnlyList<EveInputRequest> InputRequests { get; }
+
+    /// <summary>
+    /// Gets all authoritative human-input resolutions emitted while this response was consumed.
+    /// </summary>
+    public IReadOnlyList<EveInputResolution> InputResolutions { get; }
 
     /// <summary>
     /// Gets the runtime-owned session identifier.

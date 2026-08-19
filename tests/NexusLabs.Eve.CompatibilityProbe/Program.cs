@@ -241,6 +241,47 @@ EveMessageResponse resumedResponse = await approvalSession.RespondAsync(
     timeout.Token);
 EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resumedOutcome, "approved tool turn");
+if (resumedOutcome.InputResolutions.Count != 1)
+{
+    throw new InvalidOperationException(
+        $"The approved tool turn emitted {resumedOutcome.InputResolutions.Count} " +
+        "input resolutions.");
+}
+
+EveInputResolution approvalResolution = resumedOutcome.InputResolutions[0];
+EveInputResponse? acceptedApprovalResponse = approvalResolution.Response;
+if (approvalResolution.RequestId != approvalRequest.RequestId
+    || approvalResolution.RawKind != "tool-approval"
+    || approvalResolution.Kind != EveInputRequestKind.ToolApproval
+    || approvalResolution.RawOutcome != "approved"
+    || approvalResolution.Outcome != EveInputResolutionOutcome.Approved
+    || acceptedApprovalResponse?.RequestId != approvalRequest.RequestId
+    || acceptedApprovalResponse.OptionId != "approve")
+{
+    throw new InvalidOperationException(
+        "The approved tool turn did not project its authoritative input resolution.");
+}
+
+int resolutionIndex = -1;
+int resumedStepIndex = -1;
+for (int eventIndex = 0; eventIndex < resumedOutcome.Events.Count; eventIndex++)
+{
+    switch (resumedOutcome.Events[eventIndex].Kind)
+    {
+        case EveStreamEventKind.InputResolved:
+            resolutionIndex = eventIndex;
+            break;
+        case EveStreamEventKind.StepStarted when resumedStepIndex < 0:
+            resumedStepIndex = eventIndex;
+            break;
+    }
+}
+
+if (resolutionIndex < 0 || resumedStepIndex <= resolutionIndex)
+{
+    throw new InvalidOperationException(
+        "The durable input resolution did not precede the resumed step.");
+}
 
 EveSession resetSession = client.CreateSession();
 EveMessageResponse resetResponse = await resetSession.SendAsync(

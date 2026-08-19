@@ -36,6 +36,16 @@ public enum EveStreamEventKind
     InputRequested,
 
     /// <summary>
+    /// One or more human-input requests reached authoritative terminal outcomes.
+    /// </summary>
+    /// <remarks>
+    /// Stream protocol <c>23</c> emits this after eve accepts a pending-input batch and before
+    /// the resumed <see cref="StepStarted"/> event. Resolutions may intentionally omit an
+    /// accepted response.
+    /// </remarks>
+    InputResolved,
+
+    /// <summary>
     /// One responder-bound approval candidate reached a lifecycle outcome.
     /// </summary>
     /// <remarks>

@@ -9,15 +9,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.38.x`, message-stream protocol `22`.
-  The compatibility target and pinned fixture move to eve `0.38.3`; the minimum remains
+- **Supported eve versions:** `0.31.0` through `0.39.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.39.1`; the minimum remains
   eve `0.31.0`.
-- The core session routes, agent-info schema version `2`, and stream protocol version `22`
-  remain compatible from eve `0.35.0` through `0.38.3`. Existing subagent and
-  authorization events gain additive raw fields, and no stream event type is removed.
+- eve `0.39.1` adds durable `input.resolved` events and raises the stream protocol from
+  `22` to `23`. Core session routes and agent-info schema version `2` remain compatible.
 
 ### Added
 
+- `EveStreamEventKind.InputResolved` recognizes protocol-v23 human-input resolution
+  events. `EveTurnOutcome.InputResolutions` projects every authoritative outcome,
+  including response-less resolutions, while preserving raw discriminators, accepted
+  responses, and original turn coordinates.
 - `EveMessageResponse.CancelAsync` waits for its response stream to identify the exact
   turn, sends a guarded cancellation request, shares concurrent calls while preserving
   per-caller wait cancellation, and allows retry after a failed request while stream
