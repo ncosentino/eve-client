@@ -8,6 +8,7 @@ namespace NexusLabs.Eve;
 internal static class EveStreamFollower
 {
     private const string TailIndexHeader = "x-eve-stream-tail-index";
+    private static readonly TimeSpan StreamReadIdleTimeout = TimeSpan.FromSeconds(15);
 
     private static readonly HttpStatusCode[] DefaultRetryableStatusCodes =
     [
@@ -71,6 +72,7 @@ internal static class EveStreamFollower
                 await using IAsyncEnumerator<EveStreamEvent> connection = ReadConnectionAsync(
                     response,
                     maximumEventBytes,
+                    client.TimeProvider,
                     cancellationToken).GetAsyncEnumerator(cancellationToken);
                 while (true)
                 {
@@ -132,10 +134,15 @@ internal static class EveStreamFollower
     private static async IAsyncEnumerable<EveStreamEvent> ReadConnectionAsync(
         HttpResponseMessage response,
         int? maximumEventBytes,
+        TimeProvider timeProvider,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using EveNdjsonLineReader reader = new(stream, maximumEventBytes);
+        using EveNdjsonLineReader reader = new(
+            stream,
+            maximumEventBytes,
+            timeProvider,
+            StreamReadIdleTimeout);
 
         while (true)
         {
