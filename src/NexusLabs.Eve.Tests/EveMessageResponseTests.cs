@@ -276,6 +276,61 @@ public sealed class EveMessageResponseTests
         await Assert.That(attempts).IsEqualTo(0);
     }
 
+    [Test]
+    public async Task CancelAsync_RemainsActiveAcrossCallbackAuthorizationParkingAsync(
+        CancellationToken cancellationToken)
+    {
+        List<string> cancelledTurnIds = [];
+        EveMessageResponse response = new(
+            "session_1",
+            CallbackAuthorizationStreamAsync,
+            (turnId, requestCancellationToken) =>
+            {
+                requestCancellationToken.ThrowIfCancellationRequested();
+                cancelledTurnIds.Add(turnId);
+                return Task.FromResult(new EveCancellationOutcome(
+                    "session_1",
+                    EveCancellationStatus.Accepted));
+            });
+
+        await using IAsyncEnumerator<EveStreamEvent> enumerator =
+            response.GetAsyncEnumerator(cancellationToken);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsTrue()
+            .Because("The response should expose turn.started.");
+        await Assert.That(enumerator.Current.Kind).IsEqualTo(EveStreamEventKind.TurnStarted);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsTrue()
+            .Because("The response should expose authorization.required.");
+        await Assert.That(enumerator.Current.Kind)
+            .IsEqualTo(EveStreamEventKind.AuthorizationRequired);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsTrue()
+            .Because("The response should expose the interim session.waiting event.");
+        await Assert.That(enumerator.Current.Kind).IsEqualTo(EveStreamEventKind.SessionWaiting);
+
+        EveCancellationOutcome cancellation = await response.CancelAsync(cancellationToken);
+
+        await Assert.That(cancellation.Status).IsEqualTo(EveCancellationStatus.Accepted);
+        await Assert.That(cancelledTurnIds).IsEquivalentTo(["turn_1"]);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsTrue()
+            .Because("The response should continue through authorization completion.");
+        await Assert.That(enumerator.Current.Kind)
+            .IsEqualTo(EveStreamEventKind.AuthorizationCompleted);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsTrue()
+            .Because("The response should expose the final session.waiting event.");
+        await Assert.That(enumerator.Current.Kind).IsEqualTo(EveStreamEventKind.SessionWaiting);
+        await Assert.That(await enumerator.MoveNextAsync())
+            .IsFalse()
+            .Because("The final session.waiting event should settle the response.");
+
+        EveCancellationOutcome afterBoundary = await response.CancelAsync(cancellationToken);
+
+        await Assert.That(afterBoundary.Status).IsEqualTo(EveCancellationStatus.NoActiveTurn);
+    }
+
     private static async IAsyncEnumerable<EveStreamEvent> ControlledTurnStreamAsync(
         Task start,
         Task settle,
@@ -319,6 +374,20 @@ public sealed class EveMessageResponseTests
         cancellationToken.ThrowIfCancellationRequested();
         yield return EveStreamEvent.Parse(
             """{"type":"turn.started","data":{"sequence":0}}""");
+    }
+
+    private static async IAsyncEnumerable<EveStreamEvent> CallbackAuthorizationStreamAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await Task.CompletedTask;
+        cancellationToken.ThrowIfCancellationRequested();
+        yield return TurnStartedEvent();
+        yield return EveStreamEvent.Parse(
+            """{"type":"authorization.required","data":{"name":"linear","webhookUrl":"https://agent.example.com/auth/linear"}}""");
+        yield return SessionWaitingEvent();
+        yield return EveStreamEvent.Parse(
+            """{"type":"authorization.completed","data":{"name":"linear","outcome":"authorized"}}""");
+        yield return SessionWaitingEvent();
     }
 
     private static EveStreamEvent TurnStartedEvent() =>

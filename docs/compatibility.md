@@ -113,8 +113,21 @@ fixed 15-second idle deadline; a socket that remains connected without producing
 is closed and reopened from the absolute cursor after every fully consumed event.
 
 This behavior changes no route, payload, event shape, stream protocol version, or
-agent-info schema. The declared Eve reference remains `0.39.1` until an upstream release
-contains the change and all earlier parity work is complete.
+agent-info schema. It remains ahead of the declared Eve `0.42.0` reference until an
+upstream release contains the change.
+
+## Callback-backed connection authorization
+
+eve `0.41.0` can emit an interim `session.waiting` after
+`authorization.required` while a framework-owned callback is pending. Active
+`SendAsync` and `RespondAsync` responses remain attached across that parking boundary,
+correlate pending authorizations by `data.name`, and settle at the next session boundary
+after matching `authorization.completed` events clear every pending name.
+
+An `authorization.required` event without `webhookUrl` remains non-blocking, so the next
+`session.waiting` settles normally. The stream protocol remains `23`, the agent-info
+schema remains version `2`, and the core session routes are unchanged. See
+[Streaming](streaming.md#callback-authorization-parking) for consumption guidance.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override

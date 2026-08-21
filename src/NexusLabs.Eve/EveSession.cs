@@ -540,10 +540,6 @@ public sealed class EveSession
             {
                 events.Add(streamEvent);
                 yield return streamEvent;
-                if (streamEvent.IsCurrentTurnBoundary)
-                {
-                    yield break;
-                }
             }
         }
         finally

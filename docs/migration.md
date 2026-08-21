@@ -11,13 +11,13 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 through 0.39.1 need no migration"
+!!! success "eve 0.32.0 through 0.41.0 need no migration"
     None of these releases broke the framework-neutral client protocol. The core session
-    routes used by this package are unchanged across `0.31.0` through `0.39.1`.
+    routes used by this package are unchanged across `0.31.0` through `0.41.0`.
     `0.34.0` added `approval.candidate` and `approval.settled`; later releases through
-    `0.39.1` remove no stream event type and add only additive fields and events.
+    `0.41.0` remove no stream event type and add only additive fields and events.
     A `0.31.x` deployment can move anywhere in that range without changing this package,
-    and this package treats `0.31.0` through `0.38.x` as one supported range. The only
+    and this package treats `0.31.0` through `0.41.x` as one supported range. The only
     hard boundary remains eve `0.31.0`.
 
     Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
@@ -28,7 +28,9 @@ the client and the agent must move together.
     `GetInfoAsync` throws. From eve `0.37.1`, active response streams remain connected
     until a turn boundary by default. From eve `0.38.0`, response-scoped cancellation
     targets the exact observed turn. From eve `0.39.1`, accepted human input emits a
-    durable `input.resolved` event. These later changes require no deployment migration.
+    durable `input.resolved` event. From eve `0.41.0`, active responses remain attached
+    across interim waiting boundaries while callback-backed connection authorization is
+    pending. These later changes require no deployment migration.
 
 ## Why a single smoke test will not catch this
 
