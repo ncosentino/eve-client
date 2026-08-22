@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.42.0 | 23 | Development compatibility target |
+| Unreleased | 0.44.0 | 23 | Development compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
@@ -48,7 +48,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.42.0` fixture with a deterministic
+The repository contains a pinned eve `0.44.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -113,7 +113,7 @@ fixed 15-second idle deadline; a socket that remains connected without producing
 is closed and reopened from the absolute cursor after every fully consumed event.
 
 This behavior changes no route, payload, event shape, stream protocol version, or
-agent-info schema. It remains ahead of the declared Eve `0.42.0` reference until an
+agent-info schema. It remains ahead of the declared Eve `0.44.0` reference until an
 upstream release contains the change.
 
 ## Callback-backed connection authorization
@@ -135,6 +135,12 @@ Eve `0.42.0` rejects channel input-response objects containing fields outside th
 text, choice, confirmation, or tool-approval response contract. The sealed
 `EveInputResponse` model and whitelist request writer already emit only the permitted
 keys, so this upstream tightening requires no .NET request-shape change.
+
+## Eve 0.43.0 and 0.44.0
+
+These releases add no further framework-neutral client requirement. The core session
+routes, stream event vocabulary, message-stream protocol `23`, and agent-info schema
+version `2` remain unchanged.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
