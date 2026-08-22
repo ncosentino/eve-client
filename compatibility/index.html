@@ -860,6 +860,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#callback-backed-connection-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Callback-backed connection authorization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-channel-input-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact channel input responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1222,7 +1244,7 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.39.1</td>
+<td style="text-align: right;">0.42.0</td>
 <td style="text-align: right;">23</td>
 <td>Development compatibility target</td>
 </tr>
@@ -1312,12 +1334,12 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.39.1</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.42.0</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
-approval-gated human input, session context clear, and session reset through the
-C# client, including the HTTP 409 refusal returned when a retired session
-identifier is reused.</p>
+approval-gated human input, callback-backed connection authorization, session context
+clear, and session reset through the C# client, including the HTTP 409 refusal returned
+when a retired session identifier is reused.</p>
 <p>Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
 rather than causing a failure. That tolerance is covered by contract tests, not
@@ -1362,8 +1384,23 @@ and is not dropped.</p>
 fixed 15-second idle deadline; a socket that remains connected without producing bytes
 is closed and reopened from the absolute cursor after every fully consumed event.</p>
 <p>This behavior changes no route, payload, event shape, stream protocol version, or
-agent-info schema. The declared Eve reference remains <code>0.39.1</code> until an upstream release
-contains the change and all earlier parity work is complete.</p>
+agent-info schema. It remains ahead of the declared Eve <code>0.42.0</code> reference until an
+upstream release contains the change.</p>
+<h2 id="callback-backed-connection-authorization">Callback-backed connection authorization<a class="headerlink" href="#callback-backed-connection-authorization" title="Permanent link">&para;</a></h2>
+<p>eve <code>0.41.0</code> can emit an interim <code>session.waiting</code> after
+<code>authorization.required</code> while a framework-owned callback is pending. Active
+<code>SendAsync</code> and <code>RespondAsync</code> responses remain attached across that parking boundary,
+correlate pending authorizations by <code>data.name</code>, and settle at the next session boundary
+after matching <code>authorization.completed</code> events clear every pending name.</p>
+<p>An <code>authorization.required</code> event without <code>webhookUrl</code> remains non-blocking, so the next
+<code>session.waiting</code> settles normally. The stream protocol remains <code>23</code>, the agent-info
+schema remains version <code>2</code>, and the core session routes are unchanged. See
+<a href="../streaming/#callback-authorization-parking">Streaming</a> for consumption guidance.</p>
+<h2 id="exact-channel-input-responses">Exact channel input responses<a class="headerlink" href="#exact-channel-input-responses" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.42.0</code> rejects channel input-response objects containing fields outside the exact
+text, choice, confirmation, or tool-approval response contract. The sealed
+<code>EveInputResponse</code> model and whitelist request writer already emit only the permitted
+keys, so this upstream tightening requires no .NET request-shape change.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>

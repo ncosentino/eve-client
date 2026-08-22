@@ -708,6 +708,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#callback-authorization-parking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Callback authorization parking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resolved-human-input" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1276,6 +1287,19 @@ input requests. Outcome values are read from raw data rather than projected to a
 enum, so a future outcome added upstream is still readable.</p>
 <p>An agent older than eve <code>0.34.0</code> never emits these events. Because the client maps
 by wire type, they simply do not appear.</p>
+<h2 id="callback-authorization-parking">Callback authorization parking<a class="headerlink" href="#callback-authorization-parking" title="Permanent link">&para;</a></h2>
+<p>eve <code>0.41.0</code> may emit <code>authorization.required</code> with a <code>webhookUrl</code>, followed by an
+interim <code>session.waiting</code>, while a framework-owned callback is pending. Keep enumerating
+the active <code>EveMessageResponse</code>: it remains attached until the matching
+<code>authorization.completed</code> event arrives and the resumed turn reaches its next session
+boundary.</p>
+<p>Pending authorizations are correlated by <code>Data["name"]</code>, so multiple callbacks can settle
+independently. An <code>authorization.required</code> event without <code>webhookUrl</code> is non-blocking and
+the following <code>session.waiting</code> ends the response normally.</p>
+<p><code>EveStreamEvent.IsCurrentTurnBoundary</code> identifies session-level boundary event types. Its
+value is intentionally context-free, so it remains <code>true</code> for an interim waiting event.
+Do not add a manual <code>break</code> for that property while iterating an active response; allow
+<code>EveMessageResponse</code> to apply the pending-authorization context.</p>
 <h2 id="resolved-human-input">Resolved human input<a class="headerlink" href="#resolved-human-input" title="Permanent link">&para;</a></h2>
 <p>eve <code>0.39.1</code> emits <code>input.resolved</code> after accepting pending human input and before
 the resumed <code>step.started</code>. Aggregate a response to read the authoritative outcomes:</p>
