@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.39.1 | 23 | Development compatibility target |
+| Unreleased | 0.42.0 | 23 | Development compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
@@ -48,12 +48,12 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.39.1` fixture with a deterministic
+The repository contains a pinned eve `0.42.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
-approval-gated human input, session context clear, and session reset through the
-C# client, including the HTTP 409 refusal returned when a retired session
-identifier is reused.
+approval-gated human input, callback-backed connection authorization, session context
+clear, and session reset through the C# client, including the HTTP 409 refusal returned
+when a retired session identifier is reused.
 
 Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
@@ -128,6 +128,13 @@ An `authorization.required` event without `webhookUrl` remains non-blocking, so 
 `session.waiting` settles normally. The stream protocol remains `23`, the agent-info
 schema remains version `2`, and the core session routes are unchanged. See
 [Streaming](streaming.md#callback-authorization-parking) for consumption guidance.
+
+## Exact channel input responses
+
+Eve `0.42.0` rejects channel input-response objects containing fields outside the exact
+text, choice, confirmation, or tool-approval response contract. The sealed
+`EveInputResponse` model and whitelist request writer already emit only the permitted
+keys, so this upstream tightening requires no .NET request-shape change.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
