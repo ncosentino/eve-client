@@ -849,6 +849,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-stream-read-idle-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open stream read-idle recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1345,6 +1356,14 @@ optional accepted response, and original <code>turnId</code>, <code>stepIndex</c
 Future values remain available through <code>RawOutcome</code>, while the complete resolution
 object remains available through <code>Raw</code>. A resolution without a response is authoritative
 and is not dropped.</p>
+<h2 id="open-stream-read-idle-recovery">Open stream read-idle recovery<a class="headerlink" href="#open-stream-read-idle-recovery" title="Permanent link">&para;</a></h2>
+<p>The unreleased client mirrors the framework-neutral stream reliability change merged in
+<a href="https://github.com/vercel/eve/pull/2379">vercel/eve#2379</a>. Every open stream read has a
+fixed 15-second idle deadline; a socket that remains connected without producing bytes
+is closed and reopened from the absolute cursor after every fully consumed event.</p>
+<p>This behavior changes no route, payload, event shape, stream protocol version, or
+agent-info schema. The declared Eve reference remains <code>0.39.1</code> until an upstream release
+contains the change and all earlier parity work is complete.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
