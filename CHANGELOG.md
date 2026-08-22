@@ -32,6 +32,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   reaches a session boundary or the caller cancels consumption. Manually attached
   `StreamAsync` reads and explicitly configured idle-attempt limits retain their finite
   budgets.
+- Open stream connections that stop producing bytes are closed after 15 seconds and
+  reconnected from the absolute cursor after every fully consumed event. Explicit caller
+  cancellation and disabled reconnection remain terminal.
 
 ## [0.1.0-alpha.6] - 2026-08-13
 

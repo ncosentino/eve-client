@@ -2,6 +2,8 @@
 using System.Text;
 using System.Text.Json;
 
+using Microsoft.Extensions.Time.Testing;
+
 namespace NexusLabs.Eve.Tests;
 
 public sealed class EveSessionTests
@@ -1026,6 +1028,58 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task TurnStream_ReconnectsWhenAnOpenConnectionStopsProducingBytes(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 8, 21, 0, 0, 0, TimeSpan.Zero));
+        using IdleAfterPrefixStream idleStream = new(Encoding.UTF8.GetBytes(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}"""
+            + "\n"));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(idleStream)));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(
+            transport,
+            timeProvider: timeProvider).CreateSession();
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Recover the idle stream"),
+            new EveTurnOptions
+            {
+                StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+            },
+            cancellationToken);
+
+        Task<EveTurnOutcome> outcomeTask = response.GetOutcomeAsync(cancellationToken);
+        await idleStream.IdleReadStarted.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        timeProvider.Advance(TimeSpan.FromSeconds(15));
+        EveTurnOutcome outcome = await outcomeTask.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(2);
+        await Assert.That(outcome.Events[0].Kind).IsEqualTo(EveStreamEventKind.TurnStarted);
+        await Assert.That(outcome.Events[1].Kind).IsEqualTo(EveStreamEventKind.SessionWaiting);
+        await Assert.That(handler.Calls.Count).IsEqualTo(3);
+        await Assert.That(handler.Calls[2].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+        await Assert.That(idleStream.IsDisposed)
+            .IsTrue()
+            .Because("The timed-out response must release its idle connection.");
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 2,
+        });
+    }
+
+    [Test]
     public async Task ActiveTurnStream_OmittedIdleLimitSurvivesPastDefaultBudget(
         CancellationToken cancellationToken)
     {
@@ -1090,6 +1144,58 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(0);
         await Assert.That(handler.Calls.Count).IsEqualTo(6);
         await Assert.That(session.State).IsEqualTo(initialState);
+    }
+
+    [Test]
+    public async Task SessionStream_CallerCancellationDoesNotReconnectAnIdleConnection(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 8, 21, 0, 0, 0, TimeSpan.Zero));
+        using IdleAfterPrefixStream idleStream = new(Encoding.UTF8.GetBytes(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}"""
+            + "\n"));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(idleStream)));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.completed","data":{}}""")));
+        EveSessionState initialState = new()
+        {
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(
+            transport,
+            timeProvider: timeProvider).CreateSession(initialState);
+        using CancellationTokenSource streamCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        Task<IReadOnlyList<EveStreamEvent>> consumption = CollectAsync(
+            session.StreamAsync(
+                new EveStreamOptions
+                {
+                    ReconnectPolicy = ZeroDelayReconnectPolicy(),
+                },
+                streamCancellation.Token),
+            cancellationToken);
+        await idleStream.IdleReadStarted.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await streamCancellation.CancelAsync();
+        IReadOnlyList<EveStreamEvent> events = await consumption.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await Assert.That(events.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(idleStream.IsDisposed)
+            .IsTrue()
+            .Because("Caller cancellation must close the current response.");
+        await Assert.That(session.State).IsEqualTo(initialState with
+        {
+            StreamIndex = 1,
+        });
     }
 
     [Test]
@@ -1192,6 +1298,52 @@ public sealed class EveSessionTests
 
         await Assert.That(outcome.Events.Count).IsEqualTo(1);
         await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 1,
+        });
+    }
+
+    [Test]
+    public async Task DisabledReconnect_ClosesAnIdleConnectionWithoutReopening(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 8, 21, 0, 0, 0, TimeSpan.Zero));
+        using IdleAfterPrefixStream idleStream = new(Encoding.UTF8.GetBytes(
+            """{"type":"turn.started","data":{"sequence":1,"turnId":"turn_1"}}"""
+            + "\n"));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(idleStream)));
+        EveSession session = CreateClient(
+            transport,
+            timeProvider: timeProvider).CreateSession();
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Do not reconnect"),
+            new EveTurnOptions
+            {
+                StreamReconnectPolicy = EveStreamReconnectPolicy.Disabled,
+            },
+            cancellationToken);
+
+        Task<EveTurnOutcome> outcomeTask = response.GetOutcomeAsync(cancellationToken);
+        await idleStream.IdleReadStarted.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        timeProvider.Advance(TimeSpan.FromSeconds(15));
+        EveTurnOutcome outcome = await outcomeTask.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(1);
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(idleStream.IsDisposed)
+            .IsTrue()
+            .Because("The read-idle deadline must close the disabled connection.");
         await Assert.That(session.State).IsEqualTo(new EveSessionState
         {
             SessionId = "session_1",
@@ -1310,6 +1462,65 @@ public sealed class EveSessionTests
         await Assert.That(session.State).IsEqualTo(initialState with
         {
             StreamIndex = 3,
+        });
+    }
+
+    [Test]
+    public async Task BoundedStream_ReconnectsAfterAnOpenConnectionGoesIdle(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 8, 21, 0, 0, 0, TimeSpan.Zero));
+        using IdleAfterPrefixStream idleStream = new(Encoding.UTF8.GetBytes(
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"First.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}"""
+            + "\n"));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(BoundedStreamResponse(
+            "1",
+            idleStream)));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.completed","data":{}}""")));
+        EveSessionState initialState = new()
+        {
+            SessionId = "session_1",
+        };
+        EveSession session = CreateClient(
+            transport,
+            timeProvider: timeProvider).CreateSession(initialState);
+
+        Task<IReadOnlyList<EveStreamEvent>> consumption = CollectAsync(
+            session.StreamAsync(
+                new EveStreamOptions
+                {
+                    Follow = false,
+                    ReconnectPolicy = ZeroDelayReconnectPolicy(),
+                },
+                cancellationToken),
+            cancellationToken);
+        await idleStream.IdleReadStarted.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        timeProvider.Advance(TimeSpan.FromSeconds(15));
+        IReadOnlyList<EveStreamEvent> events = await consumption.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await Assert.That(events.Count).IsEqualTo(2);
+        await Assert.That(events[0].Kind).IsEqualTo(EveStreamEventKind.MessageCompleted);
+        await Assert.That(events[1].Kind).IsEqualTo(EveStreamEventKind.SessionCompleted);
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(handler.Calls[0].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+        await Assert.That(handler.Calls[1].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+        await Assert.That(idleStream.IsDisposed)
+            .IsTrue()
+            .Because("The bounded read must release its timed-out connection.");
+        await Assert.That(session.State).IsEqualTo(initialState with
+        {
+            StreamIndex = 2,
         });
     }
 
@@ -2359,12 +2570,14 @@ public sealed class EveSessionTests
 
     private static EveClient CreateClient(
         HttpMessageInvoker transport,
-        int? maximumEventBytes = null) =>
+        int? maximumEventBytes = null,
+        TimeProvider? timeProvider = null) =>
         new(
             transport,
             new EveClientOptions("https://agent.example.com")
             {
                 MaxStreamEventBytes = maximumEventBytes,
+                TimeProvider = timeProvider ?? System.TimeProvider.System,
             });
 
     private static EveStreamReconnectPolicy ZeroDelayReconnectPolicy(
@@ -2446,11 +2659,26 @@ public sealed class EveSessionTests
                 EveProtocol.MessageStreamContentType),
         };
 
+    private static HttpResponseMessage StreamResponse(Stream stream) =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(stream),
+        };
+
     private static HttpResponseMessage BoundedStreamResponse(
         string tailIndex,
         params string[] events)
     {
         HttpResponseMessage response = StreamResponse(events);
+        response.Headers.TryAddWithoutValidation("x-eve-stream-tail-index", tailIndex);
+        return response;
+    }
+
+    private static HttpResponseMessage BoundedStreamResponse(
+        string tailIndex,
+        Stream stream)
+    {
+        HttpResponseMessage response = StreamResponse(stream);
         response.Headers.TryAddWithoutValidation("x-eve-stream-tail-index", tailIndex);
         return response;
     }

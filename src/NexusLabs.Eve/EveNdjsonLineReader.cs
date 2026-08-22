@@ -8,17 +8,34 @@ internal sealed class EveNdjsonLineReader : IDisposable
     private const int ReadBufferSize = 4096;
     private const int InitialEventBufferSize = 256;
     private readonly int? _maximumEventBytes;
+    private readonly TimeSpan _readIdleTimeout;
     private readonly byte[] _readBuffer;
     private readonly Stream _stream;
+    private readonly TimeProvider _timeProvider;
     private bool _disposed;
     private int _readBufferCount;
     private int _readBufferOffset;
 
-    internal EveNdjsonLineReader(Stream stream, int? maximumEventBytes)
+    internal EveNdjsonLineReader(
+        Stream stream,
+        int? maximumEventBytes,
+        TimeProvider timeProvider,
+        TimeSpan readIdleTimeout)
     {
         ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        if (readIdleTimeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(readIdleTimeout),
+                readIdleTimeout,
+                "The stream read idle timeout must be greater than zero.");
+        }
+
         _stream = stream;
         _maximumEventBytes = maximumEventBytes;
+        _timeProvider = timeProvider;
+        _readIdleTimeout = readIdleTimeout;
         _readBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
     }
 
@@ -36,9 +53,7 @@ internal sealed class EveNdjsonLineReader : IDisposable
         {
             if (_readBufferOffset == _readBufferCount)
             {
-                _readBufferCount = await _stream.ReadAsync(
-                    _readBuffer.AsMemory(),
-                    cancellationToken);
+                _readBufferCount = await ReadIntoBufferAsync(cancellationToken);
                 _readBufferOffset = 0;
                 if (_readBufferCount == 0)
                 {
@@ -86,6 +101,27 @@ internal sealed class EveNdjsonLineReader : IDisposable
 
         ArrayPool<byte>.Shared.Return(_readBuffer, clearArray: true);
         _disposed = true;
+    }
+
+    private async ValueTask<int> ReadIntoBufferAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using CancellationTokenSource timeoutSource =
+            new(_readIdleTimeout, _timeProvider);
+        if (!cancellationToken.CanBeCanceled)
+        {
+            return await _stream.ReadAsync(
+                _readBuffer.AsMemory(),
+                timeoutSource.Token);
+        }
+
+        using CancellationTokenSource linkedSource =
+            CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                timeoutSource.Token);
+        return await _stream.ReadAsync(
+            _readBuffer.AsMemory(),
+            linkedSource.Token);
     }
 
     private void Append(ArrayBufferWriter<byte> eventBuffer, byte value)

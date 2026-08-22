@@ -105,6 +105,17 @@ Future values remain available through `RawOutcome`, while the complete resoluti
 object remains available through `Raw`. A resolution without a response is authoritative
 and is not dropped.
 
+## Open stream read-idle recovery
+
+The unreleased client mirrors the framework-neutral stream reliability change merged in
+[vercel/eve#2379](https://github.com/vercel/eve/pull/2379). Every open stream read has a
+fixed 15-second idle deadline; a socket that remains connected without producing bytes
+is closed and reopened from the absolute cursor after every fully consumed event.
+
+This behavior changes no route, payload, event shape, stream protocol version, or
+agent-info schema. The declared Eve reference remains `0.39.1` until an upstream release
+contains the change and all earlier parity work is complete.
+
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.

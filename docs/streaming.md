@@ -146,6 +146,11 @@ The default policy follows a durable stream from the next absolute event index.
 reaches a session boundary or the caller cancels consumption. Manually attached
 `StreamAsync` reads retain a finite idle reconnect budget.
 
+Each underlying stream read also has a fixed 15-second idle deadline. If an open
+connection stops producing bytes without closing, the client disposes that response and
+reconnects from the cursor after every fully consumed event. This deadline is separate
+from the retry delays and attempt budget. Explicit caller cancellation remains terminal.
+
 Set `EveStreamReconnectPolicy.StreamIdleRetry.MaxAttempts` to give an active
 response an explicit finite budget. Progress resets any finite idle budget.
 
