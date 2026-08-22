@@ -9,8 +9,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.42.x`, message-stream protocol `23`.
-  The compatibility target and pinned fixture move to eve `0.42.0`; the minimum remains
+- **Supported eve versions:** `0.31.0` through `0.44.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.44.0`; the minimum remains
   eve `0.31.0`.
 - eve `0.39.1` adds durable `input.resolved` events and raises the stream protocol from
   `22` to `23`. Core session routes and agent-info schema version `2` remain compatible.
@@ -20,6 +20,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - eve `0.42.0` requires exact channel input-response objects. The sealed
   `EveInputResponse` model and whitelist request writer already satisfy that contract;
   core session routes remain unchanged.
+- eve `0.43.0` and `0.44.0` add no further framework-neutral client requirement.
+  Message-stream protocol `23`, agent-info schema version `2`, and core session routes
+  remain unchanged.
 
 ### Added
 
