@@ -1076,11 +1076,14 @@
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a></p>
 <p><a name='NexusLabs.Eve.EveStreamEvent.IsCurrentTurnBoundary'></a></p>
 <h2 id="evestreameventiscurrentturnboundary-property">EveStreamEvent.IsCurrentTurnBoundary Property<a class="headerlink" href="#evestreameventiscurrentturnboundary-property" title="Permanent link">&para;</a></h2>
-<p>Gets whether this event settles the current turn.</p>
+<p>Gets whether this event is a session-level boundary for the current turn.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">IsCurrentTurnBoundary</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.boolean" title="System.Boolean">System.Boolean</a></p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>An active response can continue across an interim <a href="../EveStreamEventKind/#NexusLabs.Eve.EveStreamEventKind.SessionWaiting" title="NexusLabs.Eve.EveStreamEventKind.SessionWaiting">SessionWaiting</a>
+while callback-backed connection authorization remains pending.</p>
 <p><a name='NexusLabs.Eve.EveStreamEvent.IsFailure'></a></p>
 <h2 id="evestreameventisfailure-property">EveStreamEvent.IsFailure Property<a class="headerlink" href="#evestreameventisfailure-property" title="Permanent link">&para;</a></h2>
 <p>Gets whether this event represents an unrecovered turn or session failure.</p>
