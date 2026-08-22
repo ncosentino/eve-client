@@ -41,8 +41,12 @@ public sealed record EveStreamEvent
     public EveStreamEventMetadata? Metadata { get; }
 
     /// <summary>
-    /// Gets whether this event settles the current turn.
+    /// Gets whether this event is a session-level boundary for the current turn.
     /// </summary>
+    /// <remarks>
+    /// An active response can continue across an interim <see cref="EveStreamEventKind.SessionWaiting"/>
+    /// while callback-backed connection authorization remains pending.
+    /// </remarks>
     public bool IsCurrentTurnBoundary =>
         Kind is EveStreamEventKind.SessionWaiting
             or EveStreamEventKind.SessionFailed

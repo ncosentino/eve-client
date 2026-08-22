@@ -1080,6 +1080,131 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task ActiveResponse_ContinuesAcrossCallbackAuthorizationParkingBoundary(
+        bool respond,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"authorization.required","data":{"name":"linear","webhookUrl":"https://agent.example.com/auth/linear"}}""",
+            """{"type":"authorization.required","data":{"name":"github","webhookUrl":"https://agent.example.com/auth/github"}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:parked","wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"authorization.completed","data":{"name":"linear","outcome":"authorized"}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:partially-authorized","wait":"next-user-message"}}""",
+            """{"type":"authorization.completed","data":{"name":"github","outcome":"authorized"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Done."}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession(respond
+            ? new EveSessionState
+            {
+                SessionId = "session_1",
+            }
+            : new EveSessionState());
+        EveTurnOptions options = new()
+        {
+            StreamReconnectPolicy = ZeroDelayReconnectPolicy(),
+        };
+
+        EveMessageResponse response = respond
+            ? await session.RespondAsync(
+                [new EveInputResponse("request_1", "approve")],
+                options,
+                cancellationToken)
+            : await session.SendAsync(
+                EveMessageContent.FromText("Authorize connections"),
+                options,
+                cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(8);
+        await Assert.That(string.Join(
+            ",",
+            outcome.Events.Select(static streamEvent => streamEvent.Type)))
+            .IsEqualTo(
+                "authorization.required,authorization.required,session.waiting," +
+                "authorization.completed,session.waiting,authorization.completed," +
+                "message.completed,session.waiting");
+        await Assert.That(outcome.Message).IsEqualTo("Done.");
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(handler.Calls.Count).IsEqualTo(3);
+        await Assert.That(handler.Calls[2].Uri).IsEqualTo(
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=3");
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 8,
+        });
+    }
+
+    [Test]
+    public async Task ActiveResponse_StopsAtAuthorizationWithoutWebhookUrl(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"authorization.required","data":{"name":"linear"}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:next","wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"authorization.completed","data":{"name":"linear","outcome":"authorized"}}""",
+            """{"type":"session.waiting","data":{"continuationToken":"eve:later","wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync(
+            "Use an out-of-band connection",
+            cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(2);
+        await Assert.That(outcome.Events[0].Kind)
+            .IsEqualTo(EveStreamEventKind.AuthorizationRequired);
+        await Assert.That(outcome.Events[1].Kind)
+            .IsEqualTo(EveStreamEventKind.SessionWaiting);
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 2,
+        });
+    }
+
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
+    public async Task ActiveResponse_RejectsMalformedCallbackAuthorizationCorrelation(
+        int scenario,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(scenario switch
+        {
+            0 => StreamResponse(
+                """{"type":"authorization.required","data":[]}"""),
+            1 => StreamResponse(
+                """{"type":"authorization.required","data":{"webhookUrl":"https://agent.example.com/auth/linear"}}"""),
+            _ => StreamResponse(
+                """{"type":"authorization.required","data":{"name":"linear","webhookUrl":"https://agent.example.com/auth/linear"}}""",
+                """{"type":"authorization.completed","data":{"outcome":"authorized"}}"""),
+        }));
+        EveSession session = CreateClient(transport).CreateSession();
+        EveMessageResponse response = await session.SendAsync(
+            "Use a malformed connection event",
+            cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
     public async Task ActiveTurnStream_OmittedIdleLimitSurvivesPastDefaultBudget(
         CancellationToken cancellationToken)
     {

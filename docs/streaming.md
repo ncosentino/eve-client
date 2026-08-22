@@ -85,6 +85,23 @@ enum, so a future outcome added upstream is still readable.
 An agent older than eve `0.34.0` never emits these events. Because the client maps
 by wire type, they simply do not appear.
 
+## Callback authorization parking
+
+eve `0.41.0` may emit `authorization.required` with a `webhookUrl`, followed by an
+interim `session.waiting`, while a framework-owned callback is pending. Keep enumerating
+the active `EveMessageResponse`: it remains attached until the matching
+`authorization.completed` event arrives and the resumed turn reaches its next session
+boundary.
+
+Pending authorizations are correlated by `Data["name"]`, so multiple callbacks can settle
+independently. An `authorization.required` event without `webhookUrl` is non-blocking and
+the following `session.waiting` ends the response normally.
+
+`EveStreamEvent.IsCurrentTurnBoundary` identifies session-level boundary event types. Its
+value is intentionally context-free, so it remains `true` for an interim waiting event.
+Do not add a manual `break` for that property while iterating an active response; allow
+`EveMessageResponse` to apply the pending-authorization context.
+
 ## Resolved human input
 
 eve `0.39.1` emits `input.resolved` after accepting pending human input and before

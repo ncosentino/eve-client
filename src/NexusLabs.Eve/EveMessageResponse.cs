@@ -162,11 +162,21 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     private async IAsyncEnumerable<EveStreamEvent> ObserveStreamAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        // Connection names are path-derived protocol identifiers, so correlation must mirror
+        // JavaScript Set semantics and distinguish names that differ only by case.
+#pragma warning disable NLF0016
+        HashSet<string> pendingAuthorizations =
+            new HashSet<string>(StringComparer.Ordinal);
+#pragma warning restore NLF0016
+
         try
         {
             await foreach (EveStreamEvent streamEvent in
                 _createStream(cancellationToken).WithCancellation(cancellationToken))
             {
+                bool isCurrentTurnBoundary = IsResponseTurnBoundary(
+                    streamEvent,
+                    pendingAuthorizations);
                 if (streamEvent.Kind == EveStreamEventKind.TurnStarted)
                 {
                     try
@@ -181,7 +191,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                         throw;
                     }
                 }
-                else if (streamEvent.IsCurrentTurnBoundary)
+                else if (isCurrentTurnBoundary)
                 {
                     lock (_stateGate)
                     {
@@ -192,12 +202,78 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 }
 
                 yield return streamEvent;
+                if (isCurrentTurnBoundary)
+                {
+                    yield break;
+                }
             }
         }
         finally
         {
             _turnIdentity.TrySetResult(default);
         }
+    }
+
+    private static bool IsResponseTurnBoundary(
+        EveStreamEvent streamEvent,
+        HashSet<string> pendingAuthorizations)
+    {
+        UpdatePendingAuthorizations(streamEvent, pendingAuthorizations);
+
+        return streamEvent.Kind switch
+        {
+            EveStreamEventKind.SessionWaiting => pendingAuthorizations.Count == 0,
+            EveStreamEventKind.SessionFailed or EveStreamEventKind.SessionCompleted => true,
+            _ => false,
+        };
+    }
+
+    private static void UpdatePendingAuthorizations(
+        EveStreamEvent streamEvent,
+        HashSet<string> pendingAuthorizations)
+    {
+        if (streamEvent.Kind == EveStreamEventKind.AuthorizationRequired)
+        {
+            if (streamEvent.Data.ValueKind != JsonValueKind.Object)
+            {
+                throw new EveProtocolException(
+                    "An eve authorization.required event must contain an object data value.");
+            }
+
+            if (!streamEvent.Data.TryGetProperty("webhookUrl", out JsonElement webhookUrl))
+            {
+                return;
+            }
+
+            if (webhookUrl.ValueKind != JsonValueKind.String)
+            {
+                throw new EveProtocolException(
+                    "An eve authorization.required event webhookUrl must be a string.");
+            }
+
+            pendingAuthorizations.Add(RequireEventString(
+                streamEvent.Data,
+                "name",
+                "authorization.required"));
+            return;
+        }
+
+        if (streamEvent.Kind != EveStreamEventKind.AuthorizationCompleted
+            || pendingAuthorizations.Count == 0)
+        {
+            return;
+        }
+
+        if (streamEvent.Data.ValueKind != JsonValueKind.Object)
+        {
+            throw new EveProtocolException(
+                "An eve authorization.completed event must contain an object data value.");
+        }
+
+        pendingAuthorizations.Remove(RequireEventString(
+            streamEvent.Data,
+            "name",
+            "authorization.completed"));
     }
 
     private void ResetFailedCancellation(Task<EveCancellationOutcome> cancellation)

@@ -9,11 +9,17 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.39.x`, message-stream protocol `23`.
-  The compatibility target and pinned fixture move to eve `0.39.1`; the minimum remains
+- **Supported eve versions:** `0.31.0` through `0.42.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.42.0`; the minimum remains
   eve `0.31.0`.
 - eve `0.39.1` adds durable `input.resolved` events and raises the stream protocol from
   `22` to `23`. Core session routes and agent-info schema version `2` remain compatible.
+- eve `0.41.0` keeps stream protocol `23` and agent-info schema version `2`, and active
+  responses now continue across interim waiting boundaries while callback-backed
+  connection authorization is pending.
+- eve `0.42.0` requires exact channel input-response objects. The sealed
+  `EveInputResponse` model and whitelist request writer already satisfy that contract;
+  core session routes remain unchanged.
 
 ### Added
 
@@ -35,6 +41,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Open stream connections that stop producing bytes are closed after 15 seconds and
   reconnected from the absolute cursor after every fully consumed event. Explicit caller
   cancellation and disabled reconnection remain terminal.
+- Active responses do not settle on an interim `session.waiting` while one or more
+  callback-backed connection authorizations remain pending. Matching
+  `authorization.completed` events clear the pending names, and the next session boundary
+  settles the response normally.
 
 ## [0.1.0-alpha.6] - 2026-08-13
 

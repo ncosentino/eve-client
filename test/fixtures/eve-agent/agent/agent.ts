@@ -23,6 +23,13 @@ const model = new MockLanguageModelV3({
     const shouldWaitForCancellation = prompt.includes("WAIT_FOR_CANCEL");
     const shouldRequestApproval =
       prompt.includes("REQUEST_APPROVAL") && !prompt.includes("APPROVAL_TOOL_OK");
+    const isCallbackAuthorizationProbe = prompt.includes("REQUEST_CALLBACK_AUTH");
+    const callbackToolDiscovered = prompt.includes("callback-auth__probeHealth");
+    const callbackToolCompleted = prompt.includes('"status":"ready"');
+    const shouldSearchCallbackConnection =
+      isCallbackAuthorizationProbe && !callbackToolDiscovered;
+    const shouldCallCallbackConnection =
+      isCallbackAuthorizationProbe && callbackToolDiscovered && !callbackToolCompleted;
 
     return {
       stream: new ReadableStream({
@@ -46,6 +53,72 @@ const model = new MockLanguageModelV3({
               input,
               toolCallId: "call_approval",
               toolName: "request_approval",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
+          if (shouldSearchCallbackConnection) {
+            const input = JSON.stringify({
+              connection: "callback-auth",
+              keywords: "probe health",
+              limit: 1,
+            });
+            controller.enqueue({
+              id: "call_connection_search",
+              toolName: "connection_search",
+              type: "tool-input-start",
+            });
+            controller.enqueue({
+              delta: input,
+              id: "call_connection_search",
+              type: "tool-input-delta",
+            });
+            controller.enqueue({
+              id: "call_connection_search",
+              type: "tool-input-end",
+            });
+            controller.enqueue({
+              input,
+              toolCallId: "call_connection_search",
+              toolName: "connection_search",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
+          if (shouldCallCallbackConnection) {
+            const input = "{}";
+            controller.enqueue({
+              id: "call_callback_auth",
+              toolName: "callback-auth__probeHealth",
+              type: "tool-input-start",
+            });
+            controller.enqueue({
+              delta: input,
+              id: "call_callback_auth",
+              type: "tool-input-delta",
+            });
+            controller.enqueue({
+              id: "call_callback_auth",
+              type: "tool-input-end",
+            });
+            controller.enqueue({
+              input,
+              toolCallId: "call_callback_auth",
+              toolName: "callback-auth__probeHealth",
               type: "tool-call",
             });
             controller.enqueue({

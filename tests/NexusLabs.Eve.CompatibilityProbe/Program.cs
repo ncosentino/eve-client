@@ -68,6 +68,116 @@ EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
 RequireDurableEventEnvelope(textOutcome, "text turn");
 
+EveClient authorizationClient = new(
+    transport,
+    new EveClientOptions(baseUri.ToString())
+    {
+        Authentication = new EveBearerAuthentication("compatibility-user"),
+    });
+EveSession authorizationSession = authorizationClient.CreateSession();
+EveMessageResponse authorizationResponse = await authorizationSession.SendAsync(
+    "REQUEST_CALLBACK_AUTH",
+    timeout.Token);
+List<EveStreamEvent> authorizationEvents = [];
+Uri? authorizationWebhook = null;
+bool authorizationCallbackSent = false;
+
+await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellation(timeout.Token))
+{
+    authorizationEvents.Add(streamEvent);
+
+    if (streamEvent.Kind == EveStreamEventKind.AuthorizationRequired)
+    {
+        string? connectionName = streamEvent.Data.TryGetProperty(
+                "name",
+                out var name)
+            ? name.GetString()
+            : null;
+        string? webhookUrl = streamEvent.Data.TryGetProperty(
+                "webhookUrl",
+                out var webhook)
+            ? webhook.GetString()
+            : null;
+        if (!string.Equals(connectionName, "callback-auth", StringComparison.Ordinal)
+            || !Uri.TryCreate(webhookUrl, UriKind.Absolute, out Uri? reportedWebhook))
+        {
+            throw new InvalidOperationException(
+                "The callback authorization did not expose its stable name and webhook URL.");
+        }
+
+        // The local workflow runtime mints its default localhost origin independently of the
+        // fixture's selected port. The framework-owned path and token remain authoritative.
+        authorizationWebhook = new Uri(baseUri, reportedWebhook.PathAndQuery);
+    }
+    else if (streamEvent.Kind == EveStreamEventKind.SessionWaiting
+        && authorizationWebhook is not null
+        && !authorizationCallbackSent)
+    {
+        using HttpResponseMessage callbackResponse = await transport.GetAsync(
+            authorizationWebhook,
+            timeout.Token);
+        if (!callbackResponse.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                "The callback authorization webhook returned " +
+                $"{(int)callbackResponse.StatusCode} {callbackResponse.StatusCode}.");
+        }
+
+        authorizationCallbackSent = true;
+    }
+}
+
+int authorizationRequiredIndex = authorizationEvents.FindIndex(
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationRequired);
+int interimWaitingIndex = authorizationEvents.FindIndex(
+    authorizationRequiredIndex + 1,
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.SessionWaiting);
+int authorizationCompletedIndex = authorizationEvents.FindIndex(
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationCompleted);
+int finalWaitingIndex = authorizationEvents.FindLastIndex(
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.SessionWaiting);
+if (!authorizationCallbackSent
+    || authorizationRequiredIndex < 0
+    || interimWaitingIndex <= authorizationRequiredIndex
+    || authorizationCompletedIndex <= interimWaitingIndex
+    || finalWaitingIndex <= authorizationCompletedIndex)
+{
+    throw new InvalidOperationException(
+        "The callback authorization stream did not continue across its interim waiting boundary. " +
+        $"Observed: {string.Join(", ", authorizationEvents.Select(static value => value.Type))}.");
+}
+
+EveStreamEvent authorizationCompleted = authorizationEvents[authorizationCompletedIndex];
+if (!string.Equals(
+        authorizationCompleted.Data.GetProperty("name").GetString(),
+        "callback-auth",
+        StringComparison.Ordinal)
+    || !string.Equals(
+        authorizationCompleted.Data.GetProperty("outcome").GetString(),
+        "authorized",
+        StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The callback authorization did not emit its authoritative completion.");
+}
+
+EveStreamEvent? authorizationMessage = authorizationEvents.LastOrDefault(
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.MessageCompleted);
+if (!string.Equals(
+        authorizationMessage?.Data.GetProperty("message").GetString(),
+        "CONNECTION_OK",
+        StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The callback-authorized turn did not resume to its deterministic response.");
+}
+
+if (authorizationSession.State.StreamIndex != authorizationEvents.Count)
+{
+    throw new InvalidOperationException(
+        "The callback authorization stream did not advance through its final boundary.");
+}
+
 EveSession attachmentSession = client.CreateSession();
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
     EveMessageContent.FromParts(
