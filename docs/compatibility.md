@@ -142,6 +142,22 @@ These releases add no further framework-neutral client requirement. The core ses
 routes, stream event vocabulary, message-stream protocol `23`, and agent-info schema
 version `2` remain unchanged.
 
+## Agent-info schema v3
+
+Upstream main raises agent inspection to schema version `3`. `GetInfoAsync` accepts the
+canonical v3 source graph while retaining schema versions `1` and `2`, and continues to
+expose every field through `EveAgentInfo.Raw`.
+
+Version `3` is validated as a distinct contract rather than accepted by version number
+alone. The client rejects relabeled v2 documents, missing canonical collections,
+duplicate public identities, normalized channel-route collisions, incorrect subagent or
+remote-agent totals, module sources without bindings, and bindings whose owner or logical
+path disagrees with their source.
+
+This support remains ahead of the declared Eve `0.44.0` reference because the upstream
+change is not yet in a published Eve release. The pinned fixture and compatibility
+baseline therefore remain unchanged.
+
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.

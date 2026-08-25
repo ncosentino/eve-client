@@ -38,13 +38,14 @@ public static class EveProtocol
     /// </summary>
     /// <remarks>
     /// eve raised the schema to <c>2</c> in <c>0.35.0</c>, where static instructions became a
-    /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role. The
-    /// schema remains version <c>2</c> through eve <c>0.44.0</c>. Both versions expose the
-    /// identity fields this package projects, and the complete payload of either remains
+    /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role.
+    /// Upstream main uses version <c>3</c> for canonical source ownership, bindings,
+    /// composition diagnostics, node identities, and kernel effects. Every supported version
+    /// exposes the identity fields this package projects, and its complete payload remains
     /// available through <see cref="EveAgentInfo.Raw"/>. A version outside this set is rejected
     /// rather than parsed optimistically.
     /// </remarks>
-    public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2];
+    public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3];
 
     /// <summary>
     /// Gets the media type returned by eve session streams.
