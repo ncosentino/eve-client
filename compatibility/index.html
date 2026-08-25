@@ -893,28 +893,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agent-info-schema-v3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent-info schema v3
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#strict-health-response-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strict health response validation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1438,30 +1416,6 @@ keys, so this upstream tightening requires no .NET request-shape change.</p>
 <p>These releases add no further framework-neutral client requirement. The core session
 routes, stream event vocabulary, message-stream protocol <code>23</code>, and agent-info schema
 version <code>2</code> remain unchanged.</p>
-<h2 id="agent-info-schema-v3">Agent-info schema v3<a class="headerlink" href="#agent-info-schema-v3" title="Permanent link">&para;</a></h2>
-<p>Upstream main raises agent inspection to schema version <code>3</code>. <code>GetInfoAsync</code> accepts the
-canonical v3 source graph while retaining schema versions <code>1</code> and <code>2</code>, and continues to
-expose every field through <code>EveAgentInfo.Raw</code>.</p>
-<p>Version <code>3</code> is validated as a distinct contract rather than accepted by version number
-alone. The client rejects relabeled v2 documents, missing canonical collections,
-duplicate public identities, normalized channel-route collisions, incorrect subagent or
-remote-agent totals, module sources without bindings, and bindings whose owner or logical
-path disagrees with their source.</p>
-<p>This support remains ahead of the declared Eve <code>0.44.0</code> reference because the upstream
-change is not yet in a published Eve release. The pinned fixture and compatibility
-baseline therefore remain unchanged.</p>
-<h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
-<p>Upstream main strictly validates successful <code>GET /eve/v1/health</code> responses. The exact
-shape is <code>ok: true</code>, <code>status: "ready"</code>, and a nonempty string <code>workflowId</code>; unknown
-properties are rejected. A whitespace-only workflow identifier remains nonempty and is
-therefore valid.</p>
-<p><code>GetHealthAsync</code> reports successful-response validation failures through
-<code>EveHealthResponseException</code>. Its bounded <code>Issues</code> collection exposes at most five
-path-qualified diagnostics without requiring callers to parse an exception message.
-Invalid JSON preserves the parser failure as the inner exception and reports no
-structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>This behavior is also ahead of the pinned Eve <code>0.44.0</code> fixture because the upstream
-change is not yet published, so contract tests provide the compatibility gate for now.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>

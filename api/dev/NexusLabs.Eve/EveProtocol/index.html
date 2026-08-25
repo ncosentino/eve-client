@@ -1129,10 +1129,9 @@ an eve <code>0.29.x</code> or <code>0.30.x</code> agent.</p>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
 <h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
 <p>eve raised the schema to <code>2</code> in <code>0.35.0</code>, where static instructions became a
-list whose entries carry <code>content</code> and a <code>system</code> or <code>user</code> role.
-Upstream main uses version <code>3</code> for canonical source ownership, bindings,
-composition diagnostics, node identities, and kernel effects. Every supported version
-exposes the identity fields this package projects, and its complete payload remains
+list whose entries carry <code>content</code> and a <code>system</code> or <code>user</code> role. The
+schema remains version <code>2</code> through eve <code>0.44.0</code>. Both versions expose the
+identity fields this package projects, and the complete payload of either remains
 available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>. A version outside this set is rejected
 rather than parsed optimistically.</p>
 
