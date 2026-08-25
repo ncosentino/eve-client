@@ -69,7 +69,9 @@ public sealed class EveClient
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The validated health payload.</returns>
     /// <exception cref="EveClientException">The server returned a non-successful status.</exception>
-    /// <exception cref="EveProtocolException">The response did not match the health contract.</exception>
+    /// <exception cref="EveHealthResponseException">
+    /// The successful response did not match the health contract.
+    /// </exception>
     public async Task<EveHealthStatus> GetHealthAsync(
         CancellationToken cancellationToken)
     {
@@ -90,32 +92,7 @@ public sealed class EveClient
         }
 
         string body = await response.Content.ReadAsStringAsync(cancellationToken);
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(body);
-            JsonElement root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
-                || !root.TryGetProperty("ok", out JsonElement ok)
-                || ok.ValueKind != JsonValueKind.True
-                || !root.TryGetProperty("status", out JsonElement status)
-                || status.ValueKind != JsonValueKind.String
-                || !string.Equals(status.GetString(), "ready", StringComparison.Ordinal)
-                || !root.TryGetProperty("workflowId", out JsonElement workflowId)
-                || workflowId.ValueKind != JsonValueKind.String
-                || string.IsNullOrWhiteSpace(workflowId.GetString()))
-            {
-                throw new EveProtocolException(
-                    "The eve health route returned an invalid response.");
-            }
-
-            return new EveHealthStatus(true, "ready", workflowId.GetString()!);
-        }
-        catch (JsonException exception)
-        {
-            throw new EveProtocolException(
-                "The eve health route returned invalid JSON.",
-                exception);
-        }
+        return EveHealthResponseParser.Parse(body);
     }
 
     /// <summary>

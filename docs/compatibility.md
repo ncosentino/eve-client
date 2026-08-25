@@ -158,6 +158,22 @@ This support remains ahead of the declared Eve `0.44.0` reference because the up
 change is not yet in a published Eve release. The pinned fixture and compatibility
 baseline therefore remain unchanged.
 
+## Strict health response validation
+
+Upstream main strictly validates successful `GET /eve/v1/health` responses. The exact
+shape is `ok: true`, `status: "ready"`, and a nonempty string `workflowId`; unknown
+properties are rejected. A whitespace-only workflow identifier remains nonempty and is
+therefore valid.
+
+`GetHealthAsync` reports successful-response validation failures through
+`EveHealthResponseException`. Its bounded `Issues` collection exposes at most five
+path-qualified diagnostics without requiring callers to parse an exception message.
+Invalid JSON preserves the parser failure as the inner exception and reports no
+structured issues. Non-success HTTP responses continue to use `EveClientException`.
+
+This behavior is also ahead of the pinned Eve `0.44.0` fixture because the upstream
+change is not yet published, so contract tests provide the compatibility gate for now.
+
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.

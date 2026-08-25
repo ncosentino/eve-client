@@ -9,7 +9,7 @@ namespace NexusLabs.Eve;
     "Roslynator",
     "RCS1194",
     Justification = "Binary exception serialization is obsolete in modern .NET.")]
-public sealed class EveProtocolException : IOException
+public class EveProtocolException : IOException
 {
     /// <summary>
     /// Initializes a protocol exception.
