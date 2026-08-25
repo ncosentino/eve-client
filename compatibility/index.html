@@ -882,10 +882,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#eve-0430-and-0440" class="md-nav__link">
+  <a href="#eve-0430-through-0444" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Eve 0.43.0 and 0.44.0
+        Eve 0.43.0 through 0.44.4
       
     </span>
   </a>
@@ -1277,7 +1277,7 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.44.0</td>
+<td style="text-align: right;">0.44.4</td>
 <td style="text-align: right;">23</td>
 <td>Development compatibility target</td>
 </tr>
@@ -1367,7 +1367,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.44.0</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.44.4</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -1412,13 +1412,12 @@ Future values remain available through <code>RawOutcome</code>, while the comple
 object remains available through <code>Raw</code>. A resolution without a response is authoritative
 and is not dropped.</p>
 <h2 id="open-stream-read-idle-recovery">Open stream read-idle recovery<a class="headerlink" href="#open-stream-read-idle-recovery" title="Permanent link">&para;</a></h2>
-<p>The unreleased client mirrors the framework-neutral stream reliability change merged in
+<p>Eve <code>0.44.1</code> includes the framework-neutral stream reliability change merged in
 <a href="https://github.com/vercel/eve/pull/2379">vercel/eve#2379</a>. Every open stream read has a
 fixed 15-second idle deadline; a socket that remains connected without producing bytes
 is closed and reopened from the absolute cursor after every fully consumed event.</p>
 <p>This behavior changes no route, payload, event shape, stream protocol version, or
-agent-info schema. It remains ahead of the declared Eve <code>0.44.0</code> reference until an
-upstream release contains the change.</p>
+agent-info schema.</p>
 <h2 id="callback-backed-connection-authorization">Callback-backed connection authorization<a class="headerlink" href="#callback-backed-connection-authorization" title="Permanent link">&para;</a></h2>
 <p>eve <code>0.41.0</code> can emit an interim <code>session.waiting</code> after
 <code>authorization.required</code> while a framework-owned callback is pending. Active
@@ -1434,10 +1433,12 @@ schema remains version <code>2</code>, and the core session routes are unchanged
 text, choice, confirmation, or tool-approval response contract. The sealed
 <code>EveInputResponse</code> model and whitelist request writer already emit only the permitted
 keys, so this upstream tightening requires no .NET request-shape change.</p>
-<h2 id="eve-0430-and-0440">Eve 0.43.0 and 0.44.0<a class="headerlink" href="#eve-0430-and-0440" title="Permanent link">&para;</a></h2>
-<p>These releases add no further framework-neutral client requirement. The core session
-routes, stream event vocabulary, message-stream protocol <code>23</code>, and agent-info schema
-version <code>2</code> remain unchanged.</p>
+<h2 id="eve-0430-through-0444">Eve 0.43.0 through 0.44.4<a class="headerlink" href="#eve-0430-through-0444" title="Permanent link">&para;</a></h2>
+<p>The core session routes, stream event vocabulary, message-stream protocol <code>23</code>, and
+agent-info schema version <code>2</code> remain unchanged through eve <code>0.44.4</code>. Eve <code>0.44.1</code>
+contains the open-read recovery described above. Eve <code>0.44.4</code> fixes replay-to-live
+continuation in the excluded JavaScript store; the .NET session cursor and stream
+follower already expose the underlying bounded replay and active-follow behavior.</p>
 <h2 id="agent-info-schema-v3">Agent-info schema v3<a class="headerlink" href="#agent-info-schema-v3" title="Permanent link">&para;</a></h2>
 <p>Upstream main raises agent inspection to schema version <code>3</code>. <code>GetInfoAsync</code> accepts the
 canonical v3 source graph while retaining schema versions <code>1</code> and <code>2</code>, and continues to
@@ -1447,7 +1448,7 @@ alone. The client rejects relabeled v2 documents, missing canonical collections,
 duplicate public identities, normalized channel-route collisions, incorrect subagent or
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.</p>
-<p>This support remains ahead of the declared Eve <code>0.44.0</code> reference because the upstream
+<p>This support remains ahead of the declared Eve <code>0.44.4</code> reference because the upstream
 change is not yet in a published Eve release. The pinned fixture and compatibility
 baseline therefore remain unchanged.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
@@ -1460,7 +1461,7 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>This behavior is also ahead of the pinned Eve <code>0.44.0</code> fixture because the upstream
+<p>This behavior is also ahead of the pinned Eve <code>0.44.4</code> fixture because the upstream
 change is not yet published, so contract tests provide the compatibility gate for now.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
