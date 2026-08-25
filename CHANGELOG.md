@@ -14,6 +14,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   identities, normalized route collisions, collection totals, module bindings, and
   binding owner/path provenance while retaining every inspection field through
   `EveAgentInfo.Raw`.
+- `GetHealthAsync` strictly validates successful health responses and throws
+  `EveHealthResponseException` with at most five structured issues for invalid JSON
+  shapes, literals, missing fields, and unknown properties. Non-success responses remain
+  `EveClientException`, and nonempty workflow IDs retain upstream whitespace semantics.
 
 ## [0.1.0-alpha.7] - 2026-08-21
 

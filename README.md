@@ -274,6 +274,10 @@ through `EveAgentInfo.Raw`. Schema v3 includes canonical source ownership, bindi
 composition diagnostics, and node identities; preserving the raw document keeps those
 preview inspection fields available without expanding the strong projection.
 
+`GetHealthAsync` accepts only the exact successful health shape. Invalid JSON or schema
+violations throw `EveHealthResponseException`, whose `Issues` collection contains at most
+five path-qualified diagnostics. Non-success HTTP responses remain `EveClientException`.
+
 ## Development
 
 <!-- genesis:build-test:start -->

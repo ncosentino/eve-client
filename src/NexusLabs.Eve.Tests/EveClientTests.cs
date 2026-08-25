@@ -46,6 +46,130 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetHealthAsync_AcceptsWhitespaceWorkflowIdentifier(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"status":"ready","workflowId":"   "}""")));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveHealthStatus health = await client.GetHealthAsync(cancellationToken);
+
+        await Assert.That(health.WorkflowId)
+            .IsEqualTo("   ")
+            .Because("Upstream requires a nonempty string without trimming it.");
+    }
+
+    [Test]
+    public async Task GetHealthAsync_ReportsInvalidJsonAsHealthResponseFailure(
+        CancellationToken cancellationToken)
+    {
+        EveHealthResponseException exception = await GetHealthExceptionAsync(
+            "not-json",
+            cancellationToken);
+
+        await Assert.That(exception.Issues.Count).IsEqualTo(0);
+        await Assert.That(exception.InnerException).IsTypeOf<JsonException>();
+    }
+
+    [Test]
+    public async Task GetHealthAsync_RejectsUnknownProperties(
+        CancellationToken cancellationToken)
+    {
+        EveHealthResponseException exception = await GetHealthExceptionAsync(
+            """{"ok":true,"status":"ready","workflowId":"workflow_1","extra":true}""",
+            cancellationToken);
+
+        await Assert.That(exception.Issues.Count).IsEqualTo(1);
+        await Assert.That(exception.Issues[0].Path).IsEqualTo(string.Empty);
+        await Assert.That(exception.Issues[0].Message).Contains("extra");
+    }
+
+    [Test]
+    [Arguments("""{"status":"ready","workflowId":"workflow_1"}""", "ok")]
+    [Arguments("""{"ok":false,"status":"ready","workflowId":"workflow_1"}""", "ok")]
+    [Arguments("""{"ok":true,"status":"starting","workflowId":"workflow_1"}""", "status")]
+    [Arguments("""{"ok":true,"status":"ready","workflowId":42}""", "workflowId")]
+    [Arguments("""{"ok":true,"status":"ready","workflowId":""}""", "workflowId")]
+    public async Task GetHealthAsync_ReportsStructuredSchemaIssue(
+        string json,
+        string expectedPath,
+        CancellationToken cancellationToken)
+    {
+        EveHealthResponseException exception = await GetHealthExceptionAsync(
+            json,
+            cancellationToken);
+
+        await Assert.That(exception.Issues.Count).IsEqualTo(1);
+        await Assert.That(exception.Issues[0].Path).IsEqualTo(expectedPath);
+    }
+
+    [Test]
+    public async Task GetHealthAsync_BoundsStructuredSchemaIssues(
+        CancellationToken cancellationToken)
+    {
+        EveHealthResponseException exception = await GetHealthExceptionAsync(
+            """{"ok":false,"status":"starting","workflowId":"","a":1,"b":2,"c":3}""",
+            cancellationToken);
+
+        await Assert.That(exception.Issues.Count).IsEqualTo(4);
+        await Assert.That(exception.Issues[0].Path).IsEqualTo("ok");
+        await Assert.That(exception.Issues[1].Path).IsEqualTo("status");
+        await Assert.That(exception.Issues[2].Path).IsEqualTo("workflowId");
+        await Assert.That(exception.Issues[3].Path).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task GetHealthAsync_ValidatesLastDuplicatePropertyValue(
+        CancellationToken cancellationToken)
+    {
+        EveHealthResponseException exception = await GetHealthExceptionAsync(
+            """
+            {"ok":true,"status":"ready","workflowId":"workflow_1","workflowId":""}
+            """,
+            cancellationToken);
+
+        await Assert.That(exception.Issues.Count).IsEqualTo(1);
+        await Assert.That(exception.Issues[0].Path).IsEqualTo("workflowId");
+    }
+
+    [Test]
+    public async Task GetHealthAsync_ReturnsLastDuplicatePropertyValue(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {"ok":true,"status":"ready","workflowId":"","workflowId":"workflow_1"}
+            """)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveHealthStatus health = await client.GetHealthAsync(cancellationToken);
+
+        await Assert.That(health.WorkflowId).IsEqualTo("workflow_1");
+    }
+
+    [Test]
+    public async Task GetHealthAsync_KeepsNonSuccessResponsesAsClientErrors(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.ServiceUnavailable,
+            """{"error":"not ready"}""")));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        await Assert.That(async () => await client.GetHealthAsync(cancellationToken))
+            .ThrowsExactly<EveClientException>();
+    }
+
+    [Test]
     public async Task GetInfoAsync_ReturnsProjectedAndRawAgentInfo(
         CancellationToken cancellationToken)
     {
@@ -986,6 +1110,19 @@ public sealed class EveClientTests
         EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
 
         return await client.GetInfoAsync(cancellationToken);
+    }
+
+    private static async Task<EveHealthResponseException> GetHealthExceptionAsync(
+        string json,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(HttpStatusCode.OK, json)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        return (await Assert.That(async () => await client.GetHealthAsync(cancellationToken))
+            .ThrowsExactly<EveHealthResponseException>())!;
     }
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json) =>
