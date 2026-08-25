@@ -7,6 +7,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.44.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.44.4`; the minimum remains
+  eve `0.31.0`.
+- Eve `0.44.1` includes open-read idle recovery, and eve `0.44.4` fixes replay-to-live
+  continuation in the JavaScript store. The .NET client already implements the
+  framework-neutral behavior; core routes, stream protocol `23`, and the published
+  agent-info schema version `2` remain unchanged.
+- Agent-info schema version `3` and strict successful health-response validation remain
+  ahead of the published baseline because their upstream change has not been released.
+
 ### Added
 
 - `GetInfoAsync` accepts canonical agent-info schema version `3` while preserving versions

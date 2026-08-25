@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.44.0 | 23 | Development compatibility target |
+| Unreleased | 0.44.4 | 23 | Development compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
@@ -48,7 +48,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.44.0` fixture with a deterministic
+The repository contains a pinned eve `0.44.4` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -107,14 +107,13 @@ and is not dropped.
 
 ## Open stream read-idle recovery
 
-The unreleased client mirrors the framework-neutral stream reliability change merged in
+Eve `0.44.1` includes the framework-neutral stream reliability change merged in
 [vercel/eve#2379](https://github.com/vercel/eve/pull/2379). Every open stream read has a
 fixed 15-second idle deadline; a socket that remains connected without producing bytes
 is closed and reopened from the absolute cursor after every fully consumed event.
 
 This behavior changes no route, payload, event shape, stream protocol version, or
-agent-info schema. It remains ahead of the declared Eve `0.44.0` reference until an
-upstream release contains the change.
+agent-info schema.
 
 ## Callback-backed connection authorization
 
@@ -136,11 +135,13 @@ text, choice, confirmation, or tool-approval response contract. The sealed
 `EveInputResponse` model and whitelist request writer already emit only the permitted
 keys, so this upstream tightening requires no .NET request-shape change.
 
-## Eve 0.43.0 and 0.44.0
+## Eve 0.43.0 through 0.44.4
 
-These releases add no further framework-neutral client requirement. The core session
-routes, stream event vocabulary, message-stream protocol `23`, and agent-info schema
-version `2` remain unchanged.
+The core session routes, stream event vocabulary, message-stream protocol `23`, and
+agent-info schema version `2` remain unchanged through eve `0.44.4`. Eve `0.44.1`
+contains the open-read recovery described above. Eve `0.44.4` fixes replay-to-live
+continuation in the excluded JavaScript store; the .NET session cursor and stream
+follower already expose the underlying bounded replay and active-follow behavior.
 
 ## Agent-info schema v3
 
@@ -154,7 +155,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-This support remains ahead of the declared Eve `0.44.0` reference because the upstream
+This support remains ahead of the declared Eve `0.44.4` reference because the upstream
 change is not yet in a published Eve release. The pinned fixture and compatibility
 baseline therefore remain unchanged.
 
@@ -171,7 +172,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-This behavior is also ahead of the pinned Eve `0.44.0` fixture because the upstream
+This behavior is also ahead of the pinned Eve `0.44.4` fixture because the upstream
 change is not yet published, so contract tests provide the compatibility gate for now.
 
 Upstream eve lets generic per-request headers replace authentication.
