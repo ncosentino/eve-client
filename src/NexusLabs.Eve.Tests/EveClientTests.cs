@@ -246,6 +246,183 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeAndPreservesRawPayload(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            AgentInfoV3Fixture.ValidJson)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        EveAgentInfo info = await client.GetInfoAsync(cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(3);
+        await Assert.That(info.AgentName).IsEqualTo("Test Agent");
+        await Assert.That(info.Description).IsEqualTo("Exercises schema v3.");
+        await Assert.That(
+                info.Raw.GetProperty("agent").GetProperty("config")
+                    .GetProperty("sourceId").GetString())
+            .IsEqualTo("agent.ts")
+            .Because("Canonical v3 source ownership remains available through Raw.");
+        await Assert.That(
+                info.Raw.GetProperty("workspace").GetProperty("rootEntries").GetArrayLength())
+            .IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeExternalModel(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithExternalModel(),
+            cancellationToken);
+
+        await Assert.That(info.ModelId).IsEqualTo("anthropic/claude-opus-4.8");
+        await Assert.That(info.ModelRouting).IsEqualTo(EveAgentModelRouting.External);
+        await Assert.That(info.RawModelRouting).IsEqualTo("external");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeDynamicModel(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithDynamicModel(),
+            cancellationToken);
+
+        await Assert.That(info.ModelId).IsNull();
+        await Assert.That(info.ModelRouting).IsEqualTo(EveAgentModelRouting.Dynamic);
+        await Assert.That(
+                info.Raw.GetProperty("agent").GetProperty("model")
+                    .GetProperty("routing").GetProperty("resolver")
+                    .GetProperty("slug").GetString())
+            .IsEqualTo("model");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeKernelEffectsAndSubagents(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithKernelEffectAndSubagent(),
+            cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(
+                info.Raw.GetProperty("subagents").GetProperty("local").GetArrayLength())
+            .IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeBackingAndOptionalVariants(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithBackingAndOptionalVariants(),
+            cancellationToken);
+
+        await Assert.That(
+                info.Raw.GetProperty("agent").GetProperty("config")
+                    .GetProperty("binding").GetProperty("backing")
+                    .GetProperty("kind").GetString())
+            .IsEqualTo("programmatic");
+        await Assert.That(info.Raw.GetProperty("connections").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("channels").GetProperty("shadowed").GetArrayLength())
+            .IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsVersionTwoPayloadRelabeledAsVersionThree(
+        CancellationToken cancellationToken)
+    {
+        const string json =
+            """
+            {
+              "kind": "eve-agent-info",
+              "version": 3,
+              "mode": "production",
+              "agent": {
+                "name": "Relabeled Agent",
+                "model": { "id": "openai/gpt-5.5" }
+              },
+              "capabilities": { "devRoutes": false },
+              "instructions": { "dynamic": [], "static": [] }
+            }
+            """;
+
+        await AssertInfoRejectedAsync(
+            json,
+            "Schema v3 requires the canonical source graph rather than a relabeled v2 payload.",
+            cancellationToken);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeMissingRequiredStructure(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithoutChannels(),
+            "Schema v3 requires every canonical top-level collection.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeDuplicateIdentities(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithDuplicateToolNames(),
+            "Schema v3 tool names must be unique.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeRouteCollisions(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithNormalizedRouteCollision(),
+            "Equivalent parameterized route patterns must not collide.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeMismatchedTotals(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithMismatchedRemoteAgentTotal(),
+            "Schema v3 totals must equal their entry counts.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeModuleWithoutBinding(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithModuleSourceMissingBinding(),
+            "Every module source must identify its binding.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeBindingPathMismatch(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithBindingLogicalPathMismatch(),
+            "A binding logical path must match its source.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeBindingOwnerMismatch(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithBindingOwnerMismatch(),
+            "A binding owner must match its source.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeUnknownRootProperty(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithUnknownRootProperty(),
+            "Schema v3 rejects unknown root fields.",
+            cancellationToken);
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionOne(CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
@@ -277,7 +454,7 @@ public sealed class EveClientTests
 
     [Test]
     [Arguments(0)]
-    [Arguments(3)]
+    [Arguments(4)]
     public async Task GetInfoAsync_RejectsUnsupportedSchemaVersion(
         int version,
         CancellationToken cancellationToken)
@@ -783,6 +960,33 @@ public sealed class EveClientTests
                             }
                             : new Dictionary<string, string>()),
             });
+
+    private static async Task AssertInfoRejectedAsync(
+        string json,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(HttpStatusCode.OK, json)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        await Assert.That(async () => await client.GetInfoAsync(cancellationToken))
+            .Throws<EveProtocolException>()
+            .Because(reason);
+    }
+
+    private static async Task<EveAgentInfo> GetInfoAsync(
+        string json,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(JsonResponse(HttpStatusCode.OK, json)));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+
+        return await client.GetInfoAsync(cancellationToken);
+    }
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json) =>
         new(statusCode)

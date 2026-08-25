@@ -7,6 +7,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `GetInfoAsync` accepts canonical agent-info schema version `3` while preserving versions
+  `1` and `2`. Version `3` validates required source-graph structure, unique public
+  identities, normalized route collisions, collection totals, module bindings, and
+  binding owner/path provenance while retaining every inspection field through
+  `EveAgentInfo.Raw`.
+
 ## [0.1.0-alpha.7] - 2026-08-21
 
 ### Compatibility

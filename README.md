@@ -269,9 +269,10 @@ TypeScript-only React/Vue/Svelte hooks, `EveAgentStore`, and UI message reducer 
 ported because they depend on JavaScript UI and AI SDK types rather than the HTTP
 protocol.
 
-`GetInfoAsync` validates the agent-info identity contract and exposes the complete JSON
-through `EveAgentInfo.Raw`. This avoids breaking consumers whenever preview-only
-inspection fields change.
+`GetInfoAsync` validates agent-info schemas 1 through 3 and exposes the complete JSON
+through `EveAgentInfo.Raw`. Schema v3 includes canonical source ownership, bindings,
+composition diagnostics, and node identities; preserving the raw document keeps those
+preview inspection fields available without expanding the strong projection.
 
 ## Development
 
