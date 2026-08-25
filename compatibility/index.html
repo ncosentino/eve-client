@@ -893,6 +893,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agent-info-schema-v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-info schema v3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1416,6 +1427,18 @@ keys, so this upstream tightening requires no .NET request-shape change.</p>
 <p>These releases add no further framework-neutral client requirement. The core session
 routes, stream event vocabulary, message-stream protocol <code>23</code>, and agent-info schema
 version <code>2</code> remain unchanged.</p>
+<h2 id="agent-info-schema-v3">Agent-info schema v3<a class="headerlink" href="#agent-info-schema-v3" title="Permanent link">&para;</a></h2>
+<p>Upstream main raises agent inspection to schema version <code>3</code>. <code>GetInfoAsync</code> accepts the
+canonical v3 source graph while retaining schema versions <code>1</code> and <code>2</code>, and continues to
+expose every field through <code>EveAgentInfo.Raw</code>.</p>
+<p>Version <code>3</code> is validated as a distinct contract rather than accepted by version number
+alone. The client rejects relabeled v2 documents, missing canonical collections,
+duplicate public identities, normalized channel-route collisions, incorrect subagent or
+remote-agent totals, module sources without bindings, and bindings whose owner or logical
+path disagrees with their source.</p>
+<p>This support remains ahead of the declared Eve <code>0.44.0</code> reference because the upstream
+change is not yet in a published Eve release. The pinned fixture and compatibility
+baseline therefore remain unchanged.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
