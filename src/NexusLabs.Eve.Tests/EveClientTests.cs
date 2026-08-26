@@ -458,6 +458,21 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeOpaqueToolInputSchema(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithBooleanToolInputSchema(),
+            cancellationToken);
+
+        await Assert.That(
+                info.Raw.GetProperty("tools").GetProperty("static")[0]
+                    .GetProperty("inputSchema").GetBoolean())
+            .IsTrue()
+            .Because("Upstream models tool inputSchema as opaque JSON.");
+    }
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionFourAndPreservesMemoryMetadata(
         CancellationToken cancellationToken)
     {

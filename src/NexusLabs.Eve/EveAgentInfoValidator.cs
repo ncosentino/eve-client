@@ -768,7 +768,7 @@ internal static class EveAgentInfoValidator
             RequireBoolean(tool, "hasExecute", entryPath);
             RequireBoolean(tool, "hasModelOutputProjection", entryPath);
             RequireBoolean(tool, "hasOutputSchema", entryPath);
-            RequireObject(tool, "inputSchema", entryPath);
+            RequireProperty(tool, "inputSchema", entryPath);
             RequireBoolean(tool, "requiresApproval", entryPath);
         }
 
