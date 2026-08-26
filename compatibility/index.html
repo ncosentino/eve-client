@@ -893,10 +893,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agent-info-schema-v3" class="md-nav__link">
+  <a href="#eve-0450-and-agent-info-schema-v3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Agent-info schema v3
+        Eve 0.45.0 and agent-info schema v3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-info-schema-v4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-info schema v4
       
     </span>
   </a>
@@ -1451,8 +1462,8 @@ agent-info schema version <code>2</code> remain unchanged through eve <code>0.44
 contains the open-read recovery described above. Eve <code>0.44.4</code> fixes replay-to-live
 continuation in the excluded JavaScript store; the .NET session cursor and stream
 follower already expose the underlying bounded replay and active-follow behavior.</p>
-<h2 id="agent-info-schema-v3">Agent-info schema v3<a class="headerlink" href="#agent-info-schema-v3" title="Permanent link">&para;</a></h2>
-<p>Upstream main raises agent inspection to schema version <code>3</code>. <code>GetInfoAsync</code> accepts the
+<h2 id="eve-0450-and-agent-info-schema-v3">Eve 0.45.0 and agent-info schema v3<a class="headerlink" href="#eve-0450-and-agent-info-schema-v3" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.45.0</code> raises agent inspection to schema version <code>3</code>. <code>GetInfoAsync</code> accepts the
 canonical v3 source graph while retaining schema versions <code>1</code> and <code>2</code>, and continues to
 expose every field through <code>EveAgentInfo.Raw</code>.</p>
 <p>Version <code>3</code> is validated as a distinct contract rather than accepted by version number
@@ -1460,11 +1471,21 @@ alone. The client rejects relabeled v2 documents, missing canonical collections,
 duplicate public identities, normalized channel-route collisions, incorrect subagent or
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.</p>
-<p>This support remains ahead of the declared Eve <code>0.44.4</code> reference because the upstream
-change is not yet in a published Eve release. The pinned fixture and compatibility
-baseline therefore remain unchanged.</p>
+<p>This behavior is implemented and published upstream, but remains ahead of the declared
+Eve <code>0.44.4</code> reference until a separate compatibility release updates the pinned fixture.</p>
+<h2 id="agent-info-schema-v4">Agent-info schema v4<a class="headerlink" href="#agent-info-schema-v4" title="Permanent link">&para;</a></h2>
+<p>Upstream main raises agent inspection again to schema version <code>4</code>.
+<code>GetInfoAsync</code> accepts and strictly validates the required memory-provider inspection
+surface while retaining schema versions <code>1</code> through <code>3</code>.</p>
+<p>Version <code>4</code> requires a <code>memories</code> collection with unique slots, canonical source
+provenance, and <code>scope</code> or <code>session</code> visibility. It also adds memory counts to local
+subagent summaries, optional dependency and parameter maps to programmatic source
+backings, and a required <code>direct</code> or <code>derived</code> form on source descriptors. Every field
+remains available through <code>EveAgentInfo.Raw</code>.</p>
+<p>Schema v4 remains ahead of the declared Eve <code>0.44.4</code> reference because its upstream
+change is not yet in a published Eve release.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
-<p>Upstream main strictly validates successful <code>GET /eve/v1/health</code> responses. The exact
+<p>Eve <code>0.45.0</code> strictly validates successful <code>GET /eve/v1/health</code> responses. The exact
 shape is <code>ok: true</code>, <code>status: "ready"</code>, and a nonempty string <code>workflowId</code>; unknown
 properties are rejected. A whitespace-only workflow identifier remains nonempty and is
 therefore valid.</p>
@@ -1473,8 +1494,8 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>This behavior is also ahead of the pinned Eve <code>0.44.4</code> fixture because the upstream
-change is not yet published, so contract tests provide the compatibility gate for now.</p>
+<p>This behavior remains ahead of the pinned Eve <code>0.44.4</code> fixture until a separate
+compatibility release updates the declared reference.</p>
 <p>Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
