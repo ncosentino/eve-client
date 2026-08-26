@@ -145,9 +145,9 @@ contains the open-read recovery described above. Eve `0.44.4` fixes replay-to-li
 continuation in the excluded JavaScript store; the .NET session cursor and stream
 follower already expose the underlying bounded replay and active-follow behavior.
 
-## Agent-info schema v3
+## Eve 0.45.0 and agent-info schema v3
 
-Upstream main raises agent inspection to schema version `3`. `GetInfoAsync` accepts the
+Eve `0.45.0` raises agent inspection to schema version `3`. `GetInfoAsync` accepts the
 canonical v3 source graph while retaining schema versions `1` and `2`, and continues to
 expose every field through `EveAgentInfo.Raw`.
 
@@ -157,13 +157,27 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-This support remains ahead of the declared Eve `0.44.4` reference because the upstream
-change is not yet in a published Eve release. The pinned fixture and compatibility
-baseline therefore remain unchanged.
+This behavior is implemented and published upstream, but remains ahead of the declared
+Eve `0.44.4` reference until a separate compatibility release updates the pinned fixture.
+
+## Agent-info schema v4
+
+Upstream main raises agent inspection again to schema version `4`.
+`GetInfoAsync` accepts and strictly validates the required memory-provider inspection
+surface while retaining schema versions `1` through `3`.
+
+Version `4` requires a `memories` collection with unique slots, canonical source
+provenance, and `scope` or `session` visibility. It also adds memory counts to local
+subagent summaries, optional dependency and parameter maps to programmatic source
+backings, and a required `direct` or `derived` form on source descriptors. Every field
+remains available through `EveAgentInfo.Raw`.
+
+Schema v4 remains ahead of the declared Eve `0.44.4` reference because its upstream
+change is not yet in a published Eve release.
 
 ## Strict health response validation
 
-Upstream main strictly validates successful `GET /eve/v1/health` responses. The exact
+Eve `0.45.0` strictly validates successful `GET /eve/v1/health` responses. The exact
 shape is `ok: true`, `status: "ready"`, and a nonempty string `workflowId`; unknown
 properties are rejected. A whitespace-only workflow identifier remains nonempty and is
 therefore valid.
@@ -174,8 +188,8 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-This behavior is also ahead of the pinned Eve `0.44.4` fixture because the upstream
-change is not yet published, so contract tests provide the compatibility gate for now.
+This behavior remains ahead of the pinned Eve `0.44.4` fixture until a separate
+compatibility release updates the declared reference.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override

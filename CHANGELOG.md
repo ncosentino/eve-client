@@ -7,6 +7,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `GetInfoAsync` accepts and strictly validates agent-info schema version `4`, including
+  first-class memory-provider entries, unique memory slots, subagent memory counts,
+  versioned programmatic-backing metadata, and direct/derived source descriptors. Valid
+  v4 fields remain available through `EveAgentInfo.Raw`, while schema v3 keeps its
+  original strict shape.
+
 ## [0.1.0-alpha.8] - 2026-08-25
 
 ### Compatibility
