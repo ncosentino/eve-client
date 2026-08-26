@@ -15,6 +15,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   v4 fields remain available through `EveAgentInfo.Raw`, while schema v3 keeps its
   original strict shape.
 
+### Fixed
+
+- Agent inspection accepts opaque tool `inputSchema` values, including Boolean JSON
+  schemas, instead of incorrectly requiring every schema to be an object.
+
 ## [0.1.0-alpha.8] - 2026-08-25
 
 ### Compatibility
