@@ -566,9 +566,9 @@ public sealed class EveClient
                     "The eve info route returned an unsupported agent-info payload.");
             }
 
-            if (version == 3)
+            if (version is 3 or 4)
             {
-                EveAgentInfoV3Validator.Validate(root);
+                EveAgentInfoValidator.Validate(root, version);
             }
 
             (string? modelId, EveAgentModelRouting routing, string? rawRouting) =

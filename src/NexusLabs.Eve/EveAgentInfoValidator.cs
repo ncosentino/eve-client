@@ -2,7 +2,7 @@
 
 namespace NexusLabs.Eve;
 
-internal static class EveAgentInfoV3Validator
+internal static class EveAgentInfoValidator
 {
     private const long MaximumSafeInteger = 9_007_199_254_740_991;
 
@@ -19,8 +19,10 @@ internal static class EveAgentInfoV3Validator
     private static readonly string[] ChannelsProperties = ["routes", "shadowed"];
     private static readonly string[] ChannelShadowedProperties =
         ["method", "source", "urlPath", "winnerSourceId"];
-    private static readonly string[] ChannelShadowedSourceProperties =
+    private static readonly string[] ChannelShadowedSourceV3Properties =
         ["backing", "layer", "logicalPath", "owner", "sourceId"];
+    private static readonly string[] ChannelShadowedSourceV4Properties =
+        ["backing", "form", "layer", "logicalPath", "owner", "sourceId"];
     private static readonly string[] CollectionProperties = ["dynamic", "static"];
     private static readonly string[] CompositionAllowedProperties =
         ["kind", "logicalPath", "owner", "sourceId", "winnerSourceId"];
@@ -62,6 +64,9 @@ internal static class EveAgentInfoV3Validator
         ["action", "audience", "kind", "sourceId"];
     private static readonly string[] KernelEffectRequiredProperties =
         ["audience", "kind", "sourceId"];
+    private static readonly string[] MemoryAllowedProperties =
+        ["description", "slot", "tools", "visibility"];
+    private static readonly string[] MemoryRequiredProperties = ["slot", "visibility"];
     private static readonly string[] ModelAllowedProperties =
     [
         "contextWindowTokens",
@@ -79,7 +84,7 @@ internal static class EveAgentInfoV3Validator
         ["description", "name", "nodeId", "parentNodeId"];
     private static readonly string[] RemoteAgentsProperties = ["entries", "total"];
     private static readonly string[] ResourceBackingProperties = ["kind", "sourcePath"];
-    private static readonly string[] RootAllowedProperties =
+    private static readonly string[] RootV3AllowedProperties =
     [
         "agent",
         "capabilities",
@@ -103,7 +108,7 @@ internal static class EveAgentInfoV3Validator
         "workflow",
         "workspace",
     ];
-    private static readonly string[] RootRequiredProperties =
+    private static readonly string[] RootV3RequiredProperties =
     [
         "agent",
         "capabilities",
@@ -126,13 +131,27 @@ internal static class EveAgentInfoV3Validator
         "workflow",
         "workspace",
     ];
+    private static readonly string[] RootV4AllowedProperties =
+        [.. RootV3AllowedProperties, "memories"];
+    private static readonly string[] RootV4RequiredProperties =
+        [.. RootV3RequiredProperties, "memories"];
     private static readonly string[] GatewayRoutingAllowedProperties =
         ["byok", "kind", "target"];
     private static readonly string[] GatewayRoutingRequiredProperties = ["kind", "target"];
     private static readonly string[] ExternalRoutingProperties = ["kind", "provider"];
     private static readonly string[] DynamicRoutingProperties = ["kind", "resolver"];
-    private static readonly string[] ProgrammaticBackingAllowedProperties =
+    private static readonly string[] ProgrammaticBackingV3AllowedProperties =
         ["kind", "moduleId", "registryId", "revision", "semanticRevision"];
+    private static readonly string[] ProgrammaticBackingV4AllowedProperties =
+    [
+        "dependencies",
+        "kind",
+        "moduleId",
+        "parameters",
+        "registryId",
+        "revision",
+        "semanticRevision",
+    ];
     private static readonly string[] ProgrammaticBackingRequiredProperties =
         ["kind", "moduleId", "registryId", "revision"];
     private static readonly string[] SandboxAllowedProperties =
@@ -169,8 +188,10 @@ internal static class EveAgentInfoV3Validator
     ];
     private static readonly string[] SubagentRequiredProperties =
         ["entryPath", "name", "nodeId", "parentNodeId", "rootPath", "summary"];
-    private static readonly string[] SubagentSummaryProperties =
+    private static readonly string[] SubagentSummaryV3Properties =
         ["channels", "connections", "hooks", "instructions", "schedules", "skills", "tools"];
+    private static readonly string[] SubagentSummaryV4Properties =
+        [.. SubagentSummaryV3Properties, "memories"];
     private static readonly string[] SubagentsProperties = ["local", "total"];
     private static readonly string[] ToolAllowedProperties =
     [
@@ -200,33 +221,53 @@ internal static class EveAgentInfoV3Validator
     private static readonly string[] WorkflowRequiredProperties = ["enabled", "toolName"];
     private static readonly string[] WorkspaceProperties = ["resourceRoot", "rootEntries"];
 
-    public static void Validate(JsonElement root)
+    public static void Validate(JsonElement root, int version)
     {
-        ValidateExactObject(root, "$", RootRequiredProperties, RootAllowedProperties);
-        ValidateAgent(RequireObject(root, "agent", "$"));
+        bool isVersionFour = version switch
+        {
+            3 => false,
+            4 => true,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(version),
+                version,
+                "Strict agent-info validation supports only schema versions 3 and 4."),
+        };
+        string[] rootRequiredProperties = isVersionFour
+            ? RootV4RequiredProperties
+            : RootV3RequiredProperties;
+        string[] rootAllowedProperties = isVersionFour
+            ? RootV4AllowedProperties
+            : RootV3AllowedProperties;
+        ValidateExactObject(root, "$", rootRequiredProperties, rootAllowedProperties);
+        ValidateAgent(RequireObject(root, "agent", "$"), isVersionFour);
         ValidateCapabilities(RequireObject(root, "capabilities", "$"));
-        ValidateChannels(RequireObject(root, "channels", "$"));
+        ValidateChannels(RequireObject(root, "channels", "$"), isVersionFour);
         ValidateComposition(RequireObject(root, "composition", "$"));
-        ValidateConnections(RequireArray(root, "connections", "$"));
+        ValidateConnections(RequireArray(root, "connections", "$"), isVersionFour);
         ValidateDiagnostics(RequireObject(root, "diagnostics", "$"));
-        ValidateHooks(RequireArray(root, "hooks", "$"));
-        ValidateInstructions(RequireObject(root, "instructions", "$"));
+        ValidateHooks(RequireArray(root, "hooks", "$"), isVersionFour);
+        ValidateInstructions(RequireObject(root, "instructions", "$"), isVersionFour);
         ValidateKernelEffects(RequireArray(root, "kernelEffects", "$"));
-        ValidateRemoteAgents(RequireObject(root, "remoteAgents", "$"));
-        ValidateSandbox(RequireObject(root, "sandbox", "$"));
-        ValidateSchedules(RequireArray(root, "schedules", "$"));
-        ValidateSkills(RequireObject(root, "skills", "$"));
-        ValidateSubagents(RequireObject(root, "subagents", "$"));
-        ValidateTools(RequireObject(root, "tools", "$"));
-        ValidateWorkflow(RequireObject(root, "workflow", "$"));
+        if (isVersionFour)
+        {
+            ValidateMemories(RequireArray(root, "memories", "$"));
+        }
+
+        ValidateRemoteAgents(RequireObject(root, "remoteAgents", "$"), isVersionFour);
+        ValidateSandbox(RequireObject(root, "sandbox", "$"), isVersionFour);
+        ValidateSchedules(RequireArray(root, "schedules", "$"), isVersionFour);
+        ValidateSkills(RequireObject(root, "skills", "$"), isVersionFour);
+        ValidateSubagents(RequireObject(root, "subagents", "$"), isVersionFour);
+        ValidateTools(RequireObject(root, "tools", "$"), isVersionFour);
+        ValidateWorkflow(RequireObject(root, "workflow", "$"), isVersionFour);
         ValidateWorkspace(RequireObject(root, "workspace", "$"));
         if (root.TryGetProperty("instrumentation", out JsonElement instrumentation))
         {
-            ValidateSource(instrumentation, "$.instrumentation");
+            ValidateSource(instrumentation, "$.instrumentation", isVersionFour);
         }
     }
 
-    private static void ValidateAgent(JsonElement agent)
+    private static void ValidateAgent(JsonElement agent, bool isVersionFour)
     {
         const string path = "$.agent";
         ValidateExactObject(
@@ -236,14 +277,14 @@ internal static class EveAgentInfoV3Validator
             AgentAllowedProperties);
         RequireString(agent, "agentRoot", path);
         RequireString(agent, "appRoot", path);
-        ValidateSource(RequireObject(agent, "config", path), $"{path}.config");
-        ValidateModel(RequireObject(agent, "model", path));
+        ValidateSource(RequireObject(agent, "config", path), $"{path}.config", isVersionFour);
+        ValidateModel(RequireObject(agent, "model", path), isVersionFour);
         RequireString(agent, "name", path);
         RequireString(agent, "nodeId", path);
         ValidateOptionalString(agent, "description", path);
     }
 
-    private static void ValidateModel(JsonElement model)
+    private static void ValidateModel(JsonElement model, bool isVersionFour)
     {
         const string path = "$.agent.model";
         ValidateExactObject(model, path, ModelRequiredProperties, ModelAllowedProperties);
@@ -278,7 +319,10 @@ internal static class EveAgentInfoV3Validator
                 routingPath,
                 DynamicRoutingProperties,
                 DynamicRoutingProperties);
-            ValidateDynamicResolver(RequireObject(routing, "resolver", routingPath), $"{routingPath}.resolver");
+            ValidateDynamicResolver(
+                RequireObject(routing, "resolver", routingPath),
+                $"{routingPath}.resolver",
+                isVersionFour);
         }
         else
         {
@@ -293,7 +337,7 @@ internal static class EveAgentInfoV3Validator
 
         if (model.TryGetProperty("source", out JsonElement source))
         {
-            ValidateSource(source, $"{path}.source");
+            ValidateSource(source, $"{path}.source", isVersionFour);
         }
     }
 
@@ -308,7 +352,7 @@ internal static class EveAgentInfoV3Validator
         RequireBoolean(capabilities, "devRoutes", path);
     }
 
-    private static void ValidateChannels(JsonElement channels)
+    private static void ValidateChannels(JsonElement channels, bool isVersionFour)
     {
         const string path = "$.channels";
         ValidateExactObject(channels, path, ChannelsProperties, ChannelsProperties);
@@ -321,6 +365,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 route,
                 routePath,
+                isVersionFour,
                 ChannelRouteRequiredProperties,
                 ChannelRouteAllowedProperties);
             RequireString(route, "name", routePath);
@@ -350,14 +395,27 @@ internal static class EveAgentInfoV3Validator
             RequireString(entry, "urlPath", entryPath);
             RequireString(entry, "winnerSourceId", entryPath);
             JsonElement source = RequireObject(entry, "source", entryPath);
+            string[] sourceProperties = isVersionFour
+                ? ChannelShadowedSourceV4Properties
+                : ChannelShadowedSourceV3Properties;
             ValidateExactObject(
                 source,
                 $"{entryPath}.source",
-                ChannelShadowedSourceProperties,
-                ChannelShadowedSourceProperties);
+                sourceProperties,
+                sourceProperties);
             ValidateSourceBacking(
                 RequireObject(source, "backing", $"{entryPath}.source"),
-                $"{entryPath}.source.backing");
+                $"{entryPath}.source.backing",
+                isVersionFour);
+            if (isVersionFour)
+            {
+                string form = RequireString(source, "form", $"{entryPath}.source");
+                if (form is not "derived" and not "direct")
+                {
+                    ThrowInvalid($"{entryPath}.source.form has unsupported value '{form}'.");
+                }
+            }
+
             RequireString(source, "layer", $"{entryPath}.source");
             RequireString(source, "logicalPath", $"{entryPath}.source");
             ValidateOwner(RequireObject(source, "owner", $"{entryPath}.source"));
@@ -392,7 +450,7 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
-    private static void ValidateConnections(JsonElement connections)
+    private static void ValidateConnections(JsonElement connections, bool isVersionFour)
     {
         HashSet<string> identities = CreateIdentitySet();
         for (int index = 0; index < connections.GetArrayLength(); index++)
@@ -402,6 +460,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 connection,
                 path,
+                isVersionFour,
                 ConnectionRequiredProperties,
                 ConnectionAllowedProperties);
             string identity = RequireString(connection, "connectionName", path);
@@ -423,14 +482,14 @@ internal static class EveAgentInfoV3Validator
         RequireNonnegativeSafeInteger(diagnostics, "discoveryWarnings", path);
     }
 
-    private static void ValidateHooks(JsonElement hooks)
+    private static void ValidateHooks(JsonElement hooks, bool isVersionFour)
     {
         HashSet<string> identities = CreateIdentitySet();
         for (int index = 0; index < hooks.GetArrayLength(); index++)
         {
             JsonElement hook = hooks[index];
             string path = $"$.hooks[{index}]";
-            ValidateDynamicResolver(hook, path);
+            ValidateDynamicResolver(hook, path, isVersionFour);
             AddIdentity(
                 identities,
                 RequireString(hook, "slug", path),
@@ -439,12 +498,12 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
-    private static void ValidateInstructions(JsonElement instructions)
+    private static void ValidateInstructions(JsonElement instructions, bool isVersionFour)
     {
         const string path = "$.instructions";
         ValidateExactObject(instructions, path, CollectionProperties, CollectionProperties);
         JsonElement dynamicEntries = RequireArray(instructions, "dynamic", path);
-        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic");
+        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic", isVersionFour);
         EnsureUnique(dynamicEntries, "slug", $"{path}.dynamic");
 
         JsonElement staticEntries = RequireArray(instructions, "static", path);
@@ -455,6 +514,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 instruction,
                 entryPath,
+                isVersionFour,
                 InstructionProperties,
                 InstructionProperties);
             RequireString(instruction, "name", entryPath);
@@ -511,7 +571,38 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
-    private static void ValidateRemoteAgents(JsonElement remoteAgents)
+    private static void ValidateMemories(JsonElement memories)
+    {
+        HashSet<string> identities = CreateIdentitySet();
+        for (int index = 0; index < memories.GetArrayLength(); index++)
+        {
+            JsonElement memory = memories[index];
+            string path = $"$.memories[{index}]";
+            ValidateSource(
+                memory,
+                path,
+                true,
+                MemoryRequiredProperties,
+                MemoryAllowedProperties);
+            string slot = RequireString(memory, "slot", path);
+            string visibility = RequireString(memory, "visibility", path);
+            if (visibility is not "scope" and not "session")
+            {
+                ThrowInvalid($"{path}.visibility has unsupported value '{visibility}'.");
+            }
+
+            ValidateOptionalString(memory, "description", path);
+            if (memory.TryGetProperty("tools", out JsonElement tools)
+                && tools.ValueKind != JsonValueKind.False)
+            {
+                ThrowInvalid($"{path}.tools must be false when present.");
+            }
+
+            AddIdentity(identities, slot, "$.memories", "slot");
+        }
+    }
+
+    private static void ValidateRemoteAgents(JsonElement remoteAgents, bool isVersionFour)
     {
         const string path = "$.remoteAgents";
         ValidateExactObject(remoteAgents, path, RemoteAgentsProperties, RemoteAgentsProperties);
@@ -523,6 +614,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 entry,
                 entryPath,
+                isVersionFour,
                 RemoteAgentRequiredProperties,
                 RemoteAgentAllowedProperties);
             RequireString(entry, "name", entryPath);
@@ -536,12 +628,13 @@ internal static class EveAgentInfoV3Validator
         ValidateTotal(remoteAgents, "total", entries.GetArrayLength(), path);
     }
 
-    private static void ValidateSandbox(JsonElement sandbox)
+    private static void ValidateSandbox(JsonElement sandbox, bool isVersionFour)
     {
         const string path = "$.sandbox";
         ValidateSource(
             sandbox,
             path,
+            isVersionFour,
             SandboxRequiredProperties,
             SandboxAllowedProperties);
         RequireBoolean(sandbox, "hasBootstrap", path);
@@ -552,7 +645,7 @@ internal static class EveAgentInfoV3Validator
         ValidateOptionalString(sandbox, "sourceHash", path);
     }
 
-    private static void ValidateSchedules(JsonElement schedules)
+    private static void ValidateSchedules(JsonElement schedules, bool isVersionFour)
     {
         for (int index = 0; index < schedules.GetArrayLength(); index++)
         {
@@ -561,6 +654,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 schedule,
                 path,
+                isVersionFour,
                 ScheduleRequiredProperties,
                 ScheduleAllowedProperties);
             RequireString(schedule, "name", path);
@@ -572,12 +666,12 @@ internal static class EveAgentInfoV3Validator
         EnsureUnique(schedules, "name", "$.schedules");
     }
 
-    private static void ValidateSkills(JsonElement skills)
+    private static void ValidateSkills(JsonElement skills, bool isVersionFour)
     {
         const string path = "$.skills";
         ValidateExactObject(skills, path, CollectionProperties, CollectionProperties);
         JsonElement dynamicEntries = RequireArray(skills, "dynamic", path);
-        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic");
+        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic", isVersionFour);
         EnsureUnique(dynamicEntries, "slug", $"{path}.dynamic");
 
         JsonElement staticEntries = RequireArray(skills, "static", path);
@@ -588,6 +682,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 skill,
                 entryPath,
+                isVersionFour,
                 SkillRequiredProperties,
                 SkillAllowedProperties);
             RequireString(skill, "name", entryPath);
@@ -599,7 +694,7 @@ internal static class EveAgentInfoV3Validator
         EnsureUnique(staticEntries, "name", $"{path}.static");
     }
 
-    private static void ValidateSubagents(JsonElement subagents)
+    private static void ValidateSubagents(JsonElement subagents, bool isVersionFour)
     {
         const string path = "$.subagents";
         ValidateExactObject(subagents, path, SubagentsProperties, SubagentsProperties);
@@ -611,6 +706,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 subagent,
                 entryPath,
+                isVersionFour,
                 SubagentRequiredProperties,
                 SubagentAllowedProperties);
             RequireString(subagent, "name", entryPath);
@@ -620,12 +716,15 @@ internal static class EveAgentInfoV3Validator
             RequireString(subagent, "rootPath", entryPath);
             ValidateOptionalString(subagent, "description", entryPath);
             JsonElement summary = RequireObject(subagent, "summary", entryPath);
+            string[] summaryProperties = isVersionFour
+                ? SubagentSummaryV4Properties
+                : SubagentSummaryV3Properties;
             ValidateExactObject(
                 summary,
                 $"{entryPath}.summary",
-                SubagentSummaryProperties,
-                SubagentSummaryProperties);
-            foreach (string propertyName in SubagentSummaryProperties)
+                summaryProperties,
+                summaryProperties);
+            foreach (string propertyName in summaryProperties)
             {
                 RequireNumber(summary, propertyName, $"{entryPath}.summary");
             }
@@ -633,7 +732,10 @@ internal static class EveAgentInfoV3Validator
             if (subagent.TryGetProperty("configResolver", out JsonElement resolver)
                 )
             {
-                ValidateDynamicResolver(resolver, $"{entryPath}.configResolver");
+                ValidateDynamicResolver(
+                    resolver,
+                    $"{entryPath}.configResolver",
+                    isVersionFour);
             }
         }
 
@@ -641,12 +743,12 @@ internal static class EveAgentInfoV3Validator
         ValidateTotal(subagents, "total", local.GetArrayLength(), path);
     }
 
-    private static void ValidateTools(JsonElement tools)
+    private static void ValidateTools(JsonElement tools, bool isVersionFour)
     {
         const string path = "$.tools";
         ValidateExactObject(tools, path, CollectionProperties, CollectionProperties);
         JsonElement dynamicEntries = RequireArray(tools, "dynamic", path);
-        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic");
+        ValidateDynamicResolvers(dynamicEntries, $"{path}.dynamic", isVersionFour);
         EnsureUnique(dynamicEntries, "slug", $"{path}.dynamic");
 
         JsonElement staticEntries = RequireArray(tools, "static", path);
@@ -657,6 +759,7 @@ internal static class EveAgentInfoV3Validator
             ValidateSource(
                 tool,
                 entryPath,
+                isVersionFour,
                 ToolRequiredProperties,
                 ToolAllowedProperties);
             RequireString(tool, "name", entryPath);
@@ -672,7 +775,7 @@ internal static class EveAgentInfoV3Validator
         EnsureUnique(staticEntries, "name", $"{path}.static");
     }
 
-    private static void ValidateWorkflow(JsonElement workflow)
+    private static void ValidateWorkflow(JsonElement workflow, bool isVersionFour)
     {
         const string path = "$.workflow";
         ValidateExactObject(
@@ -690,7 +793,7 @@ internal static class EveAgentInfoV3Validator
                 ThrowInvalid($"{path}.source is required when the workflow is enabled.");
             }
 
-            ValidateSource(source, $"{path}.source");
+            ValidateSource(source, $"{path}.source", isVersionFour);
         }
         else if (hasSource)
         {
@@ -706,20 +809,27 @@ internal static class EveAgentInfoV3Validator
         ValidateStringArray(RequireArray(workspace, "rootEntries", path), $"{path}.rootEntries");
     }
 
-    private static void ValidateDynamicResolvers(JsonElement resolvers, string path)
+    private static void ValidateDynamicResolvers(
+        JsonElement resolvers,
+        string path,
+        bool isVersionFour)
     {
         for (int index = 0; index < resolvers.GetArrayLength(); index++)
         {
             JsonElement resolver = resolvers[index];
-            ValidateDynamicResolver(resolver, $"{path}[{index}]");
+            ValidateDynamicResolver(resolver, $"{path}[{index}]", isVersionFour);
         }
     }
 
-    private static void ValidateDynamicResolver(JsonElement resolver, string path)
+    private static void ValidateDynamicResolver(
+        JsonElement resolver,
+        string path,
+        bool isVersionFour)
     {
         ValidateSource(
             resolver,
             path,
+            isVersionFour,
             DynamicResolverProperties,
             DynamicResolverProperties);
         ValidateStringArray(RequireArray(resolver, "eventNames", path), $"{path}.eventNames");
@@ -729,6 +839,7 @@ internal static class EveAgentInfoV3Validator
     private static void ValidateSource(
         JsonElement source,
         string path,
+        bool isVersionFour,
         ReadOnlySpan<string> requiredAdditionalProperties = default,
         ReadOnlySpan<string> allowedAdditionalProperties = default)
     {
@@ -767,7 +878,12 @@ internal static class EveAgentInfoV3Validator
                 ThrowInvalid($"{path}.binding is required for a module source.");
             }
 
-            ValidateBinding(binding, $"{path}.binding", logicalPath, source.GetProperty("owner"));
+            ValidateBinding(
+                binding,
+                $"{path}.binding",
+                logicalPath,
+                source.GetProperty("owner"),
+                isVersionFour);
         }
         else if (hasBinding)
         {
@@ -781,10 +897,14 @@ internal static class EveAgentInfoV3Validator
         JsonElement binding,
         string path,
         string logicalPath,
-        JsonElement owner)
+        JsonElement owner,
+        bool isVersionFour)
     {
         ValidateExactObject(binding, path, BindingProperties, BindingProperties);
-        ValidateModuleBacking(RequireObject(binding, "backing", path), $"{path}.backing");
+        ValidateModuleBacking(
+            RequireObject(binding, "backing", path),
+            $"{path}.backing",
+            isVersionFour);
         string bindingLogicalPath = RequireString(binding, "logicalPath", path);
         if (!string.Equals(bindingLogicalPath, logicalPath, StringComparison.Ordinal))
         {
@@ -802,7 +922,10 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
-    private static void ValidateModuleBacking(JsonElement backing, string path)
+    private static void ValidateModuleBacking(
+        JsonElement backing,
+        string path,
+        bool isVersionFour)
     {
         string kind = RequireString(backing, "kind", path);
         if (kind == "filesystem")
@@ -811,15 +934,30 @@ internal static class EveAgentInfoV3Validator
         }
         else if (kind == "programmatic")
         {
+            string[] allowedProperties = isVersionFour
+                ? ProgrammaticBackingV4AllowedProperties
+                : ProgrammaticBackingV3AllowedProperties;
             ValidateExactObject(
                 backing,
                 path,
                 ProgrammaticBackingRequiredProperties,
-                ProgrammaticBackingAllowedProperties);
+                allowedProperties);
             RequireString(backing, "moduleId", path);
             RequireString(backing, "registryId", path);
             RequireString(backing, "revision", path);
             ValidateOptionalString(backing, "semanticRevision", path);
+            if (isVersionFour
+                && backing.TryGetProperty("dependencies", out JsonElement dependencies))
+            {
+                ValidateStringRecord(dependencies, $"{path}.dependencies");
+            }
+
+            if (isVersionFour
+                && backing.TryGetProperty("parameters", out JsonElement parameters)
+                && parameters.ValueKind != JsonValueKind.Object)
+            {
+                ThrowInvalid($"{path}.parameters must be an object.");
+            }
         }
         else
         {
@@ -827,7 +965,10 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
-    private static void ValidateSourceBacking(JsonElement backing, string path)
+    private static void ValidateSourceBacking(
+        JsonElement backing,
+        string path,
+        bool isVersionFour)
     {
         string kind = RequireString(backing, "kind", path);
         if (kind == "resource")
@@ -841,7 +982,7 @@ internal static class EveAgentInfoV3Validator
             return;
         }
 
-        ValidateModuleBacking(backing, path);
+        ValidateModuleBacking(backing, path, isVersionFour);
     }
 
     private static void ValidateFilesystemBacking(JsonElement backing, string path)
@@ -1129,6 +1270,24 @@ internal static class EveAgentInfoV3Validator
         }
     }
 
+    private static void ValidateStringRecord(JsonElement value, string path)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            ThrowInvalid($"{path} must be an object.");
+        }
+
+        using JsonElement.ObjectEnumerator properties = value.EnumerateObject();
+        while (properties.MoveNext())
+        {
+            JsonProperty property = properties.Current;
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                ThrowInvalid($"{path}.{property.Name} must be a string.");
+            }
+        }
+    }
+
     private static void ValidateStringArray(JsonElement values, string path)
     {
         for (int index = 0; index < values.GetArrayLength(); index++)
@@ -1172,5 +1331,5 @@ internal static class EveAgentInfoV3Validator
 
     private static void ThrowInvalid(string detail) =>
         throw new EveProtocolException(
-            $"The eve info route returned an invalid agent-info v3 payload: {detail}");
+            $"The eve info route returned an invalid agent-info payload: {detail}");
 }

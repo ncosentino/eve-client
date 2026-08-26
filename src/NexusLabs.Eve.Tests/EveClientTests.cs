@@ -458,6 +458,147 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourAndPreservesMemoryMetadata(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.ValidJson,
+            cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(4);
+        JsonElement memory = info.Raw.GetProperty("memories")[0];
+        await Assert.That(memory.GetProperty("slot").GetString()).IsEqualTo("profile");
+        await Assert.That(memory.GetProperty("visibility").GetString()).IsEqualTo("session");
+        await Assert.That(memory.GetProperty("tools").GetBoolean())
+            .IsFalse()
+            .Because("Schema v4 permits only the literal false when tools is present.");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourSubagentMemorySummary(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.WithSubagentSummary(),
+            cancellationToken);
+
+        await Assert.That(
+                info.Raw.GetProperty("subagents").GetProperty("local")[0]
+                    .GetProperty("summary").GetProperty("memories").GetInt32())
+            .IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourProgrammaticBackingMetadata(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.WithProgrammaticBackingMetadata(),
+            cancellationToken);
+
+        JsonElement backing = info.Raw.GetProperty("agent").GetProperty("config")
+            .GetProperty("binding").GetProperty("backing");
+        await Assert.That(
+                backing.GetProperty("dependencies").GetProperty("@vercel/ai").GetString())
+            .IsEqualTo("7.0.58");
+        await Assert.That(
+                backing.GetProperty("parameters").GetProperty("limit").GetInt32())
+            .IsEqualTo(25);
+        await Assert.That(
+                info.Raw.GetProperty("channels").GetProperty("shadowed")[0]
+                    .GetProperty("source").GetProperty("form").GetString())
+            .IsEqualTo("direct");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMissingMemories(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithoutMemories(),
+            "Schema v4 requires the memories collection.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourDuplicateMemorySlots(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithDuplicateMemorySlots(),
+            "Schema v4 memory slots must be unique.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourInvalidMemoryVisibility(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithInvalidMemoryVisibility(),
+            "Schema v4 memory visibility is limited to scope or session.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMemoryToolsTrue(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithMemoryToolsTrue(),
+            "Schema v4 permits only literal false for the optional memory tools field.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMemoryBindingMismatch(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithMemoryBindingOwnerMismatch(),
+            "Schema v4 memory sources use the canonical binding provenance rules.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMissingSubagentMemorySummary(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithSubagentSummaryMissingMemories(),
+            "Schema v4 subagent summaries require memory counts.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourInvalidProgrammaticDependency(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithInvalidProgrammaticDependency(),
+            "Schema v4 programmatic dependencies must map strings to strings.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMissingSourceDescriptorForm(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithShadowedSourceDescriptorMissingForm(),
+            "Schema v4 source descriptors require a direct or derived form.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourInvalidSourceDescriptorForm(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithInvalidShadowedSourceDescriptorForm(),
+            "Schema v4 source descriptor forms are limited to direct or derived.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_KeepsSchemaVersionThreeProgrammaticBackingStrict(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.VersionThreeWithProgrammaticBackingMetadata(),
+            "Schema v3 must not accept fields introduced by schema v4.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_KeepsSchemaVersionThreeSourceDescriptorsStrict(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.VersionThreeWithSourceDescriptorForm(),
+            "Schema v3 must not accept the schema-v4 source descriptor form.",
+            cancellationToken);
+
+    [Test]
     public async Task GetInfoAsync_RejectsVersionTwoPayloadRelabeledAsVersionThree(
         CancellationToken cancellationToken)
     {
@@ -578,7 +719,7 @@ public sealed class EveClientTests
 
     [Test]
     [Arguments(0)]
-    [Arguments(4)]
+    [Arguments(5)]
     public async Task GetInfoAsync_RejectsUnsupportedSchemaVersion(
         int version,
         CancellationToken cancellationToken)

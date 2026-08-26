@@ -269,10 +269,11 @@ TypeScript-only React/Vue/Svelte hooks, `EveAgentStore`, and UI message reducer 
 ported because they depend on JavaScript UI and AI SDK types rather than the HTTP
 protocol.
 
-`GetInfoAsync` validates agent-info schemas 1 through 3 and exposes the complete JSON
+`GetInfoAsync` validates agent-info schemas 1 through 4 and exposes the complete JSON
 through `EveAgentInfo.Raw`. Schema v3 includes canonical source ownership, bindings,
-composition diagnostics, and node identities; preserving the raw document keeps those
-preview inspection fields available without expanding the strong projection.
+composition diagnostics, and node identities; schema v4 adds first-class memory-provider
+inspection. Preserving the raw document keeps those preview inspection fields available
+without expanding the strong projection.
 
 `GetHealthAsync` accepts only the exact successful health shape. Invalid JSON or schema
 violations throw `EveHealthResponseException`, whose `Issues` collection contains at most
