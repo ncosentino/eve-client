@@ -24,7 +24,7 @@ part of the .NET API.
 
 ## Compatibility
 
-This release requires eve `0.31.0` or newer and targets eve `0.44.4`. eve `0.31.0`
+This release requires eve `0.31.0` or newer and targets eve `0.45.0`. eve `0.31.0`
 moved session control operations to identifier-addressed routes and removed
 continuation tokens from the client protocol, so an eve `0.29.x` or `0.30.x` agent is
 not supported. Pin `0.1.0-alpha.3` for those. A mismatched client and agent accept the

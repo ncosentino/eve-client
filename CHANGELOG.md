@@ -7,6 +7,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.9] - 2026-08-26
+
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.45.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.45.0`; the minimum remains
+  eve `0.31.0`.
+- Eve `0.45.0` publishes agent-info schema version `3` and strict successful
+  health-response validation. The real compatibility probe now verifies both contracts.
+- Agent-info schema version `4` remains ahead of the published baseline because its
+  upstream change has not been released.
+
 ### Added
 
 - `GetInfoAsync` accepts and strictly validates agent-info schema version `4`, including
@@ -340,7 +352,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.8...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.9...HEAD
+[0.1.0-alpha.9]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.8...v0.1.0-alpha.9
 [0.1.0-alpha.8]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.7...v0.1.0-alpha.8
 [0.1.0-alpha.7]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.6...v0.1.0-alpha.7
 [0.1.0-alpha.6]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.5...v0.1.0-alpha.6
