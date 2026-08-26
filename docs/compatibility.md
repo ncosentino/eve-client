@@ -6,8 +6,9 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.44.4 | 23 | Development compatibility target |
-| 0.1.0-alpha.8 | 0.44.4 | 23 | Current prerelease |
+| Unreleased | 0.45.0 | 23 | Development compatibility target |
+| 0.1.0-alpha.9 | 0.45.0 | 23 | Current prerelease |
+| 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
 | 0.1.0-alpha.7 | 0.44.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
@@ -50,7 +51,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.44.4` fixture with a deterministic
+The repository contains a pinned eve `0.45.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -157,8 +158,8 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-This behavior is implemented and published upstream, but remains ahead of the declared
-Eve `0.44.4` reference until a separate compatibility release updates the pinned fixture.
+The pinned Eve `0.45.0` fixture exercises this schema through the real compatibility
+probe.
 
 ## Agent-info schema v4
 
@@ -172,7 +173,7 @@ subagent summaries, optional dependency and parameter maps to programmatic sourc
 backings, and a required `direct` or `derived` form on source descriptors. Every field
 remains available through `EveAgentInfo.Raw`.
 
-Schema v4 remains ahead of the declared Eve `0.44.4` reference because its upstream
+Schema v4 remains ahead of the declared Eve `0.45.0` reference because its upstream
 change is not yet in a published Eve release.
 
 ## Strict health response validation
@@ -188,8 +189,8 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-This behavior remains ahead of the pinned Eve `0.44.4` fixture until a separate
-compatibility release updates the declared reference.
+The pinned Eve `0.45.0` fixture exercises this strict health response through the real
+compatibility probe.
 
 Upstream eve lets generic per-request headers replace authentication.
 NexusLabs.Eve requires an explicit client allowlist and dedicated per-call override
