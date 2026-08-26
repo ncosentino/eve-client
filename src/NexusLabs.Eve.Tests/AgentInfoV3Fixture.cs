@@ -221,6 +221,14 @@ internal static class AgentInfoV3Fixture
     public static string WithMismatchedRemoteAgentTotal() =>
         Mutate(static root => root["remoteAgents"]!["total"] = 1);
 
+    public static string WithBooleanToolInputSchema() =>
+        Mutate(static root =>
+        {
+            JsonObject tool = CreateTool("boolean-schema", "tools/boolean-schema.ts");
+            tool["inputSchema"] = true;
+            root["tools"]!["static"]!.AsArray().Add(tool);
+        });
+
     public static string WithModuleSourceMissingBinding() =>
         Mutate(static root =>
         {
