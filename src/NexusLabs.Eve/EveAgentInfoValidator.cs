@@ -65,7 +65,7 @@ internal static class EveAgentInfoValidator
     private static readonly string[] KernelEffectRequiredProperties =
         ["audience", "kind", "sourceId"];
     private static readonly string[] MemoryAllowedProperties =
-        ["description", "slot", "tools", "visibility"];
+        ["description", "slot", "visibility"];
     private static readonly string[] MemoryRequiredProperties = ["slot", "visibility"];
     private static readonly string[] ModelAllowedProperties =
     [
@@ -592,12 +592,6 @@ internal static class EveAgentInfoValidator
             }
 
             ValidateOptionalString(memory, "description", path);
-            if (memory.TryGetProperty("tools", out JsonElement tools)
-                && tools.ValueKind != JsonValueKind.False)
-            {
-                ThrowInvalid($"{path}.tools must be false when present.");
-            }
-
             AddIdentity(identities, slot, "$.memories", "slot");
         }
     }

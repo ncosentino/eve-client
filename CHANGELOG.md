@@ -7,6 +7,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.45.x`, message-stream protocol `23`.
+  The compatibility target and pinned fixture move to eve `0.45.1`; the minimum remains
+  eve `0.31.0`.
+- Eve `0.45.1` publishes agent-info schema version `4`; the real compatibility probe now
+  verifies its memory inspection contract.
+
+### Fixed
+
+- Schema-v4 agent inspection rejects the obsolete memory `tools` property, matching the
+  strict contract first published by Eve `0.45.1`.
+
 ## [0.1.0-alpha.9] - 2026-08-26
 
 ### Compatibility
