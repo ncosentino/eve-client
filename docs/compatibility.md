@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.45.0 | 23 | Development compatibility target |
+| Unreleased | 0.45.1 | 23 | Development compatibility target |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Current prerelease |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
 | 0.1.0-alpha.7 | 0.44.0 | 23 | Previous compatibility target |
@@ -51,7 +51,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.45.0` fixture with a deterministic
+The repository contains a pinned eve `0.45.1` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -158,23 +158,23 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.45.0` fixture exercises this schema through the real compatibility
+The pinned Eve `0.45.1` fixture exercises this schema through the real compatibility
 probe.
 
-## Agent-info schema v4
+## Eve 0.45.1 and agent-info schema v4
 
-Upstream main raises agent inspection again to schema version `4`.
+Eve `0.45.1` raises agent inspection again to schema version `4`.
 `GetInfoAsync` accepts and strictly validates the required memory-provider inspection
 surface while retaining schema versions `1` through `3`.
 
 Version `4` requires a `memories` collection with unique slots, canonical source
 provenance, and `scope` or `session` visibility. It also adds memory counts to local
 subagent summaries, optional dependency and parameter maps to programmatic source
-backings, and a required `direct` or `derived` form on source descriptors. Every field
-remains available through `EveAgentInfo.Raw`.
+backings, and a required `direct` or `derived` form on source descriptors. The published
+schema rejects the pre-release memory `tools` field. Every valid field remains available
+through `EveAgentInfo.Raw`.
 
-Schema v4 remains ahead of the declared Eve `0.45.0` reference because its upstream
-change is not yet in a published Eve release.
+The pinned Eve `0.45.1` fixture exercises schema v4 through the real compatibility probe.
 
 ## Strict health response validation
 
@@ -189,7 +189,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.45.0` fixture exercises this strict health response through the real
+The pinned Eve `0.45.1` fixture exercises this strict health response through the real
 compatibility probe.
 
 Upstream eve lets generic per-request headers replace authentication.

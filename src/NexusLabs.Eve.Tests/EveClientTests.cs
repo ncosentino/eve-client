@@ -484,9 +484,9 @@ public sealed class EveClientTests
         JsonElement memory = info.Raw.GetProperty("memories")[0];
         await Assert.That(memory.GetProperty("slot").GetString()).IsEqualTo("profile");
         await Assert.That(memory.GetProperty("visibility").GetString()).IsEqualTo("session");
-        await Assert.That(memory.GetProperty("tools").GetBoolean())
+        await Assert.That(memory.TryGetProperty("tools", out _))
             .IsFalse()
-            .Because("Schema v4 permits only the literal false when tools is present.");
+            .Because("The published schema-v4 memory contract has no tools property.");
     }
 
     [Test]
@@ -550,11 +550,11 @@ public sealed class EveClientTests
             cancellationToken);
 
     [Test]
-    public async Task GetInfoAsync_RejectsSchemaVersionFourMemoryToolsTrue(
+    public async Task GetInfoAsync_RejectsSchemaVersionFourMemoryToolsProperty(
         CancellationToken cancellationToken) =>
         await AssertInfoRejectedAsync(
-            AgentInfoV4Fixture.WithMemoryToolsTrue(),
-            "Schema v4 permits only literal false for the optional memory tools field.",
+            AgentInfoV4Fixture.WithMemoryToolsProperty(),
+            "Published schema v4 rejects the obsolete memory tools field.",
             cancellationToken);
 
     [Test]

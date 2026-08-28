@@ -19,9 +19,9 @@ internal static class AgentInfoV4Fixture
         Create(static root =>
             root["memories"]![0]!["visibility"] = "global");
 
-    public static string WithMemoryToolsTrue() =>
+    public static string WithMemoryToolsProperty() =>
         Create(static root =>
-            root["memories"]![0]!["tools"] = true);
+            root["memories"]![0]!["tools"] = false);
 
     public static string WithMemoryBindingOwnerMismatch() =>
         Create(static root =>
@@ -147,7 +147,6 @@ internal static class AgentInfoV4Fixture
             ["slot"] = slot,
             ["sourceId"] = logicalPath,
             ["sourceKind"] = "module",
-            ["tools"] = false,
             ["visibility"] = "session",
         };
 
