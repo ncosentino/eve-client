@@ -324,6 +324,43 @@ if (approvalOutcome.Status != EveTurnStatus.Waiting)
         $"The approval turn did not park for human input: status={approvalOutcome.Status}.");
 }
 
+int approvalInputIndex = approvalOutcome.Events
+    .ToList()
+    .FindIndex(static streamEvent =>
+        streamEvent.Kind == EveStreamEventKind.ActionInputAppended
+        && streamEvent.Data.TryGetProperty("inputTextDelta", out var delta)
+        && string.Equals(
+            delta.GetString(),
+            """{"reason":"compatibility"}""",
+            StringComparison.Ordinal));
+int approvalRequestIndex = approvalOutcome.Events
+    .ToList()
+    .FindIndex(static streamEvent => streamEvent.Kind == EveStreamEventKind.InputRequested);
+if (approvalInputIndex < 0 || approvalRequestIndex <= approvalInputIndex)
+{
+    throw new InvalidOperationException(
+        "The approval turn did not retain streamed tool input before its request. " +
+        $"Observed: {string.Join(", ", approvalOutcome.Events.Select(static value => value.Type))}.");
+}
+
+EveStreamEvent approvalInput = approvalOutcome.Events[approvalInputIndex];
+if (!string.Equals(
+        approvalInput.Data.GetProperty("callId").GetString(),
+        "call_approval",
+        StringComparison.Ordinal)
+    || approvalInput.Data.GetProperty("inputTextOffset").GetInt32() != 0
+    || !string.Equals(
+        approvalInput.Data.GetProperty("toolName").GetString(),
+        "request_approval",
+        StringComparison.Ordinal)
+    || string.IsNullOrWhiteSpace(approvalInput.Data.GetProperty("turnId").GetString())
+    || !approvalInput.Data.GetProperty("sequence").TryGetInt32(out _)
+    || !approvalInput.Data.GetProperty("stepIndex").TryGetInt32(out _))
+{
+    throw new InvalidOperationException(
+        "The streamed approval input did not retain its protocol-v24 delta coordinates.");
+}
+
 if (approvalOutcome.InputRequests.Count != 1)
 {
     throw new InvalidOperationException(

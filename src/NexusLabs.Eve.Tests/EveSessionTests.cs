@@ -2775,6 +2775,40 @@ public sealed class EveSessionTests
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
     }
 
+    [Test]
+    public async Task SendAsync_RetainsStreamedToolInputAfterMessageCompletion(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"message.completed","data":{"finishReason":"tool-calls","message":"Before tool.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"action.input.appended","data":{"callId":"call_render","inputTextDelta":"{\"title\":\"Hel","inputTextOffset":0,"sequence":2,"stepIndex":0,"toolName":"render","turnId":"turn_1"}}""",
+            """{"type":"action.input.appended","data":{"callId":"call_render","inputTextDelta":"lo\"}","inputTextOffset":13,"sequence":3,"stepIndex":0,"toolName":"render","turnId":"turn_1"}}""",
+            """{"type":"actions.requested","data":{"actions":[{"callId":"call_render","input":{"title":"Hello"},"kind":"tool-call","toolName":"render"}],"sequence":4,"stepIndex":0,"turnId":"turn_1"}}""",
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport, 1024).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Render it", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(5);
+        await Assert.That(string.Join(
+            ",",
+            outcome.Events.Select(static streamEvent => streamEvent.Type)))
+            .IsEqualTo(
+                "message.completed,action.input.appended,action.input.appended," +
+                "actions.requested,session.waiting");
+        await Assert.That(outcome.Events[1].Kind)
+            .IsEqualTo(EveStreamEventKind.ActionInputAppended);
+        await Assert.That(outcome.Events[2].Data.GetProperty("inputTextOffset").GetInt32())
+            .IsEqualTo(13);
+        await Assert.That(outcome.Events[0].Data.GetProperty("message").GetString())
+            .IsEqualTo("Before tool.");
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+    }
+
     private static HttpResponseMessage StreamResponse(params string[] events) =>
         new(HttpStatusCode.OK)
         {

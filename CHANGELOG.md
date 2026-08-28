@@ -9,11 +9,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.45.x`, message-stream protocol `23`.
-  The compatibility target and pinned fixture move to eve `0.45.1`; the minimum remains
+- **Supported eve versions:** `0.31.0` through `0.46.x`, message-stream protocol `24`.
+  The compatibility target and pinned fixture move to eve `0.46.1`; the minimum remains
   eve `0.31.0`.
 - Eve `0.45.1` publishes agent-info schema version `4`; the real compatibility probe now
   verifies its memory inspection contract.
+- Eve `0.46.1` adds durable `action.input.appended` events carrying streamed tool-input
+  deltas and raises the message-stream protocol from `23` to `24`.
+
+### Added
+
+- `EveStreamEventKind.ActionInputAppended` recognizes protocol-v24 streamed tool-input
+  deltas. The complete call correlation, UTF-16 offset, sequence, and turn coordinates
+  remain available through `EveStreamEvent.Data` and ordered turn aggregation.
 
 ### Fixed
 

@@ -196,4 +196,14 @@ public enum EveStreamEventKind
     /// The session completed successfully.
     /// </summary>
     SessionCompleted,
+
+    /// <summary>
+    /// A model appended text while streaming one tool call's input.
+    /// </summary>
+    /// <remarks>
+    /// Stream protocol <c>24</c> reports the text delta, its zero-based UTF-16 code-unit
+    /// offset, and the tool-call, turn, step, and sequence coordinates. The complete payload
+    /// remains available through <see cref="EveStreamEvent.Data"/>.
+    /// </remarks>
+    ActionInputAppended,
 }

@@ -87,6 +87,43 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
+    public async Task Parse_RecognizesActionInputAppendedAndPreservesDeltaCoordinates()
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            """
+            {
+              "type": "action.input.appended",
+              "data": {
+                "callId": "call_render",
+                "inputTextDelta": "{\"title\":\"Hel",
+                "inputTextOffset": 0,
+                "sequence": 2,
+                "stepIndex": 1,
+                "toolName": "render",
+                "turnId": "turn_1"
+              }
+            }
+            """);
+
+        await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ActionInputAppended);
+        await Assert.That(streamEvent.Type).IsEqualTo("action.input.appended");
+        await Assert.That(streamEvent.Data.GetProperty("callId").GetString())
+            .IsEqualTo("call_render");
+        await Assert.That(streamEvent.Data.GetProperty("inputTextDelta").GetString())
+            .IsEqualTo("""{"title":"Hel""");
+        await Assert.That(streamEvent.Data.GetProperty("inputTextOffset").GetInt32()).IsEqualTo(0);
+        await Assert.That(streamEvent.Data.GetProperty("sequence").GetInt32()).IsEqualTo(2);
+        await Assert.That(streamEvent.Data.GetProperty("stepIndex").GetInt32()).IsEqualTo(1);
+        await Assert.That(streamEvent.Data.GetProperty("toolName").GetString())
+            .IsEqualTo("render");
+        await Assert.That(streamEvent.Data.GetProperty("turnId").GetString())
+            .IsEqualTo("turn_1");
+        await Assert.That(streamEvent.IsCurrentTurnBoundary)
+            .IsFalse()
+            .Because("A streamed tool-input delta does not settle a response.");
+    }
+
+    [Test]
     [Arguments("pending")]
     [Arguments("rejected")]
     [Arguments("failed")]
