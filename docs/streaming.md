@@ -47,6 +47,35 @@ await foreach (EveStreamEvent streamEvent in
 Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.
 
+## Streamed tool input
+
+Eve `0.46.1` emits `action.input.appended`
+(`EveStreamEventKind.ActionInputAppended`) while the model generates one tool
+call's input. Each event carries `inputTextDelta` and the zero-based UTF-16
+`inputTextOffset` where that delta begins, plus `callId`, `toolName`, `turnId`,
+`stepIndex`, and `sequence`.
+
+```csharp
+await foreach (EveStreamEvent streamEvent in
+    response.WithCancellation(cancellationToken))
+{
+    if (streamEvent.Kind == EveStreamEventKind.ActionInputAppended)
+    {
+        Console.Write(streamEvent.Data.GetProperty("inputTextDelta").GetString());
+    }
+}
+```
+
+Events are retained in wire order and do not end a response. A
+`message.completed` event can precede tool-input deltas when assistant text is
+emitted before the tool call. Accumulate only contiguous deltas whose offset
+matches the current UTF-16 string length. The later `actions.requested` event
+contains the validated input and remains authoritative.
+
+The JavaScript UI reducer's gap handling, replacement, late-delta suppression,
+and cancellation cleanup are presentation-state policies and are not part of
+this transport-focused client.
+
 ## Approval lifecycle
 
 eve `0.34.0` publishes the durable lifecycle of a human approval request. Each

@@ -21,7 +21,7 @@ cooperative cancellation, session context clear, session reset, manual session c
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
 This package requires Vercel `eve` **0.31.0 or newer** and cannot talk to an earlier
-server. The compatibility target is `eve` **0.45.1**. eve `0.31.0` moved session control
+server. The compatibility target is `eve` **0.46.1**. eve `0.31.0` moved session control
 operations to identifier-addressed routes and removed continuation tokens from the client
 protocol, so there is no fallback path to an older agent — pin `0.1.0-alpha.3` for an eve
 `0.29.x` or `0.30.x` deployment. eve is still a preview, so pin and test compatible
