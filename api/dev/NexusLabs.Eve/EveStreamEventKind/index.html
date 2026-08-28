@@ -1185,6 +1185,13 @@ model, so treat these as provisional display state.</p>
 <p><a name='NexusLabs.Eve.EveStreamEventKind.SessionCompleted'></a></p>
 <p><code>SessionCompleted</code> 33</p>
 <p>The session completed successfully.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ActionInputAppended'></a></p>
+<p><code>ActionInputAppended</code> 34</p>
+<p>A model appended text while streaming one tool call's input.</p>
+<h3 id="remarks_4">Remarks<a class="headerlink" href="#remarks_4" title="Permanent link">&para;</a></h3>
+<p>Stream protocol <code>24</code> reports the text delta, its zero-based UTF-16 code-unit
+offset, and the tool-call, turn, step, and sequence coordinates. The complete payload
+remains available through <a href="../EveStreamEvent/#NexusLabs.Eve.EveStreamEvent.Data" title="NexusLabs.Eve.EveStreamEvent.Data">Data</a>.</p>
 
 
 

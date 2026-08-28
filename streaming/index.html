@@ -697,6 +697,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#streamed-tool-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streamed tool input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#approval-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1255,6 +1266,29 @@ and is the only value exposed to the model.</p>
 </code></pre></div>
 <p>Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.</p>
+<h2 id="streamed-tool-input">Streamed tool input<a class="headerlink" href="#streamed-tool-input" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.46.1</code> emits <code>action.input.appended</code>
+(<code>EveStreamEventKind.ActionInputAppended</code>) while the model generates one tool
+call's input. Each event carries <code>inputTextDelta</code> and the zero-based UTF-16
+<code>inputTextOffset</code> where that delta begins, plus <code>callId</code>, <code>toolName</code>, <code>turnId</code>,
+<code>stepIndex</code>, and <code>sequence</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ActionInputAppended</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"inputTextDelta"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>Events are retained in wire order and do not end a response. A
+<code>message.completed</code> event can precede tool-input deltas when assistant text is
+emitted before the tool call. Accumulate only contiguous deltas whose offset
+matches the current UTF-16 string length. The later <code>actions.requested</code> event
+contains the validated input and remains authoritative.</p>
+<p>The JavaScript UI reducer's gap handling, replacement, late-delta suppression,
+and cancellation cleanup are presentation-state policies and are not part of
+this transport-focused client.</p>
 <h2 id="approval-lifecycle">Approval lifecycle<a class="headerlink" href="#approval-lifecycle" title="Permanent link">&para;</a></h2>
 <p>eve <code>0.34.0</code> publishes the durable lifecycle of a human approval request. Each
 responder attempt arrives as <code>approval.candidate</code>
@@ -1263,23 +1297,23 @@ responder attempt arrives as <code>approval.candidate</code>
 candidate outcome may carry a <code>reason</code>. The request's terminal result arrives once
 as <code>approval.settled</code> (<code>EveStreamEventKind.ApprovalSettled</code>) with an <code>outcome</code> of
 <code>approved</code> or <code>cancelled</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="p">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ApprovalCandidate</span><span class="p">:</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">            </span><span class="n">TrackCandidate</span><span class="p">(</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"candidateId"</span><span class="p">).</span><span class="n">GetString</span><span class="p">(),</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"outcome"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ApprovalSettled</span><span class="p">:</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">            </span><span class="n">SettleRequest</span><span class="p">(</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"requestId"</span><span class="p">).</span><span class="n">GetString</span><span class="p">(),</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"outcome"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ApprovalCandidate</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span><span class="n">TrackCandidate</span><span class="p">(</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"candidateId"</span><span class="p">).</span><span class="n">GetString</span><span class="p">(),</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"outcome"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ApprovalSettled</span><span class="p">:</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">            </span><span class="n">SettleRequest</span><span class="p">(</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"requestId"</span><span class="p">).</span><span class="n">GetString</span><span class="p">(),</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">                </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"outcome"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">}</span>
 </code></pre></div>
 <p>Candidate events precede settlement for the same <code>requestId</code>. Neither event ends a
 turn, and neither changes how <code>EveTurnOutcome</code> aggregates messages, results, or
@@ -1303,14 +1337,14 @@ Do not add a manual <code>break</code> for that property while iterating an acti
 <h2 id="resolved-human-input">Resolved human input<a class="headerlink" href="#resolved-human-input" title="Permanent link">&para;</a></h2>
 <p>eve <code>0.39.1</code> emits <code>input.resolved</code> after accepting pending human input and before
 the resumed <code>step.started</code>. Aggregate a response to read the authoritative outcomes:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">EveTurnOutcome</span><span class="w"> </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">GetOutcomeAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveInputResolution</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">outcome</span><span class="p">.</span><span class="n">InputResolutions</span><span class="p">)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">{</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">        </span><span class="s">$"{resolution.RequestId}: {resolution.Outcome} at "</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">        </span><span class="s">$"{resolution.TurnId}/{resolution.StepIndex}/{resolution.Sequence}"</span><span class="p">);</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EveTurnOutcome</span><span class="w"> </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">GetOutcomeAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveInputResolution</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">outcome</span><span class="p">.</span><span class="n">InputResolutions</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">{</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">        </span><span class="s">$"{resolution.RequestId}: {resolution.Outcome} at "</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">        </span><span class="s">$"{resolution.TurnId}/{resolution.StepIndex}/{resolution.Sequence}"</span><span class="p">);</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">}</span>
 </code></pre></div>
 <p><code>Response</code> contains the accepted option or text when one exists. It is <code>null</code> for
 authoritative response-less outcomes such as <code>Ignored</code>. Unknown request kinds and
@@ -1327,18 +1361,18 @@ retried step is not a replay: it is emitted again under a new identifier.</p>
 and never stamps one.
 <code>EveStreamEventDeduplicator</code> encodes that contract, so a caller that resumes a
 stream can drop events it already processed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EveStreamEventDeduplicator</span><span class="w"> </span><span class="n">seen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">{</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">seen</span><span class="p">.</span><span class="n">Admit</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">))</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">        </span><span class="k">continue</span><span class="p">;</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="n">Handle</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">);</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveStreamEventDeduplicator</span><span class="w"> </span><span class="n">seen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">{</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">seen</span><span class="p">.</span><span class="n">Admit</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">))</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">        </span><span class="k">continue</span><span class="p">;</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="n">Handle</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">);</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>The remembered set is unbounded because a bounded window cannot survive a rewind
 past its capacity. Callers that retain nothing per event should bound their reads
@@ -1355,20 +1389,20 @@ from the retry delays and attempt budget. Explicit caller cancellation remains t
 <p>Set <code>EveStreamReconnectPolicy.StreamIdleRetry.MaxAttempts</code> to give an active
 response an explicit finite budget. Progress resets any finite idle budget.</p>
 <p>Disable reconnection when a proxy owns cursor recovery:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
 </code></pre></div>
 <h2 id="cancel-the-exact-response-turn">Cancel the exact response turn<a class="headerlink" href="#cancel-the-exact-response-turn" title="Permanent link">&para;</a></h2>
 <p>Start consuming a response before requesting cancellation. <code>CancelAsync</code> waits
 for that response's <code>turn.started</code>, sends its turn identifier as a guard, and
 keeps stream consumption attached through the durable boundary:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="s">"Run the long operation."</span><span class="p">,</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">Task</span><span class="o">&lt;</span><span class="n">EveTurnOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">outcomeTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">GetOutcomeAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">EveCancellationOutcome</span><span class="w"> </span><span class="n">cancellation</span><span class="w"> </span><span class="o">=</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">CancelAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">EveTurnOutcome</span><span class="w"> </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">outcomeTask</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="s">"Run the long operation."</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">Task</span><span class="o">&lt;</span><span class="n">EveTurnOutcome</span><span class="o">&gt;</span><span class="w"> </span><span class="n">outcomeTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">GetOutcomeAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">EveCancellationOutcome</span><span class="w"> </span><span class="n">cancellation</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="n">CancelAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">EveTurnOutcome</span><span class="w"> </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">outcomeTask</span><span class="p">;</span>
 </code></pre></div>
 <p>Concurrent calls share one in-flight cancellation request. The first call's
 token controls that request; later callers can cancel only their own wait. A
@@ -1377,26 +1411,26 @@ response returns <code>NoActiveTurn</code> without another HTTP request. Use
 <code>session.CancelAsync(turnId, cancellationToken)</code> when only an attached session
 and an observed turn identifier are available.</p>
 <h2 id="attach-to-an-existing-stream">Attach to an existing stream<a class="headerlink" href="#attach-to-an-existing-stream" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="p">{</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="p">{</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="c1">// Process historical and future events.</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.</p>
 <h2 id="bounded-catch-up-reads">Bounded catch-up reads<a class="headerlink" href="#bounded-catch-up-reads" title="Permanent link">&para;</a></h2>
 <p>Set <code>Follow = false</code> to read everything recorded through the durable tail
 observed when the stream opens, then stop instead of waiting for future events:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">{</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>The first bounded request sends <code>includeTailIndex=1</code> and the server answers with
 the <code>x-eve-stream-tail-index</code> response header. That first tail is an immutable
@@ -1412,10 +1446,10 @@ never reported the header, so bounded reads against that release fail.</p>
 <h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
 <p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
 behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">"https://agent.example.com"</span><span class="p">)</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="p">{</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">};</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">"https://agent.example.com"</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">};</span>
 </code></pre></div>
 <p>The limit applies to one raw NDJSON line before trimming, excluding its line ending.
 An oversized event throws <code>EveProtocolException</code> without including the rejected
