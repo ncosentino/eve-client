@@ -12,7 +12,7 @@
         <meta name="author" content="Nick Cosentino">
       
       
-        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/stable/NexusLabs.Eve/EveStreamEventKind/">
+        <link rel="canonical" href="https://www.devleader.ca/projects/eve-client/api/v0.1.0-alpha.10/NexusLabs.Eve/EveStreamEventMetadata/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>EveStreamEventKind - NexusLabs.Eve</title>
+        <title>EveStreamEventMetadata - NexusLabs.Eve</title>
       
     
     
@@ -60,12 +60,12 @@
   
   
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="EveStreamEventKind – NexusLabs.Eve" />
+  <meta property="og:title" content="EveStreamEventMetadata – NexusLabs.Eve" />
   <meta property="og:description" content="A C# client for the Vercel eve HTTP API." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
-  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/stable/NexusLabs.Eve/EveStreamEventKind/" />
+  <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/api/v0.1.0-alpha.10/NexusLabs.Eve/EveStreamEventMetadata/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EveStreamEventKind – NexusLabs.Eve" />
+  <meta name="twitter:title" content="EveStreamEventMetadata – NexusLabs.Eve" />
   <meta name="twitter:description" content="A C# client for the Vercel eve HTTP API." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EveStreamEventKind
+              EveStreamEventMetadata
             
           </span>
         </div>
@@ -892,7 +892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../" class="md-nav__link">
+      <a href="../../../stable/" class="md-nav__link">
         
   
   
@@ -1057,141 +1057,35 @@
   
 
 
-  <h1>EveStreamEventKind</h1>
+  <h1>EveStreamEventMetadata</h1>
 
 <h3 id="nexuslabseve"><a href="../NexusLabs.Eve/" title="NexusLabs.Eve">NexusLabs.Eve</a><a class="headerlink" href="#nexuslabseve" title="Permanent link">&para;</a></h3>
-<h2 id="evestreameventkind-enum">EveStreamEventKind Enum<a class="headerlink" href="#evestreameventkind-enum" title="Permanent link">&para;</a></h2>
-<p>Identifies a known event in the eve durable message stream.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="n">EveStreamEventKind</span>
+<h2 id="evestreameventmetadata-class">EveStreamEventMetadata Class<a class="headerlink" href="#evestreameventmetadata-class" title="Permanent link">&para;</a></h2>
+<p>Carries durable metadata stamped onto an eve stream event.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">record</span><span class="w"> </span><span class="n">EveStreamEventMetadata</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">IEquatable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEventMetadata</span><span class="o">&gt;</span>
 </code></pre></div>
-<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.Unknown'></a></p>
-<p><code>Unknown</code> 0</p>
-<p>The event type is newer than or otherwise unknown to this package.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SessionStarted'></a></p>
-<p><code>SessionStarted</code> 1</p>
-<p>A durable session started.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnStarted'></a></p>
-<p><code>TurnStarted</code> 2</p>
-<p>A runtime turn started.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.MessageReceived'></a></p>
-<p><code>MessageReceived</code> 3</p>
-<p>A user message was received.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ActionsRequested'></a></p>
-<p><code>ActionsRequested</code> 4</p>
-<p>One or more actions were requested.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.InputRequested'></a></p>
-<p><code>InputRequested</code> 5</p>
-<p>Human input was requested.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.InputResolved'></a></p>
-<p><code>InputResolved</code> 6</p>
-<p>One or more human-input requests reached authoritative terminal outcomes.</p>
+<p>Inheritance <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object" title="System.Object">System.Object</a> → EveStreamEventMetadata</p>
+<p>Implements <a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">System.IEquatable&lt;</a><a href="./" title="NexusLabs.Eve.EveStreamEventMetadata">EveStreamEventMetadata</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1" title="System.IEquatable`1">&gt;</a></p>
+<h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
+<p><a name='NexusLabs.Eve.EveStreamEventMetadata.At'></a></p>
+<h2 id="evestreameventmetadataat-property">EveStreamEventMetadata.At Property<a class="headerlink" href="#evestreameventmetadataat-property" title="Permanent link">&para;</a></h2>
+<p>Gets the server-provided event timestamp.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">At</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p><a name='NexusLabs.Eve.EveStreamEventMetadata.Id'></a></p>
+<h2 id="evestreameventmetadataid-property">EveStreamEventMetadata.Id Property<a class="headerlink" href="#evestreameventmetadataid-property" title="Permanent link">&para;</a></h2>
+<p>Gets the durable event identifier, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when the server did not stamp one.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Id</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
-<p>Stream protocol <code>23</code> emits this after eve accepts a pending-input batch and before
-the resumed <a href="./#NexusLabs.Eve.EveStreamEventKind.StepStarted" title="NexusLabs.Eve.EveStreamEventKind.StepStarted">StepStarted</a> event. Resolutions may intentionally omit an
-accepted response.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ApprovalCandidate'></a></p>
-<p><code>ApprovalCandidate</code> 7</p>
-<p>One responder-bound approval candidate reached a lifecycle outcome.</p>
-<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
-<p>eve <code>0.34.0</code> emits this for each responder attempt on an approval request, carrying
-a stable candidate identifier and an outcome of <code>pending</code>, <code>rejected</code>,
-<code>failed</code>, <code>timed-out</code>, or <code>stale</code>. A terminal outcome may also carry a
-reason. Candidate events precede <a href="./#NexusLabs.Eve.EveStreamEventKind.ApprovalSettled" title="NexusLabs.Eve.EveStreamEventKind.ApprovalSettled">ApprovalSettled</a> for the same request.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ApprovalSettled'></a></p>
-<p><code>ApprovalSettled</code> 8</p>
-<p>An approval request reached its terminal settlement.</p>
-<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
-<p>eve <code>0.34.0</code> emits this once per approval request with an outcome of
-<code>approved</code> or <code>cancelled</code>. It follows that request's
-<a href="./#NexusLabs.Eve.EveStreamEventKind.ApprovalCandidate" title="NexusLabs.Eve.EveStreamEventKind.ApprovalCandidate">ApprovalCandidate</a> events.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ActionResult'></a></p>
-<p><code>ActionResult</code> 9</p>
-<p>An action produced a result.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ActionPartial'></a></p>
-<p><code>ActionPartial</code> 10</p>
-<p>An action produced a preliminary output snapshot that a later
-<a href="./#NexusLabs.Eve.EveStreamEventKind.ActionResult" title="NexusLabs.Eve.EveStreamEventKind.ActionResult">ActionResult</a> supersedes.</p>
-<h3 id="remarks_3">Remarks<a class="headerlink" href="#remarks_3" title="Permanent link">&para;</a></h3>
-<p>Stream protocol <code>21</code> emits this for each non-terminal snapshot yielded by an
-async-generator tool. Only the terminal <a href="./#NexusLabs.Eve.EveStreamEventKind.ActionResult" title="NexusLabs.Eve.EveStreamEventKind.ActionResult">ActionResult</a> is exposed to the
-model, so treat these as provisional display state.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SubagentCalled'></a></p>
-<p><code>SubagentCalled</code> 11</p>
-<p>A remote subagent was called.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SubagentStarted'></a></p>
-<p><code>SubagentStarted</code> 12</p>
-<p>An inline subagent started.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SubagentEvent'></a></p>
-<p><code>SubagentEvent</code> 13</p>
-<p>An inline subagent emitted a child event.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SubagentCompleted'></a></p>
-<p><code>SubagentCompleted</code> 14</p>
-<p>An inline subagent completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.MessageAppended'></a></p>
-<p><code>MessageAppended</code> 15</p>
-<p>Assistant text was appended.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ReasoningAppended'></a></p>
-<p><code>ReasoningAppended</code> 16</p>
-<p>Reasoning text was appended.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.MessageCompleted'></a></p>
-<p><code>MessageCompleted</code> 17</p>
-<p>An assistant message completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ReasoningCompleted'></a></p>
-<p><code>ReasoningCompleted</code> 18</p>
-<p>A reasoning block completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ResultCompleted'></a></p>
-<p><code>ResultCompleted</code> 19</p>
-<p>A structured result completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.StepStarted'></a></p>
-<p><code>StepStarted</code> 20</p>
-<p>A model step started.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.StepCompleted'></a></p>
-<p><code>StepCompleted</code> 21</p>
-<p>A model step completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.StepFailed'></a></p>
-<p><code>StepFailed</code> 22</p>
-<p>A model step failed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnCompleted'></a></p>
-<p><code>TurnCompleted</code> 23</p>
-<p>A turn completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnFailed'></a></p>
-<p><code>TurnFailed</code> 24</p>
-<p>A turn failed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnCancelled'></a></p>
-<p><code>TurnCancelled</code> 25</p>
-<p>A turn was cancelled.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ContextCleared'></a></p>
-<p><code>ContextCleared</code> 26</p>
-<p>Durable model-message history was cleared while the session remained intact.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.CompactionRequested'></a></p>
-<p><code>CompactionRequested</code> 27</p>
-<p>Session-history compaction was requested.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.CompactionCompleted'></a></p>
-<p><code>CompactionCompleted</code> 28</p>
-<p>Session-history compaction completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.AuthorizationRequired'></a></p>
-<p><code>AuthorizationRequired</code> 29</p>
-<p>Connection authorization is required.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.AuthorizationCompleted'></a></p>
-<p><code>AuthorizationCompleted</code> 30</p>
-<p>Connection authorization completed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SessionWaiting'></a></p>
-<p><code>SessionWaiting</code> 31</p>
-<p>The session is waiting for another user message.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SessionFailed'></a></p>
-<p><code>SessionFailed</code> 32</p>
-<p>The session failed.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.SessionCompleted'></a></p>
-<p><code>SessionCompleted</code> 33</p>
-<p>The session completed successfully.</p>
-<p><a name='NexusLabs.Eve.EveStreamEventKind.ActionInputAppended'></a></p>
-<p><code>ActionInputAppended</code> 34</p>
-<p>A model appended text while streaming one tool call's input.</p>
-<h3 id="remarks_4">Remarks<a class="headerlink" href="#remarks_4" title="Permanent link">&para;</a></h3>
-<p>Stream protocol <code>24</code> reports the text delta, its zero-based UTF-16 code-unit
-offset, and the tool-call, turn, step, and sequence coordinates. The complete payload
-remains available through <a href="../EveStreamEvent/#NexusLabs.Eve.EveStreamEvent.Data" title="NexusLabs.Eve.EveStreamEvent.Data">Data</a>.</p>
+<p>eve stamps this identifier once, before the event is persisted, so rewinding, reconnecting,
+or replaying a finished session yields the same value. A retried step is not a replay: it is
+emitted again under a new identifier. Events persisted before stream protocol version 20
+carry no identifier and therefore report <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a>; they cannot be deduplicated.</p>
 
 
 
