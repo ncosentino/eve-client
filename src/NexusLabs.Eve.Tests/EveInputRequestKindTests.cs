@@ -155,12 +155,16 @@ public sealed class EveInputRequestKindTests
                 "application/json"),
         };
 
-    private static HttpResponseMessage StreamResponse(params string[] events) =>
-        new(HttpStatusCode.OK)
+    private static HttpResponseMessage StreamResponse(params string[] events)
+    {
+        HttpResponseMessage response = new(HttpStatusCode.OK)
         {
             Content = new StringContent(
                 $"{string.Join('\n', events)}\n",
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
+        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, EveProtocol.MessageStreamVersion);
+        return response;
+    }
 }

@@ -137,6 +137,9 @@ internal static class EveStreamFollower
         TimeProvider timeProvider,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        int streamVersion = ReadStreamVersion(response);
+        EveStreamDecoder decoder = new(streamVersion);
+
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using EveNdjsonLineReader reader = new(
             stream,
@@ -171,7 +174,7 @@ internal static class EveStreamFollower
                 continue;
             }
 
-            yield return EveStreamEvent.Parse(trimmed);
+            yield return decoder.Decode(trimmed);
         }
     }
 
@@ -307,6 +310,38 @@ internal static class EveStreamFollower
             lastStatusCode ?? 0,
             lastBody ?? "Failed to open the eve message stream.",
             lastHeaders ?? ReadOnlyDictionary<string, IReadOnlyList<string>>.Empty);
+    }
+
+    private static int ReadStreamVersion(HttpResponseMessage response)
+    {
+        IEnumerable<string>? values = null;
+        if (!response.Headers.TryGetValues(EveProtocol.StreamVersionHeaderName, out values)
+            && (response.Content is null || !response.Content.Headers.TryGetValues(EveProtocol.StreamVersionHeaderName, out values)))
+        {
+            throw new EveProtocolException(
+                $"A stream response requires the '{EveProtocol.StreamVersionHeaderName}' header.");
+        }
+
+        string? raw = values?.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(raw) || !IsIntegerLiteral(raw))
+        {
+            throw new EveProtocolException(
+                $"The '{EveProtocol.StreamVersionHeaderName}' response header was not an integer: '{raw}'.");
+        }
+
+        if (!int.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int version))
+        {
+            throw new EveProtocolException(
+                $"The '{EveProtocol.StreamVersionHeaderName}' response header was out of range: '{raw}'.");
+        }
+
+        if (version is < 21 or > 25)
+        {
+            throw new EveProtocolException(
+                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 25.");
+        }
+
+        return version;
     }
 
     // A negative tail index is valid upstream and reports an empty durable stream,

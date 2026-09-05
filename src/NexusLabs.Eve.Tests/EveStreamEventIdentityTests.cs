@@ -87,7 +87,7 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
-    public async Task Parse_RecognizesActionInputAppendedAndPreservesDeltaCoordinates()
+    public async Task Parse_RecognizesLegacyActionInputAppendedAndNormalizesOffset()
     {
         EveStreamEvent streamEvent = EveStreamEvent.Parse(
             """
@@ -103,7 +103,8 @@ public sealed class EveStreamEventIdentityTests
                 "turnId": "turn_1"
               }
             }
-            """);
+            """,
+            24);
 
         await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ActionInputAppended);
         await Assert.That(streamEvent.Type).IsEqualTo("action.input.appended");
@@ -111,7 +112,9 @@ public sealed class EveStreamEventIdentityTests
             .IsEqualTo("call_render");
         await Assert.That(streamEvent.Data.GetProperty("inputTextDelta").GetString())
             .IsEqualTo("""{"title":"Hel""");
-        await Assert.That(streamEvent.Data.GetProperty("inputTextOffset").GetInt32()).IsEqualTo(0);
+        await Assert.That(streamEvent.Data.TryGetProperty("inputTextOffset", out _))
+            .IsFalse()
+            .Because("Legacy inputTextOffset is normalized out of the stream event.");
         await Assert.That(streamEvent.Data.GetProperty("sequence").GetInt32()).IsEqualTo(2);
         await Assert.That(streamEvent.Data.GetProperty("stepIndex").GetInt32()).IsEqualTo(1);
         await Assert.That(streamEvent.Data.GetProperty("toolName").GetString())
@@ -121,6 +124,33 @@ public sealed class EveStreamEventIdentityTests
         await Assert.That(streamEvent.IsCurrentTurnBoundary)
             .IsFalse()
             .Because("A streamed tool-input delta does not settle a response.");
+    }
+
+    [Test]
+    public async Task Parse_RecognizesV25ActionInputAppendedDeltaOnly()
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            """
+            {
+              "type": "action.input.appended",
+              "data": {
+                "callId": "call_render",
+                "inputTextDelta": "{\"title\":\"Hel",
+                "sequence": 2,
+                "stepIndex": 1,
+                "toolName": "render",
+                "turnId": "turn_1"
+              }
+            }
+            """);
+
+        await Assert.That(streamEvent.Kind).IsEqualTo(EveStreamEventKind.ActionInputAppended);
+        await Assert.That(streamEvent.Type).IsEqualTo("action.input.appended");
+        await Assert.That(streamEvent.Data.GetProperty("callId").GetString())
+            .IsEqualTo("call_render");
+        await Assert.That(streamEvent.Data.GetProperty("inputTextDelta").GetString())
+            .IsEqualTo("""{"title":"Hel""");
+        await Assert.That(streamEvent.Data.TryGetProperty("inputTextOffset", out _)).IsFalse();
     }
 
     [Test]
@@ -375,12 +405,16 @@ public sealed class EveStreamEventIdentityTests
                 "application/json"),
         };
 
-    private static HttpResponseMessage StreamResponse(params string[] events) =>
-        new(System.Net.HttpStatusCode.OK)
+    private static HttpResponseMessage StreamResponse(params string[] events)
+    {
+        HttpResponseMessage response = new(System.Net.HttpStatusCode.OK)
         {
             Content = new StringContent(
                 $"{string.Join('\n', events)}\n",
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
+        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, EveProtocol.MessageStreamVersion);
+        return response;
+    }
 }
