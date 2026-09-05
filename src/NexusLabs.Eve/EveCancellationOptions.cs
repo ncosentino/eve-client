@@ -1,4 +1,4 @@
-namespace NexusLabs.Eve;
+﻿namespace NexusLabs.Eve;
 
 /// <summary>
 /// Carries optional guards and scopes for a session-cancellation request.
