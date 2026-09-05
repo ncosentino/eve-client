@@ -11,13 +11,13 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 through 0.46.1 need no migration"
+!!! success "eve 0.32.0 through 0.48.0 need no migration"
     None of these releases broke the framework-neutral client protocol. The core session
-    routes used by this package are unchanged across `0.31.0` through `0.46.1`.
+    routes used by this package are unchanged across `0.31.0` through `0.48.0`.
     `0.34.0` added `approval.candidate` and `approval.settled`; later releases through
-    `0.46.1` remove no stream event type and add only additive fields and events.
+    `0.48.0` remove no stream event type and add only additive fields and events.
     A `0.31.x` deployment can move anywhere in that range without changing this package,
-    and this package treats `0.31.0` through `0.46.x` as one supported range. The only
+    and this package treats `0.31.0` through `0.48.x` as one supported range. The only
     hard boundary remains eve `0.31.0`.
 
     Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
@@ -37,7 +37,8 @@ the client and the agent must move together.
     inspection to schema version `3` and strictly validates successful health responses;
     `0.1.0-alpha.8` or newer supports both. Eve `0.45.1` publishes schema version `4`
     memory inspection. Eve `0.46.1` adds durable streamed tool-input deltas and raises
-    the message-stream protocol to `24`. The unreleased client supports both additions.
+    the message-stream protocol to `24`. Eve `0.48.0` adds the `workflow-tool-call` kernel
+    effect for durable workflow tools. The unreleased client supports all these additions.
     These later changes require no deployment migration.
 
 ## Why a single smoke test will not catch this
