@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using System.Text.Json;
 
 using NexusLabs.Eve;
 using NexusLabs.Eve.CompatibilityProbe;
@@ -43,6 +44,14 @@ if (string.IsNullOrWhiteSpace(info.AgentName)
     || !EveProtocol.SupportedAgentInfoVersions.Contains(info.Version))
 {
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
+}
+
+if (!info.Raw.GetProperty("kernelEffects").EnumerateArray().Any(
+        static effect => effect.TryGetProperty("action", out JsonElement action)
+            && action.GetString() == "workflow-tool-call"))
+{
+    throw new InvalidOperationException(
+        "The Eve fixture did not expose the durable workflow tool kernel effect.");
 }
 
 // A dynamic model reports no identifier from eve 0.33.0 onward, so require one only when the
@@ -348,7 +357,7 @@ if (!string.Equals(
         approvalInput.Data.GetProperty("callId").GetString(),
         "call_approval",
         StringComparison.Ordinal)
-    || approvalInput.Data.GetProperty("inputTextOffset").GetInt32() != 0
+    || approvalInput.Data.TryGetProperty("inputTextOffset", out _)
     || !string.Equals(
         approvalInput.Data.GetProperty("toolName").GetString(),
         "request_approval",
@@ -358,7 +367,7 @@ if (!string.Equals(
     || !approvalInput.Data.GetProperty("stepIndex").TryGetInt32(out _))
 {
     throw new InvalidOperationException(
-        "The streamed approval input did not retain its protocol-v24 delta coordinates.");
+        "The streamed approval input did not retain its protocol-v25 delta coordinates.");
 }
 
 if (approvalOutcome.InputRequests.Count != 1)

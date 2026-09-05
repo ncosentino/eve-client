@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.46.1 | 24 | Development compatibility target |
+| Unreleased | 0.50.0 | 25 | Development compatibility target |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Current prerelease |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
 | 0.1.0-alpha.7 | 0.44.0 | 23 | Previous compatibility target |
@@ -51,7 +51,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.46.1` fixture with a deterministic
+The repository contains a pinned eve `0.50.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -158,7 +158,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.46.1` fixture exercises this schema through the real compatibility
+The pinned Eve `0.50.0` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -174,7 +174,9 @@ backings, and a required `direct` or `derived` form on source descriptors. The p
 schema rejects the pre-release memory `tools` field. Every valid field remains available
 through `EveAgentInfo.Raw`.
 
-The pinned Eve `0.46.1` fixture exercises schema v4 through the real compatibility probe.
+The pinned Eve `0.50.0` fixture exercises schema v4 through the real compatibility probe.
+Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
+these effects remain available through `EveAgentInfo.Raw`.
 
 ## Strict health response validation
 
@@ -189,7 +191,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.46.1` fixture exercises this strict health response through the real
+The pinned Eve `0.50.0` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -211,6 +213,20 @@ for protected headers so existing generic header bags cannot silently replace cr
 
 Unknown event types remain available through `EveStreamEvent.Type` and `Data`
 instead of causing deserialization failure.
+
+## Delta-only stream events and version-aware decoding
+
+Stream protocol `25`, introduced by Eve `0.50.0`, persists text stream events
+(`message.appended`, `reasoning.appended`, `action.input.appended`) as deltas only.
+Every stream response must declare its version via the required `x-eve-stream-version`
+response header (versions 21 through 25 are supported).
+
+The .NET client validates each response version on initial connections and reconnects.
+For legacy stream events (v21–v24), cumulative properties (`messageSoFar`,
+`reasoningSoFar`, `inputTextOffset`) are validated against stream position and normalized out
+of the event data so callers receive a consistent delta-only shape across server versions.
+Version 25 events containing legacy cumulative fields, missing deltas, invalid legacy snapshots,
+or unsupported/missing stream version headers raise `EveProtocolException`.
 
 ## Stream event identity
 
