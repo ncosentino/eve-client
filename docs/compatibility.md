@@ -175,6 +175,8 @@ schema rejects the pre-release memory `tools` field. Every valid field remains a
 through `EveAgentInfo.Raw`.
 
 The pinned Eve `0.50.0` fixture exercises schema v4 through the real compatibility probe.
+Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
+these effects remain available through `EveAgentInfo.Raw`.
 
 ## Strict health response validation
 

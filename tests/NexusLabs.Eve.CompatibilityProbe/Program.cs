@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using System.Text.Json;
 
 using NexusLabs.Eve;
 using NexusLabs.Eve.CompatibilityProbe;
@@ -43,6 +44,14 @@ if (string.IsNullOrWhiteSpace(info.AgentName)
     || !EveProtocol.SupportedAgentInfoVersions.Contains(info.Version))
 {
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
+}
+
+if (!info.Raw.GetProperty("kernelEffects").EnumerateArray().Any(
+        static effect => effect.TryGetProperty("action", out JsonElement action)
+            && action.GetString() == "workflow-tool-call"))
+{
+    throw new InvalidOperationException(
+        "The Eve fixture did not expose the durable workflow tool kernel effect.");
 }
 
 // A dynamic model reports no identifier from eve 0.33.0 onward, so require one only when the
