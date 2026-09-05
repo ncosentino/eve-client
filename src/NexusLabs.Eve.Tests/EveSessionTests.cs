@@ -985,7 +985,7 @@ public sealed class EveSessionTests
             .Because("eve 0.31.0 names no session when nothing was cancelled.");
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
             "https://agent.example.com/eve/v1/session/session_1/cancel");
-        await Assert.That(handler.Calls[0].Body).IsNull();
+        await Assert.That(handler.Calls[0].Body).IsEqualTo(string.Empty);
     }
 
     [Test]

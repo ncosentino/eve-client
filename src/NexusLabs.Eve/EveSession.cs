@@ -191,7 +191,7 @@ public sealed class EveSession
     /// <param name="cancellationToken">Cancels the cancellation request.</param>
     /// <returns>The successful cancellation disposition.</returns>
     public Task<EveCancellationOutcome> CancelAsync(CancellationToken cancellationToken) =>
-        CancelAsync(null, cancellationToken);
+        CancelAsync((string?)null, cancellationToken);
 
     /// <summary>
     /// Requests cooperative cancellation of the active turn with an optional turn guard.
@@ -203,10 +203,10 @@ public sealed class EveSession
     /// </param>
     /// <param name="cancellationToken">Cancels the cancellation request.</param>
     /// <returns>The successful cancellation disposition.</returns>
-    public async Task<EveCancellationOutcome> CancelAsync(
+    public Task<EveCancellationOutcome> CancelAsync(
         string? turnId,
         CancellationToken cancellationToken)
-        => await CancelAsync(
+        => CancelAsync(
             new EveCancellationOptions
             {
                 TurnId = turnId,
