@@ -2966,7 +2966,8 @@ public sealed class EveSessionTests
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "24",
             """{"type":"message.completed","data":{"finishReason":"tool-calls","message":"Before tool.","sequence":1,"stepIndex":0,"turnId":"turn_1"}}""",
             """{"type":"action.input.appended","data":{"callId":"call_render","inputTextDelta":"{\"title\":\"Hel","inputTextOffset":0,"sequence":2,"stepIndex":0,"toolName":"render","turnId":"turn_1"}}""",
             """{"type":"action.input.appended","data":{"callId":"call_render","inputTextDelta":"lo\"}","inputTextOffset":13,"sequence":3,"stepIndex":0,"toolName":"render","turnId":"turn_1"}}""",
@@ -2986,27 +2987,153 @@ public sealed class EveSessionTests
                 "actions.requested,session.waiting");
         await Assert.That(outcome.Events[1].Kind)
             .IsEqualTo(EveStreamEventKind.ActionInputAppended);
-        await Assert.That(outcome.Events[2].Data.GetProperty("inputTextOffset").GetInt32())
-            .IsEqualTo(13);
+        await Assert.That(outcome.Events[2].Data.TryGetProperty("inputTextOffset", out _))
+            .IsFalse()
+            .Because("Legacy inputTextOffset is normalized out of the stream event.");
+        await Assert.That(outcome.Events[2].Data.GetProperty("inputTextDelta").GetString())
+            .IsEqualTo("lo\"}");
         await Assert.That(outcome.Events[0].Data.GetProperty("message").GetString())
             .IsEqualTo("Before tool.");
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
     }
 
+    [Test]
+    [Arguments("20")]
+    [Arguments("26")]
+    [Arguments("invalid")]
+    public async Task FollowAsync_RejectsInvalidStreamVersionHeader(
+        string version,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponseWithVersion(
+            version,
+            """{"type":"session.completed"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    public async Task FollowAsync_RejectsMissingStreamVersionHeader(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) =>
+        {
+            HttpResponseMessage resp = StreamResponse("""{"type":"session.completed"}""");
+            resp.Headers.Remove(EveProtocol.StreamVersionHeaderName);
+            return Task.FromResult(resp);
+        });
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    public async Task EventParse_RejectsProtocolV25WithLegacyFields(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "25",
+            """{"type":"message.appended","data":{"messageDelta":"hello","messageSoFar":"hello","turnId":"t1"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    public async Task EventParse_RejectsLegacyEventWithContradictorySnapshot(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "24",
+            """{"type":"message.appended","data":{"messageDelta":"hello","messageSoFar":"wrong","turnId":"t1"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    public async Task TurnStream_AccumulatesAcrossReconnectsWithDifferentStreamVersions(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "24",
+            """{"type":"message.appended","data":{"messageDelta":"Hello ","messageSoFar":"Hello ","turnId":"t1"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "25",
+            """{"type":"message.appended","data":{"messageDelta":"World!","turnId":"t1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Hello World!","turnId":"t1"}}""",
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync(
+            EveMessageContent.FromText("Test"),
+            new EveTurnOptions
+            {
+                StreamReconnectPolicy = new EveStreamReconnectPolicy
+                {
+                    StreamOpenRetry = new EveRetryPolicy { BaseDelay = TimeSpan.Zero, MaxDelay = TimeSpan.Zero },
+                    StreamIdleRetry = new EveRetryPolicy { BaseDelay = TimeSpan.Zero, MaxDelay = TimeSpan.Zero },
+                },
+            },
+            cancellationToken);
+
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+        await Assert.That(outcome.Message).IsEqualTo("Hello World!");
+    }
+
     private static HttpResponseMessage StreamResponse(params string[] events) =>
-        new(HttpStatusCode.OK)
+        StreamResponseWithVersion(EveProtocol.MessageStreamVersion, events);
+
+    private static HttpResponseMessage StreamResponseWithVersion(string streamVersion, params string[] events)
+    {
+        HttpResponseMessage response = new(HttpStatusCode.OK)
         {
             Content = new StringContent(
                 $"{string.Join('\n', events)}\n",
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
+        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, streamVersion);
+        return response;
+    }
 
-    private static HttpResponseMessage StreamResponse(Stream stream) =>
-        new(HttpStatusCode.OK)
+    private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = EveProtocol.MessageStreamVersion)
+    {
+        HttpResponseMessage response = new(HttpStatusCode.OK)
         {
             Content = new StreamContent(stream),
         };
+        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, streamVersion);
+        return response;
+    }
 
     private static HttpResponseMessage BoundedStreamResponse(
         string tailIndex,

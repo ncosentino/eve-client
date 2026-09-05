@@ -31,6 +31,18 @@ internal static class AgentInfoV4Fixture
                 ["kind"] = "framework",
             });
 
+    public static string WithKernelEffectAudience(string audience) =>
+        Create(
+            root =>
+            {
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["audience"] = new JsonArray(audience),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/agent.ts",
+                });
+            });
+
     public static string WithSubagentSummary() =>
         Create(AgentInfoV3Fixture.WithKernelEffectAndSubagent(), static _ => { });
 
@@ -39,6 +51,30 @@ internal static class AgentInfoV4Fixture
             AgentInfoV3Fixture.WithKernelEffectAndSubagent(),
             static root =>
                 root["subagents"]!["local"]![0]!["summary"]!.AsObject().Remove("memories"));
+
+    public static string WithWorkflowToolKernelEffect() =>
+        Create(
+            AgentInfoV3Fixture.ValidJson,
+            static root =>
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["action"] = "workflow-tool-call",
+                    ["audience"] = new JsonArray("root-session"),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/durable.ts",
+                }));
+
+    public static string WithUnknownKernelEffectAction() =>
+        Create(
+            AgentInfoV3Fixture.ValidJson,
+            static root =>
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["action"] = "unknown-action",
+                    ["audience"] = new JsonArray("root-session"),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/durable.ts",
+                }));
 
     public static string WithProgrammaticBackingMetadata() =>
         Create(

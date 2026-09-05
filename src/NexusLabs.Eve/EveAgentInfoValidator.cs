@@ -64,6 +64,20 @@ internal static class EveAgentInfoValidator
         ["action", "audience", "kind", "sourceId"];
     private static readonly string[] KernelEffectRequiredProperties =
         ["audience", "kind", "sourceId"];
+    private static readonly string[] KernelEffectAudienceV3Values =
+        [
+            "below-subagent-depth",
+            "delegated-task-child",
+            "requires-loadable-skill",
+            "requires-request-input",
+            "root-session",
+        ];
+    private static readonly string[] KernelEffectAudienceV4Values =
+        [
+            "delegated-task-child",
+            "requires-request-input",
+            "root-session",
+        ];
     private static readonly string[] MemoryAllowedProperties =
         ["description", "slot", "visibility"];
     private static readonly string[] MemoryRequiredProperties = ["slot", "visibility"];
@@ -247,7 +261,7 @@ internal static class EveAgentInfoValidator
         ValidateDiagnostics(RequireObject(root, "diagnostics", "$"));
         ValidateHooks(RequireArray(root, "hooks", "$"), isVersionFour);
         ValidateInstructions(RequireObject(root, "instructions", "$"), isVersionFour);
-        ValidateKernelEffects(RequireArray(root, "kernelEffects", "$"));
+        ValidateKernelEffects(RequireArray(root, "kernelEffects", "$"), isVersionFour);
         if (isVersionFour)
         {
             ValidateMemories(RequireArray(root, "memories", "$"));
@@ -529,7 +543,7 @@ internal static class EveAgentInfoValidator
         EnsureUnique(staticEntries, "name", $"{path}.static");
     }
 
-    private static void ValidateKernelEffects(JsonElement kernelEffects)
+    private static void ValidateKernelEffects(JsonElement kernelEffects, bool isVersionFour)
     {
         for (int index = 0; index < kernelEffects.GetArrayLength(); index++)
         {
@@ -545,12 +559,7 @@ internal static class EveAgentInfoValidator
             ValidateEnumArray(
                 audience,
                 $"{path}.audience",
-                [
-                    "below-subagent-depth",
-                    "delegated-task-child",
-                    "requires-request-input",
-                    "root-session",
-                ]);
+                isVersionFour ? KernelEffectAudienceV4Values : KernelEffectAudienceV3Values);
             string kind = RequireString(effect, "kind", path);
             if (kind is not "dispatch" and not "provider-tool" and not "request-input")
             {
@@ -562,7 +571,8 @@ internal static class EveAgentInfoValidator
                 if (action.ValueKind != JsonValueKind.String
                     || action.GetString() is not "subagent-call"
                         and not "task-cancel"
-                        and not "task-update")
+                        and not "task-update"
+                        and not "workflow-tool-call")
                 {
                     ThrowInvalid($"{path}.action has an unsupported value.");
                 }
