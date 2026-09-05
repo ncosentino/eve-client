@@ -552,6 +552,32 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourWorkflowToolKernelEffect(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.WithWorkflowToolKernelEffect(),
+            cancellationToken);
+
+        JsonElement effect = info.Raw.GetProperty("kernelEffects")[0];
+        await Assert.That(effect.GetProperty("action").GetString())
+            .IsEqualTo("workflow-tool-call");
+        await Assert.That(effect.GetProperty("audience")[0].GetString())
+            .IsEqualTo("root-session");
+        await Assert.That(effect.GetProperty("kind").GetString()).IsEqualTo("dispatch");
+        await Assert.That(effect.GetProperty("sourceId").GetString())
+            .IsEqualTo("tools/durable.ts");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFourUnknownKernelEffectAction(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithUnknownKernelEffectAction(),
+            "Schema v4 rejects unknown kernel-effect actions.",
+            cancellationToken);
+
+    [Test]
     public async Task GetInfoAsync_RejectsSchemaVersionFourMissingMemories(
         CancellationToken cancellationToken) =>
         await AssertInfoRejectedAsync(

@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Compatibility
+
+- **Supported eve versions:** `0.31.0` through `0.48.x`, message-stream protocol `24`.
+  The compatibility target and pinned fixture move to eve `0.48.0`; the minimum remains
+  eve `0.31.0`.
+- Eve `0.48.0` adds the `workflow-tool-call` kernel effect for durable workflow tools.
+
 ## [0.1.0-alpha.10] - 2026-08-28
 
 ### Compatibility

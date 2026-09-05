@@ -40,6 +40,30 @@ internal static class AgentInfoV4Fixture
             static root =>
                 root["subagents"]!["local"]![0]!["summary"]!.AsObject().Remove("memories"));
 
+    public static string WithWorkflowToolKernelEffect() =>
+        Create(
+            AgentInfoV3Fixture.ValidJson,
+            static root =>
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["action"] = "workflow-tool-call",
+                    ["audience"] = new JsonArray("root-session"),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/durable.ts",
+                }));
+
+    public static string WithUnknownKernelEffectAction() =>
+        Create(
+            AgentInfoV3Fixture.ValidJson,
+            static root =>
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["action"] = "unknown-action",
+                    ["audience"] = new JsonArray("root-session"),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/durable.ts",
+                }));
+
     public static string WithProgrammaticBackingMetadata() =>
         Create(
             AgentInfoV3Fixture.WithBackingAndOptionalVariants(),
