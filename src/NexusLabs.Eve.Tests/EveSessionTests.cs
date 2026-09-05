@@ -1991,7 +1991,7 @@ public sealed class EveSessionTests
         await WaitForCallCountAsync(handler, 3, cancellationToken);
         timeProvider.Advance(TimeSpan.FromMilliseconds(1000));
 
-        await Assert.That(async () => await sendTask)
+        await Assert.That(async () => await sendTask.WaitAsync(cancellationToken))
             .Throws<EveClientException>()
             .Because("The final readiness conflict must be surfaced.");
         await Assert.That(handler.Calls.Count).IsEqualTo(4);
@@ -2019,6 +2019,40 @@ public sealed class EveSessionTests
             .Throws<EveClientException>();
 
         await Assert.That(handler.Calls.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task SendAsync_CancellationInterruptsSessionNotActiveBackoff(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new();
+        using CancellationTokenSource sendCancellation = new();
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) =>
+        {
+            sendCancellation.CancelAfter(TimeSpan.FromMilliseconds(50));
+            return Task.FromResult(JsonResponse(
+                HttpStatusCode.Conflict,
+                """{"code":"session_not_active","error":"The session is not active."}"""));
+        });
+        EveSession session = new(
+            new EveClient(
+                transport,
+                new EveClientOptions("https://agent.example.com")
+                {
+                    TimeProvider = timeProvider,
+                }),
+            new EveSessionState
+            {
+                SessionId = "session_1",
+            });
+        Task sendTask = session.SendAsync("Follow up", sendCancellation.Token);
+
+        await Assert.That(async () => await sendTask.WaitAsync(TimeSpan.FromSeconds(5)))
+            .Throws<OperationCanceledException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        await Assert.That(cancellationToken.IsCancellationRequested).IsFalse();
     }
 
     [Test]
