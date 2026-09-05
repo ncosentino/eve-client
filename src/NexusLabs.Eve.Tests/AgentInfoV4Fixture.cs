@@ -31,6 +31,18 @@ internal static class AgentInfoV4Fixture
                 ["kind"] = "framework",
             });
 
+    public static string WithKernelEffectAudience(string audience) =>
+        Create(
+            root =>
+            {
+                root["kernelEffects"]!.AsArray().Add(new JsonObject
+                {
+                    ["audience"] = new JsonArray(audience),
+                    ["kind"] = "dispatch",
+                    ["sourceId"] = "tools/agent.ts",
+                });
+            });
+
     public static string WithSubagentSummary() =>
         Create(AgentInfoV3Fixture.WithKernelEffectAndSubagent(), static _ => { });
 

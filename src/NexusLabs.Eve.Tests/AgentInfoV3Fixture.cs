@@ -113,9 +113,6 @@ internal static class AgentInfoV3Fixture
             });
         });
 
-    public static string WithObsoleteKernelEffectAudience() =>
-        WithKernelEffectAudience("requires-loadable-skill");
-
     public static string WithKernelEffectAndSubagent() =>
         Mutate(static root =>
         {
