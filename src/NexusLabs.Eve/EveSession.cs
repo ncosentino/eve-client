@@ -16,6 +16,13 @@ namespace NexusLabs.Eve;
 /// </remarks>
 public sealed class EveSession
 {
+    private static readonly TimeSpan[] FollowUpRetryDelays =
+    [
+        TimeSpan.FromMilliseconds(250),
+        TimeSpan.FromMilliseconds(500),
+        TimeSpan.FromMilliseconds(1000),
+    ];
+
     private readonly EveClient _client;
     private readonly object _stateGate = new();
     private EveSessionState _state;
@@ -94,6 +101,7 @@ public sealed class EveSession
                 state.SessionId is not null),
             options,
             false,
+            true,
             cancellationToken);
     }
 
@@ -141,6 +149,7 @@ public sealed class EveSession
             _ => EveRequestWriter.WriteResponseTurn(inputResponses, options),
             options,
             true,
+            false,
             cancellationToken);
     }
 
@@ -148,6 +157,7 @@ public sealed class EveSession
         Func<EveSessionState, byte[]> createBody,
         EveTurnOptions? options,
         bool mustDeliver,
+        bool retrySessionNotActive,
         CancellationToken cancellationToken)
     {
         EveSessionState initialState = State;
@@ -155,6 +165,7 @@ public sealed class EveSession
         AcceptedTurn acceptedTurn = await PostTurnAsync(
             options,
             mustDeliver,
+            retrySessionNotActive,
             initialState,
             body,
             cancellationToken);
@@ -415,6 +426,7 @@ public sealed class EveSession
     private async Task<AcceptedTurn> PostTurnAsync(
         EveTurnOptions? options,
         bool mustDeliver,
+        bool retrySessionNotActive,
         EveSessionState state,
         byte[] body,
         CancellationToken cancellationToken)
@@ -425,7 +437,12 @@ public sealed class EveSession
         EveRequestKind requestKind = state.SessionId is null
             ? EveRequestKind.CreateSession
             : EveRequestKind.ContinueSession;
-        int attempts = mustDeliver ? _client.DeliveryRetryAttempts : 1;
+        bool retryFollowUp = retrySessionNotActive && state.SessionId is not null;
+        int attempts = mustDeliver
+            ? _client.DeliveryRetryAttempts
+            : retryFollowUp
+                ? FollowUpRetryDelays.Length + 1
+                : 1;
 
         for (int attempt = 0; attempt < attempts; attempt++)
         {
@@ -451,17 +468,23 @@ public sealed class EveSession
             }
 
             EveClientException exception = EveClient.CreateClientException(response, responseBody);
-            bool retryable = response.StatusCode == HttpStatusCode.InternalServerError
+            bool retryable = mustDeliver
+                && response.StatusCode == HttpStatusCode.InternalServerError
                 && responseBody.Contains(
                     "target session was not found",
-                    StringComparison.OrdinalIgnoreCase);
+                    StringComparison.OrdinalIgnoreCase)
+                || retryFollowUp
+                && response.StatusCode == HttpStatusCode.Conflict
+                && exception.ErrorCode == "session_not_active";
             if (!retryable || attempt == attempts - 1)
             {
                 throw exception;
             }
 
             await Task.Delay(
-                _client.DeliveryRetryDelay,
+                retryFollowUp
+                    ? FollowUpRetryDelays[attempt]
+                    : _client.DeliveryRetryDelay,
                 _client.TimeProvider,
                 cancellationToken);
         }
