@@ -185,6 +185,7 @@ public sealed class EveSession
 
     /// <summary>
     /// Requests cooperative cancellation of the active turn.
+    /// An accepted response does not indicate that the turn has reached its terminal boundary.
     /// Continue consuming the turn stream to observe its terminal boundary.
     /// </summary>
     /// <param name="cancellationToken">Cancels the cancellation request.</param>
@@ -194,6 +195,7 @@ public sealed class EveSession
 
     /// <summary>
     /// Requests cooperative cancellation of the active turn with an optional turn guard.
+    /// An accepted response does not indicate that the turn has reached its terminal boundary.
     /// Continue consuming the turn stream to observe its terminal boundary.
     /// </summary>
     /// <param name="turnId">
@@ -204,7 +206,26 @@ public sealed class EveSession
     public async Task<EveCancellationOutcome> CancelAsync(
         string? turnId,
         CancellationToken cancellationToken)
+        => await CancelAsync(
+            new EveCancellationOptions
+            {
+                TurnId = turnId,
+            },
+            cancellationToken);
+
+    /// <summary>
+    /// Requests cooperative cancellation using the specified turn guard and task scope.
+    /// An accepted response is asynchronous and does not prove that every requested task has
+    /// reached a terminal state.
+    /// </summary>
+    /// <param name="options">The optional turn guard and task-cancellation scope.</param>
+    /// <param name="cancellationToken">Cancels the cancellation request.</param>
+    /// <returns>The successful cancellation disposition.</returns>
+    public async Task<EveCancellationOutcome> CancelAsync(
+        EveCancellationOptions options,
+        CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(options);
         string? sessionId = State.SessionId;
         if (sessionId is null)
         {
@@ -212,7 +233,9 @@ public sealed class EveSession
                 "The eve session has no session identifier. Send a message first.");
         }
 
-        byte[] body = turnId is null ? [] : EveRequestWriter.WriteCancel(turnId);
+        byte[] body = options.TurnId is null && options.CancelOwnedTasks is null
+            ? []
+            : EveRequestWriter.WriteCancel(options);
         using ByteArrayContent content = new(body);
         content.Headers.ContentType = new("application/json");
         using HttpRequestMessage request = await _client.CreateRequestAsync(

@@ -930,6 +930,43 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task CancelAsync_CancellationOptions_SerializesTaskScopeValues(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Accepted,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        EveSession session = CreateClient(transport).AttachSession("session_1");
+
+        await session.CancelAsync(
+            new EveCancellationOptions
+            {
+                CancelOwnedTasks = false,
+            },
+            cancellationToken);
+        await session.CancelAsync(
+            new EveCancellationOptions
+            {
+                TurnId = "turn_1",
+                CancelOwnedTasks = true,
+            },
+            cancellationToken);
+
+        using JsonDocument falseBody = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(falseBody.RootElement.GetProperty("tasks").GetBoolean()).IsFalse();
+        await Assert.That(falseBody.RootElement.TryGetProperty("turnId", out _)).IsFalse();
+        using JsonDocument trueBody = JsonDocument.Parse(handler.Calls[1].Body!);
+        await Assert.That(trueBody.RootElement.GetProperty("tasks").GetBoolean()).IsTrue();
+        await Assert.That(trueBody.RootElement.GetProperty("turnId").GetString())
+            .IsEqualTo("turn_1");
+    }
+
+    [Test]
     public async Task CancelAsync_NoActiveTurn_SucceedsWithoutSessionId(
         CancellationToken cancellationToken)
     {
@@ -948,6 +985,7 @@ public sealed class EveSessionTests
             .Because("eve 0.31.0 names no session when nothing was cancelled.");
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
             "https://agent.example.com/eve/v1/session/session_1/cancel");
+        await Assert.That(handler.Calls[0].Body).IsNull();
     }
 
     [Test]

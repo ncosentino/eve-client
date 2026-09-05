@@ -66,13 +66,23 @@ internal static class EveRequestWriter
             null);
     }
 
-    internal static byte[] WriteCancel(string turnId)
+    internal static byte[] WriteCancel(EveCancellationOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         ArrayBufferWriter<byte> buffer = new();
         using (Utf8JsonWriter writer = new(buffer))
         {
             writer.WriteStartObject();
-            writer.WriteString("turnId", turnId);
+            if (options.TurnId is not null)
+            {
+                writer.WriteString("turnId", options.TurnId);
+            }
+
+            if (options.CancelOwnedTasks is bool cancelOwnedTasks)
+            {
+                writer.WriteBoolean("tasks", cancelOwnedTasks);
+            }
+
             writer.WriteEndObject();
         }
 
