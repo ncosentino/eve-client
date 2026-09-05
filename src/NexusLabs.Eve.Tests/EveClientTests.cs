@@ -426,6 +426,32 @@ public sealed class EveClientTests
     }
 
     [Test]
+    [Arguments("below-subagent-depth")]
+    [Arguments("delegated-task-child")]
+    [Arguments("requires-request-input")]
+    [Arguments("root-session")]
+    public async Task GetInfoAsync_AcceptsSupportedKernelEffectAudiences(
+        string audience,
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithKernelEffectAudience(audience),
+            cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("kernelEffects")[0].GetProperty("audience")[0].GetString())
+            .IsEqualTo(audience);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsObsoleteKernelEffectAudience(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithObsoleteKernelEffectAudience(),
+            "Schema v3 rejects the obsolete kernel-effect audience 'requires-loadable-skill'.",
+            cancellationToken);
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionThreeKernelEffectsAndSubagents(
         CancellationToken cancellationToken)
     {

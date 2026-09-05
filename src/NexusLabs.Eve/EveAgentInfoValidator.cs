@@ -548,7 +548,6 @@ internal static class EveAgentInfoValidator
                 [
                     "below-subagent-depth",
                     "delegated-task-child",
-                    "requires-loadable-skill",
                     "requires-request-input",
                     "root-session",
                 ]);

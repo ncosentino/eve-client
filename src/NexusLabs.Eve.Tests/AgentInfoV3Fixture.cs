@@ -102,6 +102,20 @@ internal static class AgentInfoV3Fixture
                 },
             });
 
+    public static string WithKernelEffectAudience(string audience) =>
+        Mutate(root =>
+        {
+            root["kernelEffects"]!.AsArray().Add(new JsonObject
+            {
+                ["audience"] = new JsonArray(audience),
+                ["kind"] = "dispatch",
+                ["sourceId"] = "tools/agent.ts",
+            });
+        });
+
+    public static string WithObsoleteKernelEffectAudience() =>
+        WithKernelEffectAudience("requires-loadable-skill");
+
     public static string WithKernelEffectAndSubagent() =>
         Mutate(static root =>
         {
