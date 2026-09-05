@@ -49,11 +49,12 @@ final tool result, and expect it to be superseded.
 
 ## Streamed tool input
 
-Eve `0.46.1` emits `action.input.appended`
+Eve `0.46.1` introduced `action.input.appended`
 (`EveStreamEventKind.ActionInputAppended`) while the model generates one tool
-call's input. Each event carries `inputTextDelta` and the zero-based UTF-16
-`inputTextOffset` where that delta begins, plus `callId`, `toolName`, `turnId`,
-`stepIndex`, and `sequence`.
+call's input. Starting in protocol v25 (Eve `0.50.0`), text append events are
+persisted as deltas only. Stream responses carry the required `x-eve-stream-version`
+header (versions 21 through 25), and legacy cumulative properties (`inputTextOffset`,
+`messageSoFar`, `reasoningSoFar`) are normalized out of the event payload at the decode boundary.
 
 ```csharp
 await foreach (EveStreamEvent streamEvent in

@@ -72,8 +72,17 @@ public sealed record EveStreamEvent
         return JsonSerializer.Deserialize(Data, jsonTypeInfo);
     }
 
-    internal static EveStreamEvent Parse(string json)
+    internal static EveStreamEvent Parse(
+        string json,
+        int streamVersion = 25,
+        EveStreamDecoder? decoder = null)
     {
+        if (streamVersion is < 21 or > 25)
+        {
+            throw new EveProtocolException(
+                $"Unsupported eve stream protocol version '{streamVersion}'. Supported versions are 21 through 25.");
+        }
+
         try
         {
             using JsonDocument document = JsonDocument.Parse(json);
@@ -91,17 +100,279 @@ public sealed record EveStreamEvent
                 throw new EveProtocolException("An eve stream event type cannot be empty.");
             }
 
+            EveStreamEventKind kind = ResolveKind(type);
             JsonElement data = root.TryGetProperty("data", out JsonElement dataElement)
                 ? dataElement
                 : EveJsonElementFactory.EmptyObject;
+
+            data = NormalizeAndValidateData(kind, data, streamVersion, decoder);
             EveStreamEventMetadata? metadata = ParseMetadata(root);
 
-            return new EveStreamEvent(type, ResolveKind(type), data, metadata);
+            return new EveStreamEvent(type, kind, data, metadata);
         }
         catch (JsonException exception)
         {
             throw new EveProtocolException("The eve stream contained invalid JSON.", exception);
         }
+    }
+
+    private static JsonElement NormalizeAndValidateData(
+        EveStreamEventKind kind,
+        JsonElement data,
+        int streamVersion,
+        EveStreamDecoder? decoder)
+    {
+        return kind switch
+        {
+            EveStreamEventKind.MessageAppended => ValidateAndNormalizeMessageAppended(data, streamVersion, decoder),
+            EveStreamEventKind.ReasoningAppended => ValidateAndNormalizeReasoningAppended(data, streamVersion, decoder),
+            EveStreamEventKind.ActionInputAppended => ValidateAndNormalizeActionInputAppended(data, streamVersion, decoder),
+            _ => data,
+        };
+    }
+
+    private static JsonElement ValidateAndNormalizeMessageAppended(
+        JsonElement data,
+        int streamVersion,
+        EveStreamDecoder? decoder)
+    {
+        if (data.ValueKind != JsonValueKind.Object
+            || !data.TryGetProperty("messageDelta", out JsonElement deltaElement)
+            || deltaElement.ValueKind != JsonValueKind.String)
+        {
+            throw new EveProtocolException("A message.appended event must contain a string 'messageDelta'.");
+        }
+
+        string delta = deltaElement.GetString()!;
+        bool hasSoFar = data.TryGetProperty("messageSoFar", out JsonElement soFarElement);
+        if (streamVersion == 25)
+        {
+            if (hasSoFar)
+            {
+                throw new EveProtocolException("Protocol v25 message.appended events must not contain legacy 'messageSoFar'.");
+            }
+
+            return data;
+        }
+
+        if (hasSoFar)
+        {
+            if (soFarElement.ValueKind != JsonValueKind.String)
+            {
+                throw new EveProtocolException("Legacy 'messageSoFar' must be a string.");
+            }
+
+            string soFar = soFarElement.GetString()!;
+            if (!soFar.EndsWith(delta, StringComparison.Ordinal))
+            {
+                throw new EveProtocolException(
+                    $"Legacy 'messageSoFar' snapshot '{soFar}' contradicts 'messageDelta' '{delta}'.");
+            }
+
+            string? turnId = data.TryGetProperty("turnId", out JsonElement turnIdElement)
+                && turnIdElement.ValueKind == JsonValueKind.String
+                    ? turnIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && turnId is not null)
+            {
+                string? prevSoFar = decoder.GetMessageSoFar(turnId);
+                if (prevSoFar is not null && soFar != prevSoFar + delta)
+                {
+                    throw new EveProtocolException(
+                        $"Legacy 'messageSoFar' snapshot '{soFar}' contradicts accumulated text '{prevSoFar + delta}'.");
+                }
+
+                decoder.SetMessageSoFar(turnId, soFar);
+            }
+
+            return RemoveProperty(data, "messageSoFar");
+        }
+        else
+        {
+            string? turnId = data.TryGetProperty("turnId", out JsonElement turnIdElement)
+                && turnIdElement.ValueKind == JsonValueKind.String
+                    ? turnIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && turnId is not null)
+            {
+                string? prevSoFar = decoder.GetMessageSoFar(turnId);
+                decoder.SetMessageSoFar(turnId, (prevSoFar ?? string.Empty) + delta);
+            }
+
+            return data;
+        }
+    }
+
+    private static JsonElement ValidateAndNormalizeReasoningAppended(
+        JsonElement data,
+        int streamVersion,
+        EveStreamDecoder? decoder)
+    {
+        if (data.ValueKind != JsonValueKind.Object
+            || !data.TryGetProperty("reasoningDelta", out JsonElement deltaElement)
+            || deltaElement.ValueKind != JsonValueKind.String)
+        {
+            throw new EveProtocolException("A reasoning.appended event must contain a string 'reasoningDelta'.");
+        }
+
+        string delta = deltaElement.GetString()!;
+        bool hasSoFar = data.TryGetProperty("reasoningSoFar", out JsonElement soFarElement);
+        if (streamVersion == 25)
+        {
+            if (hasSoFar)
+            {
+                throw new EveProtocolException("Protocol v25 reasoning.appended events must not contain legacy 'reasoningSoFar'.");
+            }
+
+            return data;
+        }
+
+        if (hasSoFar)
+        {
+            if (soFarElement.ValueKind != JsonValueKind.String)
+            {
+                throw new EveProtocolException("Legacy 'reasoningSoFar' must be a string.");
+            }
+
+            string soFar = soFarElement.GetString()!;
+            if (!soFar.EndsWith(delta, StringComparison.Ordinal))
+            {
+                throw new EveProtocolException(
+                    $"Legacy 'reasoningSoFar' snapshot '{soFar}' contradicts 'reasoningDelta' '{delta}'.");
+            }
+
+            string? turnId = data.TryGetProperty("turnId", out JsonElement turnIdElement)
+                && turnIdElement.ValueKind == JsonValueKind.String
+                    ? turnIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && turnId is not null)
+            {
+                string? prevSoFar = decoder.GetReasoningSoFar(turnId);
+                if (prevSoFar is not null && soFar != prevSoFar + delta)
+                {
+                    throw new EveProtocolException(
+                        $"Legacy 'reasoningSoFar' snapshot '{soFar}' contradicts accumulated reasoning text '{prevSoFar + delta}'.");
+                }
+
+                decoder.SetReasoningSoFar(turnId, soFar);
+            }
+
+            return RemoveProperty(data, "reasoningSoFar");
+        }
+        else
+        {
+            string? turnId = data.TryGetProperty("turnId", out JsonElement turnIdElement)
+                && turnIdElement.ValueKind == JsonValueKind.String
+                    ? turnIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && turnId is not null)
+            {
+                string? prevSoFar = decoder.GetReasoningSoFar(turnId);
+                decoder.SetReasoningSoFar(turnId, (prevSoFar ?? string.Empty) + delta);
+            }
+
+            return data;
+        }
+    }
+
+    private static JsonElement ValidateAndNormalizeActionInputAppended(
+        JsonElement data,
+        int streamVersion,
+        EveStreamDecoder? decoder)
+    {
+        if (data.ValueKind != JsonValueKind.Object
+            || !data.TryGetProperty("inputTextDelta", out JsonElement deltaElement)
+            || deltaElement.ValueKind != JsonValueKind.String)
+        {
+            throw new EveProtocolException("An action.input.appended event must contain a string 'inputTextDelta'.");
+        }
+
+        string delta = deltaElement.GetString()!;
+        bool hasOffset = data.TryGetProperty("inputTextOffset", out JsonElement offsetElement);
+        if (streamVersion == 25)
+        {
+            if (hasOffset)
+            {
+                throw new EveProtocolException("Protocol v25 action.input.appended events must not contain legacy 'inputTextOffset'.");
+            }
+
+            return data;
+        }
+
+        if (hasOffset)
+        {
+            if (offsetElement.ValueKind != JsonValueKind.Number
+                || !offsetElement.TryGetInt32(out int offset)
+                || offset < 0)
+            {
+                throw new EveProtocolException("Legacy 'inputTextOffset' must be a non-negative integer.");
+            }
+
+            string? callId = data.TryGetProperty("callId", out JsonElement callIdElement)
+                && callIdElement.ValueKind == JsonValueKind.String
+                    ? callIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && callId is not null)
+            {
+                int? prevOffset = decoder.GetToolInputOffset(callId);
+                if (prevOffset.HasValue && offset != prevOffset.Value)
+                {
+                    throw new EveProtocolException(
+                        $"Legacy 'inputTextOffset' {offset} contradicts expected offset {prevOffset.Value}.");
+                }
+
+                decoder.SetToolInputOffset(callId, offset + delta.Length);
+            }
+
+            return RemoveProperty(data, "inputTextOffset");
+        }
+        else
+        {
+            string? callId = data.TryGetProperty("callId", out JsonElement callIdElement)
+                && callIdElement.ValueKind == JsonValueKind.String
+                    ? callIdElement.GetString()
+                    : null;
+
+            if (decoder is not null && callId is not null)
+            {
+                int prevOffset = decoder.GetToolInputOffset(callId) ?? 0;
+                decoder.SetToolInputOffset(callId, prevOffset + delta.Length);
+            }
+
+            return data;
+        }
+    }
+
+    private static JsonElement RemoveProperty(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return element;
+        }
+
+        using MemoryStream stream = new();
+        using (Utf8JsonWriter writer = new(stream))
+        {
+            writer.WriteStartObject();
+            using JsonElement.ObjectEnumerator enumerator = element.EnumerateObject();
+            while (enumerator.MoveNext())
+            {
+                JsonProperty property = enumerator.Current;
+                if (!string.Equals(property.Name, propertyName, StringComparison.Ordinal))
+                {
+                    property.WriteTo(writer);
+                }
+            }
+            writer.WriteEndObject();
+        }
+
+        using JsonDocument doc = JsonDocument.Parse(stream.ToArray());
+        return doc.RootElement.Clone();
     }
 
     private static EveStreamEventMetadata? ParseMetadata(JsonElement root)

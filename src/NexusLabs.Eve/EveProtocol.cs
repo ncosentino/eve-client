@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.48.0";
+    public const string ReferenceEveVersion = "0.50.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -29,10 +29,11 @@ public static class EveProtocol
     /// <c>packages/eve/src/protocol/message.ts</c>. Read that constant when advancing the
     /// baseline; the value does not follow from whether the event vocabulary changed. eve
     /// <c>0.35.0</c> raised it to <c>22</c> while adding no event type and removing none. The
-    /// <c>0.39.1</c> raised it to <c>23</c> for durable <c>input.resolved</c> events, and
-    /// <c>0.46.1</c> raised it to <c>24</c> for durable <c>action.input.appended</c> events.
+    /// <c>0.39.1</c> raised it to <c>23</c> for durable <c>input.resolved</c> events,
+    /// <c>0.46.1</c> raised it to <c>24</c> for durable <c>action.input.appended</c> events, and
+    /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming.
     /// </remarks>
-    public const string MessageStreamVersion = "24";
+    public const string MessageStreamVersion = "25";
 
     /// <summary>
     /// Gets the agent-info payload schema versions this package understands.
@@ -58,6 +59,11 @@ public static class EveProtocol
     /// Gets the response header that carries the assigned eve session identifier.
     /// </summary>
     public const string SessionIdHeaderName = "x-eve-session-id";
+
+    /// <summary>
+    /// Gets the response header that carries the stream protocol version.
+    /// </summary>
+    public const string StreamVersionHeaderName = "x-eve-stream-version";
 
     /// <summary>
     /// Gets the Vercel header used to present a trusted OIDC identity-provider token.
