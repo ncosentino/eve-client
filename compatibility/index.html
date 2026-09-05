@@ -1299,7 +1299,7 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.46.1</td>
+<td style="text-align: right;">0.48.0</td>
 <td style="text-align: right;">24</td>
 <td>Development compatibility target</td>
 </tr>
@@ -1407,7 +1407,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.46.1</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.48.0</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -1488,7 +1488,7 @@ alone. The client rejects relabeled v2 documents, missing canonical collections,
 duplicate public identities, normalized channel-route collisions, incorrect subagent or
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.</p>
-<p>The pinned Eve <code>0.46.1</code> fixture exercises this schema through the real compatibility
+<p>The pinned Eve <code>0.48.0</code> fixture exercises this schema through the real compatibility
 probe.</p>
 <h2 id="eve-0451-and-agent-info-schema-v4">Eve 0.45.1 and agent-info schema v4<a class="headerlink" href="#eve-0451-and-agent-info-schema-v4" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.45.1</code> raises agent inspection again to schema version <code>4</code>.
@@ -1500,7 +1500,9 @@ subagent summaries, optional dependency and parameter maps to programmatic sourc
 backings, and a required <code>direct</code> or <code>derived</code> form on source descriptors. The published
 schema rejects the pre-release memory <code>tools</code> field. Every valid field remains available
 through <code>EveAgentInfo.Raw</code>.</p>
-<p>The pinned Eve <code>0.46.1</code> fixture exercises schema v4 through the real compatibility probe.</p>
+<p>The pinned Eve <code>0.48.0</code> fixture exercises schema v4 through the real compatibility probe.
+Eve <code>0.48.0</code> may include <code>workflow-tool-call</code> kernel effects for durable workflow tools;
+these effects remain available through <code>EveAgentInfo.Raw</code>.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.45.0</code> strictly validates successful <code>GET /eve/v1/health</code> responses. The exact
 shape is <code>ok: true</code>, <code>status: "ready"</code>, and a nonempty string <code>workflowId</code>; unknown
@@ -1511,7 +1513,7 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>The pinned Eve <code>0.46.1</code> fixture exercises this strict health response through the real
+<p>The pinned Eve <code>0.48.0</code> fixture exercises this strict health response through the real
 compatibility probe.</p>
 <h2 id="streamed-tool-inputs">Streamed tool inputs<a class="headerlink" href="#streamed-tool-inputs" title="Permanent link">&para;</a></h2>
 <p>Stream protocol <code>24</code>, published by Eve <code>0.46.1</code>, adds durable
