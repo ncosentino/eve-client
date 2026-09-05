@@ -1267,11 +1267,12 @@ and is the only value exposed to the model.</p>
 <p>Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.</p>
 <h2 id="streamed-tool-input">Streamed tool input<a class="headerlink" href="#streamed-tool-input" title="Permanent link">&para;</a></h2>
-<p>Eve <code>0.46.1</code> emits <code>action.input.appended</code>
+<p>Eve <code>0.46.1</code> introduced <code>action.input.appended</code>
 (<code>EveStreamEventKind.ActionInputAppended</code>) while the model generates one tool
-call's input. Each event carries <code>inputTextDelta</code> and the zero-based UTF-16
-<code>inputTextOffset</code> where that delta begins, plus <code>callId</code>, <code>toolName</code>, <code>turnId</code>,
-<code>stepIndex</code>, and <code>sequence</code>.</p>
+call's input. Starting in protocol v25 (Eve <code>0.50.0</code>), text append events are
+persisted as deltas only. Stream responses carry the required <code>x-eve-stream-version</code>
+header (versions 21 through 25), and legacy cumulative properties (<code>inputTextOffset</code>,
+<code>messageSoFar</code>, <code>reasoningSoFar</code>) are normalized out of the event payload at the decode boundary.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">{</span>

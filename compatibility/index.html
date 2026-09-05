@@ -937,6 +937,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#delta-only-stream-events-and-version-aware-decoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delta-only stream events and version-aware decoding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1299,8 +1310,8 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.48.0</td>
-<td style="text-align: right;">24</td>
+<td style="text-align: right;">0.50.0</td>
+<td style="text-align: right;">25</td>
 <td>Development compatibility target</td>
 </tr>
 <tr>
@@ -1407,7 +1418,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.48.0</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.50.0</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -1488,7 +1499,7 @@ alone. The client rejects relabeled v2 documents, missing canonical collections,
 duplicate public identities, normalized channel-route collisions, incorrect subagent or
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.</p>
-<p>The pinned Eve <code>0.48.0</code> fixture exercises this schema through the real compatibility
+<p>The pinned Eve <code>0.50.0</code> fixture exercises this schema through the real compatibility
 probe.</p>
 <h2 id="eve-0451-and-agent-info-schema-v4">Eve 0.45.1 and agent-info schema v4<a class="headerlink" href="#eve-0451-and-agent-info-schema-v4" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.45.1</code> raises agent inspection again to schema version <code>4</code>.
@@ -1500,7 +1511,7 @@ subagent summaries, optional dependency and parameter maps to programmatic sourc
 backings, and a required <code>direct</code> or <code>derived</code> form on source descriptors. The published
 schema rejects the pre-release memory <code>tools</code> field. Every valid field remains available
 through <code>EveAgentInfo.Raw</code>.</p>
-<p>The pinned Eve <code>0.48.0</code> fixture exercises schema v4 through the real compatibility probe.
+<p>The pinned Eve <code>0.50.0</code> fixture exercises schema v4 through the real compatibility probe.
 Eve <code>0.48.0</code> may include <code>workflow-tool-call</code> kernel effects for durable workflow tools;
 these effects remain available through <code>EveAgentInfo.Raw</code>.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
@@ -1513,7 +1524,7 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>The pinned Eve <code>0.48.0</code> fixture exercises this strict health response through the real
+<p>The pinned Eve <code>0.50.0</code> fixture exercises this strict health response through the real
 compatibility probe.</p>
 <h2 id="streamed-tool-inputs">Streamed tool inputs<a class="headerlink" href="#streamed-tool-inputs" title="Permanent link">&para;</a></h2>
 <p>Stream protocol <code>24</code>, published by Eve <code>0.46.1</code>, adds durable
@@ -1530,6 +1541,17 @@ NexusLabs.Eve requires an explicit client allowlist and dedicated per-call overr
 for protected headers so existing generic header bags cannot silently replace credentials.</p>
 <p>Unknown event types remain available through <code>EveStreamEvent.Type</code> and <code>Data</code>
 instead of causing deserialization failure.</p>
+<h2 id="delta-only-stream-events-and-version-aware-decoding">Delta-only stream events and version-aware decoding<a class="headerlink" href="#delta-only-stream-events-and-version-aware-decoding" title="Permanent link">&para;</a></h2>
+<p>Stream protocol <code>25</code>, introduced by Eve <code>0.50.0</code>, persists text stream events
+(<code>message.appended</code>, <code>reasoning.appended</code>, <code>action.input.appended</code>) as deltas only.
+Every stream response must declare its version via the required <code>x-eve-stream-version</code>
+response header (versions 21 through 25 are supported).</p>
+<p>The .NET client validates each response version on initial connections and reconnects.
+For legacy stream events (v21–v24), cumulative properties (<code>messageSoFar</code>,
+<code>reasoningSoFar</code>, <code>inputTextOffset</code>) are validated against stream position and normalized out
+of the event data so callers receive a consistent delta-only shape across server versions.
+Version 25 events containing legacy cumulative fields, missing deltas, invalid legacy snapshots,
+or unsupported/missing stream version headers raise <code>EveProtocolException</code>.</p>
 <h2 id="stream-event-identity">Stream event identity<a class="headerlink" href="#stream-event-identity" title="Permanent link">&para;</a></h2>
 <p>Stream protocol version 20 stamps every persisted event with a stable
 <code>evt_</code>-prefixed identifier. <code>EveStreamEvent.Metadata.Id</code> projects it when
