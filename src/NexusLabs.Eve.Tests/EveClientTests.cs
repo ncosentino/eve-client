@@ -428,9 +428,10 @@ public sealed class EveClientTests
     [Test]
     [Arguments("below-subagent-depth")]
     [Arguments("delegated-task-child")]
+    [Arguments("requires-loadable-skill")]
     [Arguments("requires-request-input")]
     [Arguments("root-session")]
-    public async Task GetInfoAsync_AcceptsSupportedKernelEffectAudiences(
+    public async Task GetInfoAsync_AcceptsSchemaVersionThreeKernelEffectAudiences(
         string audience,
         CancellationToken cancellationToken)
     {
@@ -444,11 +445,31 @@ public sealed class EveClientTests
     }
 
     [Test]
-    public async Task GetInfoAsync_RejectsObsoleteKernelEffectAudience(
+    [Arguments("delegated-task-child")]
+    [Arguments("requires-request-input")]
+    [Arguments("root-session")]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourKernelEffectAudiences(
+        string audience,
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.WithKernelEffectAudience(audience),
+            cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("kernelEffects")[0].GetProperty("audience")[0].GetString())
+            .IsEqualTo(audience);
+    }
+
+    [Test]
+    [Arguments("below-subagent-depth")]
+    [Arguments("requires-loadable-skill")]
+    public async Task GetInfoAsync_RejectsObsoleteSchemaVersionFourKernelEffectAudience(
+        string audience,
         CancellationToken cancellationToken) =>
         await AssertInfoRejectedAsync(
-            AgentInfoV3Fixture.WithObsoleteKernelEffectAudience(),
-            "Schema v3 rejects the obsolete kernel-effect audience 'requires-loadable-skill'.",
+            AgentInfoV4Fixture.WithKernelEffectAudience(audience),
+            $"Schema v4 rejects the obsolete kernel-effect audience '{audience}'.",
             cancellationToken);
 
     [Test]
