@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.52.3 delivery-correlation boundary.">
+        <meta name="description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary.">
       
       
         <meta name="author" content="Nick Cosentino">
@@ -65,12 +65,12 @@
   
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Migration – NexusLabs.Eve" />
-  <meta property="og:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.52.3 delivery-correlation boundary." />
+  <meta property="og:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/migration/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Migration – NexusLabs.Eve" />
-  <meta name="twitter:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.52.3 delivery-correlation boundary." />
+  <meta name="twitter:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
 
@@ -93,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migrating-to-eve-0523" class="md-skip">
+        <a href="#migrating-to-eve-0542" class="md-skip">
           Skip to content
         </a>
       
@@ -832,10 +832,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations-that-do-not-require-delivery-correlation" class="md-nav__link">
+  <a href="#historical-eve-0523-delivery-correlation-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations that do not require delivery correlation
+        Historical eve 0.52.3 delivery-correlation boundary
       
     </span>
   </a>
@@ -1248,42 +1248,47 @@
   
 
 
-<h1 id="migrating-to-eve-0523">Migrating to eve 0.52.3<a class="headerlink" href="#migrating-to-eve-0523" title="Permanent link">&para;</a></h1>
-<p>The current client targets eve <code>0.54.0</code> and requires eve <code>0.52.3</code> or newer. Eve <code>0.52.3</code>
-is the first release whose accepted response for a message sent to an existing session
-includes a nonempty <code>deliveryId</code>. The client uses that identifier and durable event
-<code>meta.deliveryIds</code> to consume stale replay events without returning an older turn.</p>
-<p>Accepted existing-session message responses from pre-<code>0.52.3</code> servers lack
-<code>deliveryId</code>. There is no response version negotiation and no safe fallback, so the new
-client rejects the accepted response rather than risk returning stale durable events.
-Advancing the tested reference to <code>0.54.0</code> does not change this server-first boundary:
-message-stream protocol <code>25</code>, agent-info schema v4, and the framework-neutral routes
-remain compatible.</p>
+<h1 id="migrating-to-eve-0542">Migrating to eve 0.54.2<a class="headerlink" href="#migrating-to-eve-0542" title="Permanent link">&para;</a></h1>
+<p>The current client requires and targets eve <code>0.54.2</code>. This is the first published release
+whose agent-info schema-v4 kernel-effect action set is exactly <code>subagent-call</code>,
+<code>task-cancel</code>, and <code>workflow-tool-call</code>.</p>
+<p>Earlier schema-v4 servers can still advertise the obsolete <code>task-update</code> action. The
+payload remains version <code>4</code>, so the client has no schema discriminator with which to
+accept both contracts strictly. It rejects <code>task-update</code> in v4 while historical schema
+v3 continues accepting and preserving that action through <code>EveAgentInfo.Raw</code>.</p>
 <h2 id="required-server-first-order">Required server-first order<a class="headerlink" href="#required-server-first-order" title="Permanent link">&para;</a></h2>
 <p>This boundary is a server-first rolling upgrade:</p>
 <ol>
-<li>Pin and deploy eve <code>0.52.3</code> or newer while applications remain on their existing
+<li>Pin and deploy eve <code>0.54.2</code> while applications remain on their existing
    NexusLabs.Eve release.</li>
-<li>Verify health, agent inspection, and a multi-turn conversation against the upgraded
-   server.</li>
-<li>Upgrade the application to the client release whose minimum is eve <code>0.52.3</code>.</li>
-<li>Verify a resumed send from a persisted or deliberately stale cursor returns the newly
-   accepted turn rather than a prior durable turn.</li>
+<li>Verify health and agent inspection, including the absence of <code>task-update</code> and the
+   presence of <code>workflow-tool-call</code> when durable workflow tools are configured.</li>
+<li>Upgrade the application to the client release whose minimum is eve <code>0.54.2</code>.</li>
+<li>Verify agent inspection and a multi-turn conversation against the upgraded pair.</li>
 </ol>
-<p>Do not upgrade the client first. An existing-session <code>SendAsync</code> against an older server
-is accepted by HTTP but then fails with <code>EveProtocolException</code> because the response does
-not contain a nonempty <code>deliveryId</code>. The older client can ignore the additive <code>0.52.3</code>
-response field, which makes the server-first order safe.</p>
-<h2 id="operations-that-do-not-require-delivery-correlation">Operations that do not require delivery correlation<a class="headerlink" href="#operations-that-do-not-require-delivery-correlation" title="Permanent link">&para;</a></h2>
+<p>Do not upgrade the client first. A pre-<code>0.54.2</code> server can return a schema-v4 payload
+that the new client correctly rejects with <code>EveProtocolException</code>. Existing clients
+already accept the narrower <code>0.54.2</code> action set, which makes the server-first order safe.</p>
+<h2 id="historical-eve-0523-delivery-correlation-boundary">Historical eve 0.52.3 delivery-correlation boundary<a class="headerlink" href="#historical-eve-0523-delivery-correlation-boundary" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.52.3</code> is the first release whose accepted response for a message sent to an
+existing session includes a nonempty <code>deliveryId</code>. The client uses that identifier and
+durable event <code>meta.deliveryIds</code> to consume stale replay events without returning an
+older turn.</p>
+<p>Accepted existing-session message responses from pre-<code>0.52.3</code> servers lack
+<code>deliveryId</code>. There is no response version negotiation and no safe fallback, so clients
+using delivery correlation reject the accepted response rather than risk returning stale
+durable events. That historical migration was also server-first: older clients ignore
+the additive response field, while the newer client requires it.</p>
+<p>The following operations do not require delivery correlation:</p>
 <ul>
 <li>The initial <code>SendAsync</code> creates a session and has no prior durable events for that
   session, so its accepted response does not need <code>deliveryId</code>.</li>
 <li><code>RespondAsync</code> continues a pending human-input turn rather than accepting a new
   message delivery, so it also remains uncorrelated.</li>
 </ul>
-<p>Every <code>SendAsync</code> on an existing session requires the identifier. Message-stream
-protocol <code>25</code>, agent-info schema v4, session routes, and request bodies are unchanged by
-this cutover.</p>
+<p>Every <code>SendAsync</code> on an existing session requires the identifier. The <code>0.54.2</code> strict
+agent-info cutover does not change that delivery behavior, message-stream protocol <code>25</code>,
+session routes, or request bodies.</p>
 <h2 id="historical-migration-to-eve-031x">Historical migration to eve 0.31.x<a class="headerlink" href="#historical-migration-to-eve-031x" title="Permanent link">&para;</a></h2>
 <p><code>NexusLabs.Eve</code> <code>0.1.0-alpha.4</code> requires eve <code>0.31.0</code> or newer. <code>0.1.0-alpha.3</code> is the
 final release for eve <code>0.29.x</code> and <code>0.30.x</code>.</p>
