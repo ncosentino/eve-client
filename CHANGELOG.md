@@ -14,6 +14,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   eve `0.31.0`.
 - Eve `0.48.0` adds the `workflow-tool-call` kernel effect for durable workflow tools.
 
+### Fixed
+
+- `GetOutcomeAsync` aborts an early-terminated stream connection before disposing its
+  response body, so an open tracing or tee consumer cannot block terminal outcome and
+  cursor settlement.
+
 ## [0.1.0-alpha.10] - 2026-08-28
 
 ### Compatibility
