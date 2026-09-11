@@ -590,7 +590,7 @@ public sealed class EveSession
         }
         finally
         {
-            SetState(AdvanceState(
+            MergeState(AdvanceState(
                 initialState,
                 acceptedTurn.SessionId,
                 events));
@@ -632,7 +632,7 @@ public sealed class EveSession
                 {
                     StreamIndex = startIndex,
                 };
-                SetState(AdvanceState(
+                MergeState(AdvanceState(
                     cursorState,
                     initialState.SessionId!,
                     events));
@@ -824,11 +824,27 @@ public sealed class EveSession
         }
     }
 
-    private void SetState(EveSessionState state)
+    private void MergeState(EveSessionState candidate)
     {
         lock (_stateGate)
         {
-            _state = state;
+            if (string.Equals(
+                    _state.SessionId,
+                    candidate.SessionId,
+                    StringComparison.Ordinal))
+            {
+                if (candidate.StreamIndex > _state.StreamIndex)
+                {
+                    _state = _state with
+                    {
+                        StreamIndex = candidate.StreamIndex,
+                    };
+                }
+
+                return;
+            }
+
+            _state = candidate;
         }
     }
 
@@ -838,7 +854,7 @@ public sealed class EveSession
         EveSessionState initialState,
         string sessionId,
         IReadOnlyList<EveStreamEvent> events) =>
-        new()
+        initialState with
         {
             SessionId = sessionId,
             StreamIndex = initialState.StreamIndex + events.Count,
