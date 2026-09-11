@@ -9,16 +9,31 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.52.x`, message-stream protocol `25`.
-  The compatibility target and pinned fixture move to eve `0.52.2`; the minimum remains
-  eve `0.31.0`.
+- **Minimum and reference eve version:** `0.52.3`, message-stream protocol `25`, and
+  agent-info schema version `4`. Earlier servers are no longer supported because their
+  accepted existing-session message responses omit the delivery identifier required for
+  safe durable-stream correlation.
+- Upgrade the eve server to `0.52.3` before upgrading this client. Initial session
+  creation and `RespondAsync` human-input continuation do not require delivery
+  correlation; `SendAsync` on an existing session does.
 - Eve `0.48.0` adds the `workflow-tool-call` kernel effect for durable workflow tools.
 - Eve `0.50.0` raises the message-stream protocol to `25` for delta-only text streaming.
 - Eve `0.52.2` preserves transient client context across every model call in a turn,
   including calls after tool execution, and clears it before the next turn.
+- Eve `0.52.3` adds `deliveryId` to accepted existing-session message responses and
+  stamps associated durable events with ordered `meta.deliveryIds`.
+
+### Added
+
+- `EveMessageResponse.DeliveryId` exposes the accepted message delivery identifier, and
+  `EveStreamEventMetadata.DeliveryIds` projects ordered event correlation metadata while
+  preserving the complete metadata object through `Raw`.
 
 ### Fixed
 
+- Existing-session sends now consume stale replay events for cursor advancement without
+  yielding or aggregating them, then return the turn associated with the accepted
+  delivery. The real eve `0.52.3` fixture covers this with a deliberately stale cursor.
 - Concurrent send-response and manual session streams now merge automatic cursor
   advancement monotonically, so a stale shorter stream cannot overwrite a farther
   cursor for the same session.

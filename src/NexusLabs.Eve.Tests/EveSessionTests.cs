@@ -2204,7 +2204,7 @@ public sealed class EveSessionTests
         using HttpMessageInvoker transport = new(handler, false);
         handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
             HttpStatusCode.Accepted,
-            """{"ok":true,"sessionId":"session_1"}""")));
+            """{"ok":true,"sessionId":"session_1","deliveryId":"delivery_1"}""")));
         EveSession session = CreateClient(transport).CreateSession(new EveSessionState
         {
             SessionId = "session_1",
@@ -2956,7 +2956,7 @@ public sealed class EveSessionTests
         string sessionId = "session_1") =>
         JsonResponse(
             HttpStatusCode.Accepted,
-            $$"""{"ok":true,"sessionId":"{{sessionId}}"}""");
+            $$"""{"ok":true,"sessionId":"{{sessionId}}","deliveryId":"delivery_1"}""");
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json) =>
         new(statusCode)
@@ -3163,12 +3163,26 @@ public sealed class EveSessionTests
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {
             Content = new StringContent(
-                $"{string.Join('\n', events)}\n",
+                $"{string.Join('\n', events.Select(StampDefaultDeliveryId))}\n",
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
         response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, streamVersion);
         return response;
+    }
+
+    private static string StampDefaultDeliveryId(string streamEvent)
+    {
+        if (streamEvent.Length < 2
+            || streamEvent[0] != '{'
+            || streamEvent[^1] != '}'
+            || streamEvent.Contains("\"meta\":", StringComparison.Ordinal))
+        {
+            return streamEvent;
+        }
+
+        return streamEvent[..^1]
+            + ""","meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":["delivery_1"]}}""";
     }
 
     private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = EveProtocol.MessageStreamVersion)

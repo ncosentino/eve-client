@@ -102,6 +102,7 @@ public sealed class EveSession
             options,
             false,
             true,
+            true,
             cancellationToken);
     }
 
@@ -150,6 +151,7 @@ public sealed class EveSession
             options,
             true,
             false,
+            false,
             cancellationToken);
     }
 
@@ -158,14 +160,18 @@ public sealed class EveSession
         EveTurnOptions? options,
         bool mustDeliver,
         bool retrySessionNotActive,
+        bool correlateExistingMessage,
         CancellationToken cancellationToken)
     {
         EveSessionState initialState = State;
         byte[] body = createBody(initialState);
+        bool requireDeliveryId =
+            correlateExistingMessage && initialState.SessionId is not null;
         AcceptedTurn acceptedTurn = await PostTurnAsync(
             options,
             mustDeliver,
             retrySessionNotActive,
+            requireDeliveryId,
             initialState,
             body,
             cancellationToken);
@@ -173,6 +179,8 @@ public sealed class EveSession
 
         return new EveMessageResponse(
             acceptedTurn.SessionId,
+            acceptedTurn.DeliveryId,
+            requireDeliveryId,
             streamCancellationToken => CreateTurnStreamAsync(
                 acceptedTurn,
                 initialState,
@@ -180,7 +188,8 @@ public sealed class EveSession
                 cancellationToken,
                 streamCancellationToken),
             (turnId, cancelCancellationToken) =>
-                CancelAsync(turnId, cancelCancellationToken));
+                CancelAsync(turnId, cancelCancellationToken),
+            cancellationToken);
     }
 
     /// <summary>
@@ -450,6 +459,7 @@ public sealed class EveSession
         EveTurnOptions? options,
         bool mustDeliver,
         bool retrySessionNotActive,
+        bool requireDeliveryId,
         EveSessionState state,
         byte[] body,
         CancellationToken cancellationToken)
@@ -487,7 +497,11 @@ public sealed class EveSession
 
             if (response.IsSuccessStatusCode)
             {
-                return ParseAcceptedTurn(response, responseBody, state.SessionId);
+                return ParseAcceptedTurn(
+                    response,
+                    responseBody,
+                    state.SessionId,
+                    requireDeliveryId);
             }
 
             EveClientException exception = EveClient.CreateClientException(response, responseBody);
@@ -518,7 +532,8 @@ public sealed class EveSession
     private static AcceptedTurn ParseAcceptedTurn(
         HttpResponseMessage response,
         string body,
-        string? currentSessionId)
+        string? currentSessionId,
+        bool requireDeliveryId)
     {
         try
         {
@@ -542,7 +557,19 @@ public sealed class EveSession
                     "The eve message route did not return a session identifier.");
             }
 
-            return new AcceptedTurn(sessionId);
+            string? deliveryId = root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("deliveryId", out JsonElement bodyDeliveryId)
+                && bodyDeliveryId.ValueKind == JsonValueKind.String
+                    ? bodyDeliveryId.GetString()
+                    : null;
+            if (requireDeliveryId && string.IsNullOrEmpty(deliveryId))
+            {
+                throw new EveProtocolException(
+                    "The eve message route did not return a nonempty deliveryId for the accepted message. " +
+                    "Upgrade the eve server before using this client.");
+            }
+
+            return new AcceptedTurn(sessionId, deliveryId);
         }
         catch (JsonException exception)
         {
@@ -562,7 +589,7 @@ public sealed class EveSession
         using CancellationTokenSource linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
             sendCancellationToken,
             streamCancellationToken);
-        List<EveStreamEvent> events = [];
+        int eventCount = 0;
 
         try
         {
@@ -584,7 +611,7 @@ public sealed class EveSession
                 _client.MaxStreamEventBytes,
                 linkedSource.Token))
             {
-                events.Add(streamEvent);
+                eventCount++;
                 yield return streamEvent;
             }
         }
@@ -593,7 +620,7 @@ public sealed class EveSession
             MergeState(AdvanceState(
                 initialState,
                 acceptedTurn.SessionId,
-                events));
+                eventCount));
         }
     }
 
@@ -604,7 +631,7 @@ public sealed class EveSession
         EveStreamReconnectPolicy? reconnectPolicy,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        List<EveStreamEvent> events = [];
+        int eventCount = 0;
 
         try
         {
@@ -620,7 +647,7 @@ public sealed class EveSession
                 _client.MaxStreamEventBytes,
                 cancellationToken))
             {
-                events.Add(streamEvent);
+                eventCount++;
                 yield return streamEvent;
             }
         }
@@ -635,7 +662,7 @@ public sealed class EveSession
                 MergeState(AdvanceState(
                     cursorState,
                     initialState.SessionId!,
-                    events));
+                    eventCount));
             }
         }
     }
@@ -853,12 +880,12 @@ public sealed class EveSession
     private static EveSessionState AdvanceState(
         EveSessionState initialState,
         string sessionId,
-        IReadOnlyList<EveStreamEvent> events) =>
+        int eventCount) =>
         initialState with
         {
             SessionId = sessionId,
-            StreamIndex = initialState.StreamIndex + events.Count,
+            StreamIndex = initialState.StreamIndex + eventCount,
         };
 
-    private sealed record AcceptedTurn(string SessionId);
+    private sealed record AcceptedTurn(string SessionId, string? DeliveryId);
 }

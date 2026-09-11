@@ -1,8 +1,47 @@
 ---
-description: Move an existing deployment from eve 0.29.x or 0.30.x to eve 0.31.x without breaking a running conversation.
+description: Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.52.3 delivery-correlation boundary.
 ---
 
-# Migrating to eve 0.31.x
+# Migrating to eve 0.52.3
+
+The current client requires eve `0.52.3` or newer. Eve `0.52.3` is the first release
+whose accepted response for a message sent to an existing session includes a nonempty
+`deliveryId`. The client uses that identifier and durable event `meta.deliveryIds` to
+consume stale replay events without returning an older turn.
+
+Accepted existing-session message responses from pre-`0.52.3` servers lack
+`deliveryId`. There is no response version negotiation and no safe fallback, so the new
+client rejects the accepted response rather than risk returning stale durable events.
+
+## Required server-first order
+
+This boundary is a server-first rolling upgrade:
+
+1. Pin and deploy eve `0.52.3` or newer while applications remain on their existing
+   NexusLabs.Eve release.
+2. Verify health, agent inspection, and a multi-turn conversation against the upgraded
+   server.
+3. Upgrade the application to the client release whose minimum is eve `0.52.3`.
+4. Verify a resumed send from a persisted or deliberately stale cursor returns the newly
+   accepted turn rather than a prior durable turn.
+
+Do not upgrade the client first. An existing-session `SendAsync` against an older server
+is accepted by HTTP but then fails with `EveProtocolException` because the response does
+not contain a nonempty `deliveryId`. The older client can ignore the additive `0.52.3`
+response field, which makes the server-first order safe.
+
+## Operations that do not require delivery correlation
+
+- The initial `SendAsync` creates a session and has no prior durable events for that
+  session, so its accepted response does not need `deliveryId`.
+- `RespondAsync` continues a pending human-input turn rather than accepting a new
+  message delivery, so it also remains uncorrelated.
+
+Every `SendAsync` on an existing session requires the identifier. Message-stream
+protocol `25`, agent-info schema v4, session routes, and request bodies are unchanged by
+this cutover.
+
+## Historical migration to eve 0.31.x
 
 `NexusLabs.Eve` `0.1.0-alpha.4` requires eve `0.31.0` or newer. `0.1.0-alpha.3` is the
 final release for eve `0.29.x` and `0.30.x`.
@@ -11,14 +50,15 @@ final release for eve `0.29.x` and `0.30.x`.
 first turn and fail the second. Upgrading either side alone breaks the conversation, so
 the client and the agent must move together.
 
-!!! success "eve 0.32.0 through 0.52.2 need no migration"
-    None of these releases broke the framework-neutral client protocol. The core session
-    routes used by this package are unchanged across `0.31.0` through `0.52.2`.
+!!! success "Earlier clients need no migration from eve 0.32.0 through 0.52.2"
+    For NexusLabs.Eve releases whose minimum was `0.31.0`, none of these eve releases
+    broke the framework-neutral client protocol. The core session routes are unchanged
+    across `0.31.0` through `0.52.2`.
     `0.34.0` added `approval.candidate` and `approval.settled`; later releases through
     `0.52.2` remove no stream event type and add only additive fields and events.
     A `0.31.x` deployment can move anywhere in that range without changing this package,
-    and this package treats `0.31.0` through `0.52.x` as one supported range. The only
-    hard boundary remains eve `0.31.0`.
+    and those client releases treated `0.31.0` through `0.52.2` as one supported range.
+    Their hard boundary remained eve `0.31.0`.
 
     Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
     that arrives while a turn is active cancels and replaces that turn instead of waiting
@@ -41,8 +81,9 @@ the client and the agent must move together.
     effect for durable workflow tools. Eve `0.50.0` raises the message-stream protocol to
     `25` for delta-only text streaming. Eve `0.52.x` keeps transient client context
     available across every model call in its turn, including after tools, then clears it
-    before the next turn. The unreleased client supports all these additions. These later
-    changes require no deployment migration.
+    before the next turn. Client releases before the delivery-correlation cutover support
+    these additions. These later changes required no deployment migration until eve
+    `0.52.3` introduced the server-first boundary described above.
 
 ## Why a single smoke test will not catch this
 

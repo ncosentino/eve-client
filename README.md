@@ -20,17 +20,19 @@ health and agent inspection, authentication, durable sessions, human-input respo
 cooperative cancellation, session context clear, session reset, manual session compaction,
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
-This package requires Vercel `eve` **0.31.0 or newer** and cannot talk to an earlier
-server. The compatibility target is `eve` **0.52.2**, using message-stream protocol
-**25**. eve `0.31.0` moved session control
-operations to identifier-addressed routes and removed continuation tokens from the client
-protocol, so there is no fallback path to an older agent — pin `0.1.0-alpha.3` for an eve
-`0.29.x` or `0.30.x` deployment. eve is still a preview, so pin and test compatible
-versions before upgrading. See [Compatibility](docs/compatibility.md) and
-[Migration](docs/migration.md).
+This package requires Vercel `eve` **0.52.3 or newer**. The minimum and reference
+version are both `eve` **0.52.3**, using message-stream protocol **25** and agent-info
+schema **v4**. Existing-session message sends depend on the accepted response's
+`deliveryId` to skip stale durable events and return the accepted delivery. Earlier
+servers accept the send but omit that identifier, so **upgrade the eve server before
+upgrading this client**.
 
-A mismatched client and server complete the first turn and fail the second, so verify a
-multi-turn conversation rather than a single message when changing either side.
+The initial `SendAsync` that creates a session has no prior session events to correlate,
+and `RespondAsync` continues a pending human-input turn rather than accepting a new
+message delivery. Those two operations therefore do not require `deliveryId`; every
+`SendAsync` on an existing session does. eve is still a preview, so pin and test
+compatible versions before upgrading. See [Compatibility](docs/compatibility.md) and
+[Migration](docs/migration.md).
 
 ## Prerequisites
 
@@ -203,7 +205,7 @@ following `session.waiting` boundary before sending another turn:
 EveClearOutcome clear = await session.ClearAsync(cancellationToken);
 ```
 
-Context clear is covered by contract tests and by the pinned `0.38.3` fixture.
+Context clear is covered by contract tests and by the pinned `0.52.3` fixture.
 
 `ResetAsync` retires the durable session instead of only stopping the active turn:
 

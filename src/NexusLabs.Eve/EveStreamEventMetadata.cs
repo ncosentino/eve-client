@@ -1,14 +1,22 @@
-﻿namespace NexusLabs.Eve;
+﻿using System.Text.Json;
+
+namespace NexusLabs.Eve;
 
 /// <summary>
 /// Carries durable metadata stamped onto an eve stream event.
 /// </summary>
 public sealed record EveStreamEventMetadata
 {
-    internal EveStreamEventMetadata(string at, string? id)
+    internal EveStreamEventMetadata(
+        string at,
+        string? id,
+        IReadOnlyList<string>? deliveryIds,
+        JsonElement raw)
     {
         At = at;
         Id = id;
+        DeliveryIds = deliveryIds;
+        Raw = raw.Clone();
     }
 
     /// <summary>
@@ -26,4 +34,19 @@ public sealed record EveStreamEventMetadata
     /// carry no identifier and therefore report <see langword="null"/>; they cannot be deduplicated.
     /// </remarks>
     public string? Id { get; }
+
+    /// <summary>
+    /// Gets the ordered message-delivery identifiers associated with this event, or
+    /// <see langword="null"/> when the server did not stamp delivery correlation metadata.
+    /// </summary>
+    /// <remarks>
+    /// The order and duplicates are preserved exactly as received. A turn may contain more than
+    /// one identifier when the server coalesces multiple accepted messages into one delivery.
+    /// </remarks>
+    public IReadOnlyList<string>? DeliveryIds { get; }
+
+    /// <summary>
+    /// Gets the complete server-provided metadata object.
+    /// </summary>
+    public JsonElement Raw { get; }
 }

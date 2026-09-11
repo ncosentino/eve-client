@@ -29,6 +29,39 @@ public sealed class EveStreamEventIdentityTests
     }
 
     [Test]
+    public async Task Parse_ProjectsOrderedDeliveryIdentifiersAndPreservesRawMetadata()
+    {
+        EveStreamEvent streamEvent = EveStreamEvent.Parse(
+            """{"type":"turn.started","data":{"turnId":"turn_1"},"meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":["delivery_2","delivery_1","delivery_2"],"future":{"enabled":true}}}""");
+
+        await Assert.That(streamEvent.Metadata).IsNotNull();
+        await Assert.That(streamEvent.Metadata!.DeliveryIds)
+            .IsEquivalentTo(["delivery_2", "delivery_1", "delivery_2"]);
+        await Assert.That(string.Join(",", streamEvent.Metadata.DeliveryIds!))
+            .IsEqualTo("delivery_2,delivery_1,delivery_2")
+            .Because("Delivery correlation preserves server order and duplicates.");
+        await Assert.That(streamEvent.Metadata.Raw.GetProperty("future")
+            .GetProperty("enabled")
+            .GetBoolean())
+            .IsTrue()
+            .Because("Unknown metadata fields must remain available through Raw.");
+    }
+
+    [Test]
+    [Arguments("{}")]
+    [Arguments("null")]
+    [Arguments("\"delivery_1\"")]
+    [Arguments("[\"delivery_1\",17]")]
+    public async Task Parse_RejectsMalformedDeliveryIdentifiers(string deliveryIdsJson)
+    {
+        await Assert.That(() => EveStreamEvent.Parse(
+                """{"type":"turn.started","data":{"turnId":"turn_1"},"meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":"""
+                + deliveryIdsJson
+                + "}}"))
+            .Throws<EveProtocolException>();
+    }
+
+    [Test]
     [Arguments("\"\"")]
     [Arguments("\"   \"")]
     [Arguments("17")]

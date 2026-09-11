@@ -36,8 +36,12 @@ and structured-output support without using the TypeScript SDK.
 - `EveStreamFollower` mirrors upstream absolute-index reconnect and idle-budget behavior.
 - Preview event and inspection payloads retain raw `JsonElement` values so unknown
   upstream fields and event types remain available.
-- The compatibility baseline is Vercel eve 0.52.2, message-stream protocol version 25. The
-  minimum supported eve release is 0.31.0; earlier servers are not supported.
+- The compatibility baseline and minimum supported release are Vercel eve 0.52.3, using
+  message-stream protocol version 25 and agent-info schema version 4. Earlier servers are
+  not supported.
+- Pre-0.52.3 accepted existing-session message responses lack `deliveryId`; upgrade the
+  server before this client. Initial session creation and `RespondAsync` do not require
+  delivery correlation.
 - `test/fixtures/eve-agent` is a pinned, deterministic real Eve server used by the
   compatibility probe under `tests/NexusLabs.Eve.CompatibilityProbe`.
 - `version.json` is the only release-version source; package versions come from NBGV.
