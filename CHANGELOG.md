@@ -19,6 +19,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- Concurrent send-response and manual session streams now merge automatic cursor
+  advancement monotonically, so a stale shorter stream cannot overwrite a farther
+  cursor for the same session.
 - `EveClientContext` and `EveTurnOptions.ClientContext` now document the server's
   turn-scoped lifetime instead of describing only the first model call.
 - `GetOutcomeAsync` aborts an early-terminated stream connection before disposing its
