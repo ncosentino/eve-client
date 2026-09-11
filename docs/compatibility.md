@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.52.3 | 25 | Minimum supported release and development target |
+| Unreleased | 0.54.0 | 25 | Minimum 0.52.3; current development target |
 | 0.1.0-alpha.10 | 0.46.1 | 24 | Current prerelease |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
@@ -21,8 +21,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 ## Minimum supported eve release
 
 **This package requires eve `0.52.3` or newer and cannot safely use an earlier server.**
-`EveProtocol.MinimumEveVersion` and `EveProtocol.ReferenceEveVersion` both declare
-`0.52.3`.
+`EveProtocol.MinimumEveVersion` declares `0.52.3`, while
+`EveProtocol.ReferenceEveVersion` declares the tested development target, `0.54.0`.
 
 Eve `0.52.3` is the first release whose accepted response for a message sent to an
 existing session includes a nonempty `deliveryId`. The resulting durable turn events
@@ -78,7 +78,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.52.3` fixture with a deterministic
+The repository contains a pinned eve `0.54.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -186,7 +186,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.52.3` fixture exercises this schema through the real compatibility
+The pinned Eve `0.54.0` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -202,7 +202,7 @@ backings, and a required `direct` or `derived` form on source descriptors. The p
 schema rejects the pre-release memory `tools` field. Every valid field remains available
 through `EveAgentInfo.Raw`.
 
-The pinned Eve `0.52.3` fixture exercises schema v4 through the real compatibility probe.
+The pinned Eve `0.54.0` fixture exercises schema v4 through the real compatibility probe.
 Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
 these effects remain available through `EveAgentInfo.Raw`.
 
@@ -219,7 +219,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.52.3` fixture exercises this strict health response through the real
+The pinned Eve `0.54.0` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -263,7 +263,7 @@ the current turn, including model calls after tool execution. The value remains 
 eve does not append it to durable conversation history and clears it before the following
 turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
 
-The pinned Eve `0.52.3` fixture forces a deterministic tool loop, verifies that the
+The pinned Eve `0.54.0` fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.
 
@@ -284,6 +284,19 @@ Initial session creation and `RespondAsync` are intentionally uncorrelated and d
 require `deliveryId`. Existing-session `SendAsync` rejects a missing or empty identifier
 with `EveProtocolException`, which is why the server must be upgraded first. Stream
 protocol `25` and agent-info schema v4 remain unchanged.
+
+## Eve 0.53.0 through 0.54.0
+
+Released eve `0.53.0` through `0.54.0` leave the framework-neutral session routes,
+client request and response contracts, durable event union, message-stream protocol
+`25`, and agent-info schema version `4` unchanged. Eve `0.54.0` is therefore the current
+reference and pinned compatibility fixture, while the minimum remains `0.52.3`.
+
+The released server changes in this range tighten exact empty-delivery marker handling,
+redact credential-shaped agent-info provider options, and add semantic kinds to internal
+model history. They do not add a .NET request, response, route, or durable-event
+obligation; opaque agent-info values and unknown event data remain available through the
+existing raw JSON surfaces.
 
 ## Stream event identity
 

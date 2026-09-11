@@ -9,10 +9,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Minimum and reference eve version:** `0.52.3`, message-stream protocol `25`, and
-  agent-info schema version `4`. Earlier servers are no longer supported because their
-  accepted existing-session message responses omit the delivery identifier required for
-  safe durable-stream correlation.
+- **Minimum eve version:** `0.52.3`; **reference eve version:** `0.54.0`; message-stream
+  protocol `25`; agent-info schema version `4`. Earlier servers are no longer supported
+  because their accepted existing-session message responses omit the delivery identifier
+  required for safe durable-stream correlation.
 - Upgrade the eve server to `0.52.3` before upgrading this client. Initial session
   creation and `RespondAsync` human-input continuation do not require delivery
   correlation; `SendAsync` on an existing session does.
@@ -22,6 +22,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   including calls after tool execution, and clears it before the next turn.
 - Eve `0.52.3` adds `deliveryId` to accepted existing-session message responses and
   stamps associated durable events with ordered `meta.deliveryIds`.
+- Eve `0.53.0` through `0.54.0` leave the framework-neutral session routes, client
+  request and response contracts, durable event schema, message-stream protocol, and
+  agent-info schema unchanged. The pinned compatibility fixture advances without a
+  client API change.
 
 ### Added
 
@@ -33,7 +37,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Existing-session sends now consume stale replay events for cursor advancement without
   yielding or aggregating them, then return the turn associated with the accepted
-  delivery. The real eve `0.52.3` fixture covers this with a deliberately stale cursor.
+  delivery. The real eve `0.54.0` fixture covers this with a deliberately stale cursor.
 - Concurrent send-response and manual session streams now merge automatic cursor
   advancement monotonically, so a stale shorter stream cannot overwrite a farther
   cursor for the same session.

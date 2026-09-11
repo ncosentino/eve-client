@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.52.3";
+    public const string ReferenceEveVersion = "0.54.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
