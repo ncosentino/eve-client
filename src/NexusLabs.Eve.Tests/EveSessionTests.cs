@@ -164,6 +164,52 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    public async Task SendAsync_ScopesClientContextToEachTurnRequest(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("session_1")));
+        EveSession session = CreateClient(transport, 1024).CreateSession();
+        EveTurnOptions contextOptions = new()
+        {
+            ClientContext = EveClientContext.FromText("turn-scoped-context"),
+        };
+
+        EveMessageResponse first = await session.SendAsync(
+            EveMessageContent.FromText("First"),
+            contextOptions,
+            cancellationToken);
+        await first.GetOutcomeAsync(cancellationToken);
+        EveMessageResponse second = await session.SendAsync("Second", cancellationToken);
+        await second.GetOutcomeAsync(cancellationToken);
+        await session.SendAsync(
+            EveMessageContent.FromText("Third"),
+            contextOptions,
+            cancellationToken);
+
+        using JsonDocument firstBody = JsonDocument.Parse(handler.Calls[0].Body!);
+        await Assert.That(firstBody.RootElement.GetProperty("clientContext").GetString())
+            .IsEqualTo("turn-scoped-context");
+
+        using JsonDocument secondBody = JsonDocument.Parse(handler.Calls[2].Body!);
+        await Assert.That(secondBody.RootElement.TryGetProperty("clientContext", out _))
+            .IsFalse()
+            .Because("Client context belongs to one turn and is not session state.");
+
+        using JsonDocument thirdBody = JsonDocument.Parse(handler.Calls[4].Body!);
+        await Assert.That(thirdBody.RootElement.GetProperty("clientContext").GetString())
+            .IsEqualTo("turn-scoped-context")
+            .Because("A later turn receives context only when the caller supplies it again.");
+    }
+
+    [Test]
     public async Task AttachSession_AddressesSessionIdAndStreamsFromCursor(
         CancellationToken cancellationToken)
     {

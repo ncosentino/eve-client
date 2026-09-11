@@ -14,8 +14,13 @@ namespace NexusLabs.Eve;
 public sealed record EveTurnOptions
 {
     /// <summary>
-    /// Gets ephemeral context used only for this model call.
+    /// Gets transient context available to every model call in this turn.
     /// </summary>
+    /// <remarks>
+    /// eve preserves this value across tool-loop model calls in the current turn. It is not
+    /// appended to durable conversation history and does not carry into the next turn; set it
+    /// again on each later turn that needs it.
+    /// </remarks>
     public EveClientContext? ClientContext { get; init; }
 
     /// <summary>

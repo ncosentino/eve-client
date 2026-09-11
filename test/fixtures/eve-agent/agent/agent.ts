@@ -26,6 +26,20 @@ const model = new MockLanguageModelV3({
     const isCallbackAuthorizationProbe = prompt.includes("REQUEST_CALLBACK_AUTH");
     const callbackToolDiscovered = prompt.includes("callback-auth__probeHealth");
     const callbackToolCompleted = prompt.includes('"status":"ready"');
+    const isFollowingTurnClientContextProbe = prompt.includes(
+      "VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT",
+    );
+    const isTurnScopedClientContextProbe =
+      !isFollowingTurnClientContextProbe &&
+      prompt.includes("VERIFY_TURN_SCOPED_CLIENT_CONTEXT");
+    const hasTurnScopedClientContext = prompt.includes(
+      "TURN_SCOPED_CLIENT_CONTEXT_140",
+    );
+    const clientContextToolCompleted = prompt.includes(
+      '"status":"CLIENT_CONTEXT_TOOL_OK"',
+    );
+    const shouldCallClientContextTool =
+      isTurnScopedClientContextProbe && !clientContextToolCompleted;
     const shouldSearchCallbackConnection =
       isCallbackAuthorizationProbe && !callbackToolDiscovered;
     const shouldCallCallbackConnection =
@@ -130,6 +144,37 @@ const model = new MockLanguageModelV3({
             return;
           }
 
+          if (shouldCallClientContextTool) {
+            const input = "{}";
+            controller.enqueue({
+              id: "call_client_context",
+              toolName: "client_context_probe",
+              type: "tool-input-start",
+            });
+            controller.enqueue({
+              delta: input,
+              id: "call_client_context",
+              type: "tool-input-delta",
+            });
+            controller.enqueue({
+              id: "call_client_context",
+              type: "tool-input-end",
+            });
+            controller.enqueue({
+              input,
+              toolCallId: "call_client_context",
+              toolName: "client_context_probe",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
           controller.enqueue({ id: "answer", type: "text-start" });
 
           if (shouldWaitForCancellation) {
@@ -151,8 +196,17 @@ const model = new MockLanguageModelV3({
             return;
           }
 
+          const responseText = isFollowingTurnClientContextProbe
+            ? hasTurnScopedClientContext
+              ? "CLIENT_CONTEXT_PRESENT_ON_FOLLOWING_TURN"
+              : "CLIENT_CONTEXT_ABSENT_ON_FOLLOWING_TURN"
+            : isTurnScopedClientContextProbe
+              ? hasTurnScopedClientContext
+                ? "CLIENT_CONTEXT_PRESENT_AFTER_TOOL"
+                : "CLIENT_CONTEXT_ABSENT_AFTER_TOOL"
+              : "CONNECTION_OK";
           controller.enqueue({
-            delta: "CONNECTION_OK",
+            delta: responseText,
             id: "answer",
             type: "text-delta",
           });

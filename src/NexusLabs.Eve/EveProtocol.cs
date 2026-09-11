@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.50.0";
+    public const string ReferenceEveVersion = "0.52.2";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -42,11 +42,11 @@ public static class EveProtocol
     /// eve raised the schema to <c>2</c> in <c>0.35.0</c>, where static instructions became a
     /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role.
     /// Eve <c>0.45.0</c> uses version <c>3</c> for canonical source ownership, bindings,
-    /// composition diagnostics, node identities, and kernel effects. Upstream main uses
-    /// version <c>4</c> for first-class memory-provider inspection. Every supported version
-    /// exposes the identity fields this package projects, and its complete payload remains
-    /// available through <see cref="EveAgentInfo.Raw"/>. A version outside this set is rejected
-    /// rather than parsed optimistically.
+    /// composition diagnostics, node identities, and kernel effects. Eve <c>0.45.1</c> raised
+    /// it to version <c>4</c> for first-class memory-provider inspection. Every supported
+    /// version exposes the identity fields this package projects, and its complete payload
+    /// remains available through <see cref="EveAgentInfo.Raw"/>. A version outside this set is
+    /// rejected rather than parsed optimistically.
     /// </remarks>
     public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3, 4];
 

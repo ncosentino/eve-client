@@ -9,13 +9,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Compatibility
 
-- **Supported eve versions:** `0.31.0` through `0.48.x`, message-stream protocol `24`.
-  The compatibility target and pinned fixture move to eve `0.48.0`; the minimum remains
+- **Supported eve versions:** `0.31.0` through `0.52.x`, message-stream protocol `25`.
+  The compatibility target and pinned fixture move to eve `0.52.2`; the minimum remains
   eve `0.31.0`.
 - Eve `0.48.0` adds the `workflow-tool-call` kernel effect for durable workflow tools.
+- Eve `0.50.0` raises the message-stream protocol to `25` for delta-only text streaming.
+- Eve `0.52.2` preserves transient client context across every model call in a turn,
+  including calls after tool execution, and clears it before the next turn.
 
 ### Fixed
 
+- `EveClientContext` and `EveTurnOptions.ClientContext` now document the server's
+  turn-scoped lifetime instead of describing only the first model call.
 - `GetOutcomeAsync` aborts an early-terminated stream connection before disposing its
   response body, so an open tracing or tee consumer cannot block terminal outcome and
   cursor settlement.

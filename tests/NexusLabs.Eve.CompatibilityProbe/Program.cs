@@ -77,6 +77,41 @@ EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
 RequireDurableEventEnvelope(textOutcome, "text turn");
 
+EveSession clientContextSession = client.CreateSession();
+EveTurnOptions clientContextOptions = new()
+{
+    ClientContext = EveClientContext.FromText("TURN_SCOPED_CLIENT_CONTEXT_140"),
+};
+EveMessageResponse clientContextResponse = await clientContextSession.SendAsync(
+    EveMessageContent.FromText("VERIFY_TURN_SCOPED_CLIENT_CONTEXT"),
+    clientContextOptions,
+    timeout.Token);
+EveTurnOutcome clientContextOutcome = await clientContextResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(
+    clientContextOutcome,
+    "client-context tool-loop turn",
+    "CLIENT_CONTEXT_PRESENT_AFTER_TOOL");
+
+EveMessageResponse followingTurnResponse = await clientContextSession.SendAsync(
+    "VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT",
+    timeout.Token);
+EveTurnOutcome followingTurnOutcome = await followingTurnResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(
+    followingTurnOutcome,
+    "client-context following turn",
+    "CLIENT_CONTEXT_ABSENT_ON_FOLLOWING_TURN");
+
+EveMessageResponse resuppliedContextResponse = await clientContextSession.SendAsync(
+    EveMessageContent.FromText("VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT"),
+    clientContextOptions,
+    timeout.Token);
+EveTurnOutcome resuppliedContextOutcome =
+    await resuppliedContextResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(
+    resuppliedContextOutcome,
+    "client-context resupplied turn",
+    "CLIENT_CONTEXT_PRESENT_ON_FOLLOWING_TURN");
+
 EveClient authorizationClient = new(
     transport,
     new EveClientOptions(baseUri.ToString())
@@ -520,10 +555,13 @@ RequireSuccessfulResponse(afterResetOutcome, "post-reset turn");
 
 return 0;
 
-static void RequireSuccessfulResponse(EveTurnOutcome outcome, string operation)
+static void RequireSuccessfulResponse(
+    EveTurnOutcome outcome,
+    string operation,
+    string expectedMessage = "CONNECTION_OK")
 {
     if (outcome.Status != EveTurnStatus.Waiting
-        || !string.Equals(outcome.Message, "CONNECTION_OK", StringComparison.Ordinal))
+        || !string.Equals(outcome.Message, expectedMessage, StringComparison.Ordinal))
     {
         EveStreamEvent? failure = outcome.Events.LastOrDefault(static streamEvent =>
             streamEvent.IsFailure);
