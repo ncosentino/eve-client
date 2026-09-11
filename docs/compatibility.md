@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.52.2 | 25 | Development compatibility target |
+| Unreleased | 0.52.3 | 25 | Minimum supported release and development target |
 | 0.1.0-alpha.10 | 0.46.1 | 24 | Current prerelease |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
@@ -14,17 +14,43 @@ description: Understand supported eve versions, stream protocol compatibility, a
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
 | 0.1.0-alpha.5 | 0.34.0 | 21 | Previous compatibility target |
 | 0.1.0-alpha.4 | 0.32.0 | 21 | Earlier compatibility target |
-| 0.1.0-alpha.4+ | 0.31.0 | 21 | Minimum supported release |
+| 0.1.0-alpha.4 | 0.31.0 | 21 | Historical minimum before the current cutover |
 | 0.1.0-alpha.3 | 0.29.4 | 20 | Final release for eve 0.29.x-0.30.x |
 | 0.1.0-alpha.3 | 0.27.6 | 19 | Tolerated by that release, not gated by CI |
 
 ## Minimum supported eve release
 
-**This package requires eve `0.31.0` or newer and cannot talk to an earlier server.**
-`EveProtocol.MinimumEveVersion` declares the line in code.
+**This package requires eve `0.52.3` or newer and cannot safely use an earlier server.**
+`EveProtocol.MinimumEveVersion` and `EveProtocol.ReferenceEveVersion` both declare
+`0.52.3`.
 
-eve `0.31.0` moved session control operations from fixed continuation-token body routes to
-identifier-addressed routes:
+Eve `0.52.3` is the first release whose accepted response for a message sent to an
+existing session includes a nonempty `deliveryId`. The resulting durable turn events
+carry that identifier in `meta.deliveryIds`. The client consumes older events from a
+stale cursor so its absolute stream index remains correct, but yields and aggregates
+only the accepted delivery.
+
+There is no response-version negotiation. Accepted existing-session message responses
+from pre-`0.52.3` servers lack `deliveryId`, leaving no safe way to distinguish the
+accepted turn from older durable events. This client rejects that response instead of
+returning a potentially wrong turn. **Upgrade the eve server to `0.52.3` before
+upgrading this client.**
+
+Two operations do not require delivery correlation:
+
+- The initial `SendAsync` creates the session, so no prior session events can be replayed.
+- `RespondAsync` submits responses to pending human input rather than accepting a new
+  message delivery.
+
+Their accepted responses may omit `deliveryId`; every `SendAsync` on an existing session
+requires a nonempty value. This cutover does not change message-stream protocol `25` or
+agent-info schema version `4`.
+
+## Historical eve 0.31.0 route boundary
+
+NexusLabs.Eve `0.1.0-alpha.4` through the releases before the `0.52.3` cutover used eve
+`0.31.0` as their minimum. That release moved session control operations from fixed
+continuation-token body routes to identifier-addressed routes:
 
 | Operation | eve 0.30.x and earlier | eve 0.31.0 and newer |
 |---|---|---|
@@ -52,19 +78,19 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.52.2` fixture with a deterministic
+The repository contains a pinned eve `0.52.3` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
-clear, turn-scoped client context across a tool loop and following turn, and session reset
-through the C# client, including the HTTP 409 refusal returned when a retired session
-identifier is reused.
+clear, turn-scoped client context across a tool loop and following turn, delivery
+correlation from a deliberately stale cursor, and session reset through the C# client,
+including the HTTP 409 refusal returned when a retired session identifier is reused.
 
 Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
 rather than causing a failure. That tolerance is covered by contract tests, not
-by the pinned fixture, and it does not extend the supported server range, which
-the identifier-addressed control routes fix at eve `0.31.0` and newer.
+by the pinned fixture, and it does not extend the current supported server range below
+eve `0.52.3`.
 
 ## Preliminary tool output
 
@@ -160,7 +186,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.52.2` fixture exercises this schema through the real compatibility
+The pinned Eve `0.52.3` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -176,7 +202,7 @@ backings, and a required `direct` or `derived` form on source descriptors. The p
 schema rejects the pre-release memory `tools` field. Every valid field remains available
 through `EveAgentInfo.Raw`.
 
-The pinned Eve `0.52.2` fixture exercises schema v4 through the real compatibility probe.
+The pinned Eve `0.52.3` fixture exercises schema v4 through the real compatibility probe.
 Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
 these effects remain available through `EveAgentInfo.Raw`.
 
@@ -193,7 +219,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.52.2` fixture exercises this strict health response through the real
+The pinned Eve `0.52.3` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -237,9 +263,27 @@ the current turn, including model calls after tool execution. The value remains 
 eve does not append it to durable conversation history and clears it before the following
 turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
 
-The pinned Eve `0.52.2` fixture forces a deterministic tool loop, verifies that the
+The pinned Eve `0.52.3` fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.
+
+## Accepted message delivery correlation
+
+Eve `0.52.3` adds a nonempty `deliveryId` to the accepted response for a message posted
+to an existing session. Durable events produced for that accepted message carry ordered
+`meta.deliveryIds`; one turn can name multiple identifiers when deliveries are
+coalesced.
+
+`EveMessageResponse.DeliveryId` exposes the accepted identifier, while
+`EveStreamEventMetadata.DeliveryIds` preserves event order and duplicates. The client
+still consumes unrelated replay events to advance the absolute cursor, but it does not
+yield or aggregate them. Correlation begins at the first event naming the accepted
+identifier and must reach that turn's boundary.
+
+Initial session creation and `RespondAsync` are intentionally uncorrelated and do not
+require `deliveryId`. Existing-session `SendAsync` rejects a missing or empty identifier
+with `EveProtocolException`, which is why the server must be upgraded first. Stream
+protocol `25` and agent-info schema v4 remain unchanged.
 
 ## Stream event identity
 

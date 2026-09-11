@@ -395,10 +395,36 @@ public sealed record EveStreamEvent
             && idElement.ValueKind == JsonValueKind.String
                 ? idElement.GetString()
                 : null;
+        IReadOnlyList<string>? deliveryIds = null;
+        if (metadata.TryGetProperty("deliveryIds", out JsonElement deliveryIdsElement))
+        {
+            if (deliveryIdsElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new EveProtocolException(
+                    "An eve stream event metadata deliveryIds value must be an array.");
+            }
+
+            string[] values = new string[deliveryIdsElement.GetArrayLength()];
+            for (int index = 0; index < values.Length; index++)
+            {
+                JsonElement deliveryId = deliveryIdsElement[index];
+                if (deliveryId.ValueKind != JsonValueKind.String)
+                {
+                    throw new EveProtocolException(
+                        "An eve stream event metadata deliveryIds entry must be a string.");
+                }
+
+                values[index] = deliveryId.GetString()!;
+            }
+
+            deliveryIds = Array.AsReadOnly(values);
+        }
 
         return new EveStreamEventMetadata(
             value,
-            string.IsNullOrWhiteSpace(id) ? null : id);
+            string.IsNullOrWhiteSpace(id) ? null : id,
+            deliveryIds,
+            metadata);
     }
 
     private static EveStreamEventKind ResolveKind(string type) =>

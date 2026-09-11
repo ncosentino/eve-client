@@ -77,6 +77,69 @@ EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
 RequireDurableEventEnvelope(textOutcome, "text turn");
 
+EveSession deliveryCorrelationSession = client.CreateSession();
+EveMessageResponse priorDeliveryResponse = await deliveryCorrelationSession.SendAsync(
+    "STALE_CURSOR_PRIOR_DELIVERY",
+    timeout.Token);
+EveTurnOutcome priorDeliveryOutcome =
+    await priorDeliveryResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(
+    priorDeliveryOutcome,
+    "delivery-correlation prior turn",
+    "PRIOR_DELIVERY_RESPONSE");
+
+EveSession staleDeliveryCorrelationSession = client.CreateSession(
+    new EveSessionState
+    {
+        SessionId = priorDeliveryResponse.SessionId,
+        StreamIndex = 0,
+    });
+EveMessageResponse acceptedDeliveryResponse =
+    await staleDeliveryCorrelationSession.SendAsync(
+        "STALE_CURSOR_ACCEPTED_DELIVERY",
+        timeout.Token);
+if (acceptedDeliveryResponse.DeliveryId is not string acceptedDeliveryId
+    || string.IsNullOrWhiteSpace(acceptedDeliveryId))
+{
+    throw new InvalidOperationException(
+        "The existing-session accepted response did not return a delivery identifier.");
+}
+
+EveTurnOutcome acceptedDeliveryOutcome =
+    await acceptedDeliveryResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(
+    acceptedDeliveryOutcome,
+    "delivery-correlation accepted turn",
+    "ACCEPTED_DELIVERY_RESPONSE");
+
+if (acceptedDeliveryOutcome.Events.Any(static streamEvent =>
+        streamEvent.Kind == EveStreamEventKind.MessageCompleted
+        && string.Equals(
+            streamEvent.Data.GetProperty("message").GetString(),
+            "PRIOR_DELIVERY_RESPONSE",
+            StringComparison.Ordinal)))
+{
+    throw new InvalidOperationException(
+        "The stale-cursor response yielded events from the prior durable turn.");
+}
+
+if (!acceptedDeliveryOutcome.Events.Any(streamEvent =>
+        streamEvent.Metadata?.DeliveryIds?.Contains(
+            acceptedDeliveryId,
+            StringComparer.Ordinal) == true))
+{
+    throw new InvalidOperationException(
+        "The accepted turn did not expose its delivery identifier in durable event metadata.");
+}
+
+if (staleDeliveryCorrelationSession.State.StreamIndex
+    <= acceptedDeliveryOutcome.Events.Count)
+{
+    throw new InvalidOperationException(
+        "The stale-cursor response did not consume prior durable events while selecting " +
+        "the accepted delivery.");
+}
+
 EveSession clientContextSession = client.CreateSession();
 EveTurnOptions clientContextOptions = new()
 {

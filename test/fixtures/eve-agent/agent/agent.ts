@@ -24,6 +24,12 @@ const model = new MockLanguageModelV3({
     const shouldRequestApproval =
       prompt.includes("REQUEST_APPROVAL") && !prompt.includes("APPROVAL_TOOL_OK");
     const isCallbackAuthorizationProbe = prompt.includes("REQUEST_CALLBACK_AUTH");
+    const isAcceptedDeliveryCorrelationProbe = prompt.includes(
+      "STALE_CURSOR_ACCEPTED_DELIVERY",
+    );
+    const isPriorDeliveryCorrelationProbe = prompt.includes(
+      "STALE_CURSOR_PRIOR_DELIVERY",
+    );
     const callbackToolDiscovered = prompt.includes("callback-auth__probeHealth");
     const callbackToolCompleted = prompt.includes('"status":"ready"');
     const isFollowingTurnClientContextProbe = prompt.includes(
@@ -204,7 +210,11 @@ const model = new MockLanguageModelV3({
               ? hasTurnScopedClientContext
                 ? "CLIENT_CONTEXT_PRESENT_AFTER_TOOL"
                 : "CLIENT_CONTEXT_ABSENT_AFTER_TOOL"
-              : "CONNECTION_OK";
+              : isAcceptedDeliveryCorrelationProbe
+                ? "ACCEPTED_DELIVERY_RESPONSE"
+                : isPriorDeliveryCorrelationProbe
+                  ? "PRIOR_DELIVERY_RESPONSE"
+                  : "CONNECTION_OK";
           controller.enqueue({
             delta: responseText,
             id: "answer",

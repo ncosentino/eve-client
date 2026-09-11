@@ -15,7 +15,9 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         string,
         CancellationToken,
         Task<EveCancellationOutcome>> _cancelTurn;
+    private readonly bool _correlateDelivery;
     private readonly Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> _createStream;
+    private readonly CancellationToken _sendCancellationToken;
     private readonly Lock _stateGate = new();
     private readonly TaskCompletionSource<TurnIdentity> _turnIdentity =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -27,16 +29,46 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         string sessionId,
         Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> createStream,
         Func<string, CancellationToken, Task<EveCancellationOutcome>> cancelTurn)
+        : this(
+            sessionId,
+            null,
+            false,
+            createStream,
+            cancelTurn,
+            CancellationToken.None)
+    {
+    }
+
+    internal EveMessageResponse(
+        string sessionId,
+        string? deliveryId,
+        bool correlateDelivery,
+        Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> createStream,
+        Func<string, CancellationToken, Task<EveCancellationOutcome>> cancelTurn,
+        CancellationToken sendCancellationToken)
     {
         SessionId = sessionId;
+        DeliveryId = deliveryId;
+        _correlateDelivery = correlateDelivery;
         _createStream = createStream;
         _cancelTurn = cancelTurn;
+        _sendCancellationToken = sendCancellationToken;
     }
 
     /// <summary>
     /// Gets the runtime-owned session identifier.
     /// </summary>
     public string SessionId { get; }
+
+    /// <summary>
+    /// Gets the server-issued accepted message delivery identifier, or <see langword="null"/>
+    /// when the accepted response omitted it.
+    /// </summary>
+    /// <remarks>
+    /// Existing-session message sends require this value. Initial session creation and
+    /// human-input responses may omit it and retain their uncorrelated stream behavior.
+    /// </remarks>
+    public string? DeliveryId { get; }
 
     /// <summary>
     /// Requests cooperative cancellation of the exact turn represented by this response.
@@ -168,12 +200,19 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         HashSet<string> pendingAuthorizations =
             new HashSet<string>(StringComparer.Ordinal);
 #pragma warning restore NLF0016
+        bool correlationStarted = !_correlateDelivery;
+        bool reachedBoundary = false;
 
         try
         {
             await foreach (EveStreamEvent streamEvent in
                 _createStream(cancellationToken).WithCancellation(cancellationToken))
             {
+                if (!ShouldObserveEvent(streamEvent, ref correlationStarted))
+                {
+                    continue;
+                }
+
                 bool isCurrentTurnBoundary = IsResponseTurnBoundary(
                     streamEvent,
                     pendingAuthorizations);
@@ -204,14 +243,75 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 yield return streamEvent;
                 if (isCurrentTurnBoundary)
                 {
+                    reachedBoundary = true;
                     yield break;
                 }
+            }
+
+            if (_correlateDelivery
+                && !reachedBoundary
+                && !cancellationToken.IsCancellationRequested
+                && !_sendCancellationToken.IsCancellationRequested)
+            {
+                throw new EveProtocolException(
+                    "The eve response stream ended before the accepted message reached its turn boundary.");
             }
         }
         finally
         {
             _turnIdentity.TrySetResult(default);
         }
+    }
+
+    private bool ShouldObserveEvent(
+        EveStreamEvent streamEvent,
+        ref bool correlationStarted)
+    {
+        if (!_correlateDelivery)
+        {
+            return true;
+        }
+
+        IReadOnlyList<string>? deliveryIds = streamEvent.Metadata?.DeliveryIds;
+        bool matchesAcceptedDelivery = DeliveryId is string deliveryId
+            && deliveryIds is not null
+            && deliveryIds.Contains(deliveryId, StringComparer.Ordinal);
+
+        if (!correlationStarted)
+        {
+            if (matchesAcceptedDelivery)
+            {
+                correlationStarted = true;
+                return true;
+            }
+
+            if (streamEvent.Kind is EveStreamEventKind.SessionFailed
+                or EveStreamEventKind.SessionCompleted)
+            {
+                throw new EveProtocolException(
+                    "The eve session ended before the accepted message delivery was observed.");
+            }
+
+            return false;
+        }
+
+        if (streamEvent.Kind == EveStreamEventKind.SessionFailed)
+        {
+            return true;
+        }
+
+        if (streamEvent.Kind == EveStreamEventKind.SessionCompleted)
+        {
+            if (!matchesAcceptedDelivery)
+            {
+                throw new EveProtocolException(
+                    "The eve session completed before the accepted message reached its turn boundary.");
+            }
+
+            return true;
+        }
+
+        return deliveryIds is null || matchesAcceptedDelivery;
     }
 
     private static bool IsResponseTurnBoundary(

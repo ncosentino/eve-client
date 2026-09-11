@@ -257,7 +257,7 @@ public sealed class EveSessionCursorConcurrencyTests
         new(HttpStatusCode.Accepted)
         {
             Content = new StringContent(
-                """{"ok":true,"sessionId":"session_1"}""",
+                """{"ok":true,"sessionId":"session_1","deliveryId":"delivery_1"}""",
                 Encoding.UTF8,
                 "application/json"),
         };
@@ -280,12 +280,16 @@ public sealed class EveSessionCursorConcurrencyTests
     private static string[] CreateTerminalEvents(int count) =>
         [
             .. CreateNonTerminalEvents(count - 1),
-            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""",
+            """{"type":"session.waiting","data":{"wait":"next-user-message"},"meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":["delivery_1"]}}""",
         ];
 
     private static string[] CreateNonTerminalEvents(int count) =>
         Enumerable.Range(1, count)
-            .Select(static index => $$"""{"type":"test.event.{{index}}"}""")
+            .Select(static index =>
+                "{\"type\":\"test.event."
+                + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + "\",\"meta\":{\"at\":\"2026-09-08T12:00:00.000Z\","
+                + "\"deliveryIds\":[\"delivery_1\"]}}")
             .ToArray();
 
     private static byte[] EncodeEvents(IReadOnlyList<string> events) =>
