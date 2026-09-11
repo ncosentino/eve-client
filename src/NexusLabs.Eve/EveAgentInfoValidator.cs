@@ -568,11 +568,14 @@ internal static class EveAgentInfoValidator
 
             if (effect.TryGetProperty("action", out JsonElement action))
             {
-                if (action.ValueKind != JsonValueKind.String
-                    || action.GetString() is not "subagent-call"
-                        and not "task-cancel"
-                        and not "task-update"
-                        and not "workflow-tool-call")
+                string? actionValue = action.ValueKind == JsonValueKind.String
+                    ? action.GetString()
+                    : null;
+                bool supported = actionValue is "subagent-call"
+                    or "task-cancel"
+                    or "workflow-tool-call"
+                    || !isVersionFour && actionValue == "task-update";
+                if (!supported)
                 {
                     ThrowInvalid($"{path}.action has an unsupported value.");
                 }

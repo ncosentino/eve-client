@@ -31,6 +31,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- Agent-info schema v4 now rejects the removed `task-update` kernel effect while
+  preserving its historical schema-v3 acceptance.
 - Existing-session sends now consume stale replay events for cursor advancement without
   yielding or aggregating them, then return the turn associated with the accepted
   delivery. The real eve `0.52.3` fixture covers this with a deliberately stale cursor.

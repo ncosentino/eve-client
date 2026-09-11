@@ -151,6 +151,16 @@ internal static class AgentInfoV3Fixture
             root["subagents"]!["total"] = 1;
         });
 
+    public static string WithKernelEffectAction(string action) =>
+        Mutate(root =>
+            root["kernelEffects"]!.AsArray().Add(new JsonObject
+            {
+                ["action"] = action,
+                ["audience"] = new JsonArray("root-session"),
+                ["kind"] = "dispatch",
+                ["sourceId"] = "tools/action.ts",
+            }));
+
     public static string WithBackingAndOptionalVariants() =>
         Mutate(static root =>
         {

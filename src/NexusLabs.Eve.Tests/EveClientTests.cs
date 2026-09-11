@@ -573,22 +573,48 @@ public sealed class EveClientTests
     }
 
     [Test]
-    public async Task GetInfoAsync_AcceptsSchemaVersionFourWorkflowToolKernelEffect(
+    [Arguments("subagent-call")]
+    [Arguments("task-cancel")]
+    [Arguments("workflow-tool-call")]
+    public async Task GetInfoAsync_AcceptsCurrentSchemaVersionFourKernelEffectActions(
+        string action,
         CancellationToken cancellationToken)
     {
         EveAgentInfo info = await GetInfoAsync(
-            AgentInfoV4Fixture.WithWorkflowToolKernelEffect(),
+            AgentInfoV4Fixture.WithKernelEffectAction(action),
             cancellationToken);
 
         JsonElement effect = info.Raw.GetProperty("kernelEffects")[0];
         await Assert.That(effect.GetProperty("action").GetString())
-            .IsEqualTo("workflow-tool-call");
+            .IsEqualTo(action);
         await Assert.That(effect.GetProperty("audience")[0].GetString())
             .IsEqualTo("root-session");
         await Assert.That(effect.GetProperty("kind").GetString()).IsEqualTo("dispatch");
         await Assert.That(effect.GetProperty("sourceId").GetString())
-            .IsEqualTo("tools/durable.ts");
+            .IsEqualTo("tools/action.ts");
     }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsHistoricalSchemaVersionThreeTaskUpdateKernelEffect(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV3Fixture.WithKernelEffectAction("task-update"),
+            cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects")[0]
+            .GetProperty("action")
+            .GetString())
+            .IsEqualTo("task-update");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RejectsObsoleteSchemaVersionFourTaskUpdateKernelEffect(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.WithKernelEffectAction("task-update"),
+            "Schema v4 rejects the obsolete task-update kernel-effect action.",
+            cancellationToken);
 
     [Test]
     public async Task GetInfoAsync_RejectsSchemaVersionFourUnknownKernelEffectAction(
