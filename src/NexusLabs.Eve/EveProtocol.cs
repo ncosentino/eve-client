@@ -8,18 +8,21 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.54.0";
+    public const string ReferenceEveVersion = "0.54.2";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
     /// </summary>
     /// <remarks>
-    /// eve <c>0.52.3</c> added the accepted-message delivery identity required to correlate an
-    /// existing-session send with its durable events. Earlier public accepted responses do not
-    /// expose that identity, so upgrade the eve server before adopting a client version that
-    /// declares this minimum. The message-stream protocol remains version <c>25</c>.
+    /// eve <c>0.54.2</c> is the first published release whose schema-v4 kernel-effect action set
+    /// excludes the obsolete <c>task-update</c> value. Earlier schema-v4 servers use the same
+    /// version number and can still advertise that action, so there is no discriminator that
+    /// permits strict validation across the cutover. Separately, eve <c>0.52.3</c> added the
+    /// accepted-message delivery identity required to correlate an existing-session send with its
+    /// durable events. Upgrade the eve server before adopting a client version that declares this
+    /// minimum. The message-stream protocol remains version <c>25</c>.
     /// </remarks>
-    public const string MinimumEveVersion = "0.52.3";
+    public const string MinimumEveVersion = "0.54.2";
 
     /// <summary>
     /// Gets the durable message-stream protocol version used by the reference client.
@@ -43,10 +46,12 @@ public static class EveProtocol
     /// list whose entries carry <c>content</c> and a <c>system</c> or <c>user</c> role.
     /// Eve <c>0.45.0</c> uses version <c>3</c> for canonical source ownership, bindings,
     /// composition diagnostics, node identities, and kernel effects. Eve <c>0.45.1</c> raised
-    /// it to version <c>4</c> for first-class memory-provider inspection. Every supported
-    /// version exposes the identity fields this package projects, and its complete payload
-    /// remains available through <see cref="EveAgentInfo.Raw"/>. A version outside this set is
-    /// rejected rather than parsed optimistically.
+    /// it to version <c>4</c> for first-class memory-provider inspection. Schema v3 preserves the
+    /// historical <c>task-update</c> kernel-effect action, while the schema-v4 contract published
+    /// by eve <c>0.54.2</c> accepts only <c>subagent-call</c>, <c>task-cancel</c>, and
+    /// <c>workflow-tool-call</c>. Every supported version exposes the identity fields this package
+    /// projects, and its complete payload remains available through <see cref="EveAgentInfo.Raw"/>.
+    /// A version outside this set is rejected rather than parsed optimistically.
     /// </remarks>
     public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3, 4];
 

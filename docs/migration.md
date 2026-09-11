@@ -1,48 +1,56 @@
 ---
-description: Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.52.3 delivery-correlation boundary.
+description: Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary.
 ---
 
-# Migrating to eve 0.52.3
+# Migrating to eve 0.54.2
 
-The current client targets eve `0.54.0` and requires eve `0.52.3` or newer. Eve `0.52.3`
-is the first release whose accepted response for a message sent to an existing session
-includes a nonempty `deliveryId`. The client uses that identifier and durable event
-`meta.deliveryIds` to consume stale replay events without returning an older turn.
+The current client requires and targets eve `0.54.2`. This is the first published release
+whose agent-info schema-v4 kernel-effect action set is exactly `subagent-call`,
+`task-cancel`, and `workflow-tool-call`.
 
-Accepted existing-session message responses from pre-`0.52.3` servers lack
-`deliveryId`. There is no response version negotiation and no safe fallback, so the new
-client rejects the accepted response rather than risk returning stale durable events.
-Advancing the tested reference to `0.54.0` does not change this server-first boundary:
-message-stream protocol `25`, agent-info schema v4, and the framework-neutral routes
-remain compatible.
+Earlier schema-v4 servers can still advertise the obsolete `task-update` action. The
+payload remains version `4`, so the client has no schema discriminator with which to
+accept both contracts strictly. It rejects `task-update` in v4 while historical schema
+v3 continues accepting and preserving that action through `EveAgentInfo.Raw`.
 
 ## Required server-first order
 
 This boundary is a server-first rolling upgrade:
 
-1. Pin and deploy eve `0.52.3` or newer while applications remain on their existing
+1. Pin and deploy eve `0.54.2` while applications remain on their existing
    NexusLabs.Eve release.
-2. Verify health, agent inspection, and a multi-turn conversation against the upgraded
-   server.
-3. Upgrade the application to the client release whose minimum is eve `0.52.3`.
-4. Verify a resumed send from a persisted or deliberately stale cursor returns the newly
-   accepted turn rather than a prior durable turn.
+2. Verify health and agent inspection, including the absence of `task-update` and the
+   presence of `workflow-tool-call` when durable workflow tools are configured.
+3. Upgrade the application to the client release whose minimum is eve `0.54.2`.
+4. Verify agent inspection and a multi-turn conversation against the upgraded pair.
 
-Do not upgrade the client first. An existing-session `SendAsync` against an older server
-is accepted by HTTP but then fails with `EveProtocolException` because the response does
-not contain a nonempty `deliveryId`. The older client can ignore the additive `0.52.3`
-response field, which makes the server-first order safe.
+Do not upgrade the client first. A pre-`0.54.2` server can return a schema-v4 payload
+that the new client correctly rejects with `EveProtocolException`. Existing clients
+already accept the narrower `0.54.2` action set, which makes the server-first order safe.
 
-## Operations that do not require delivery correlation
+## Historical eve 0.52.3 delivery-correlation boundary
+
+Eve `0.52.3` is the first release whose accepted response for a message sent to an
+existing session includes a nonempty `deliveryId`. The client uses that identifier and
+durable event `meta.deliveryIds` to consume stale replay events without returning an
+older turn.
+
+Accepted existing-session message responses from pre-`0.52.3` servers lack
+`deliveryId`. There is no response version negotiation and no safe fallback, so clients
+using delivery correlation reject the accepted response rather than risk returning stale
+durable events. That historical migration was also server-first: older clients ignore
+the additive response field, while the newer client requires it.
+
+The following operations do not require delivery correlation:
 
 - The initial `SendAsync` creates a session and has no prior durable events for that
   session, so its accepted response does not need `deliveryId`.
 - `RespondAsync` continues a pending human-input turn rather than accepting a new
   message delivery, so it also remains uncorrelated.
 
-Every `SendAsync` on an existing session requires the identifier. Message-stream
-protocol `25`, agent-info schema v4, session routes, and request bodies are unchanged by
-this cutover.
+Every `SendAsync` on an existing session requires the identifier. The `0.54.2` strict
+agent-info cutover does not change that delivery behavior, message-stream protocol `25`,
+session routes, or request bodies.
 
 ## Historical migration to eve 0.31.x
 

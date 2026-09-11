@@ -20,18 +20,19 @@ health and agent inspection, authentication, durable sessions, human-input respo
 cooperative cancellation, session context clear, session reset, manual session compaction,
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
-This package requires Vercel `eve` **0.52.3 or newer** and currently targets `eve`
-**0.54.0**, using message-stream protocol **25** and agent-info schema **v4**.
-Existing-session message sends depend on the accepted response's `deliveryId` to skip
-stale durable events and return the accepted delivery. Earlier servers accept the send
-but omit that identifier, so **upgrade the eve server before upgrading this client**.
+This package requires and currently targets Vercel `eve` **0.54.2**, using
+message-stream protocol **25** and agent-info schema **v4**. Eve `0.54.2` is the first
+published release whose strict schema-v4 kernel-effect action set is exactly
+`subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier schema-v4 servers can
+still advertise the obsolete `task-update` action under the same schema version, so
+**upgrade the eve server before upgrading this client**.
 
-The initial `SendAsync` that creates a session has no prior session events to correlate,
-and `RespondAsync` continues a pending human-input turn rather than accepting a new
-message delivery. Those two operations therefore do not require `deliveryId`; every
-`SendAsync` on an existing session does. eve is still a preview, so pin and test
-compatible versions before upgrading. See [Compatibility](docs/compatibility.md) and
-[Migration](docs/migration.md).
+Eve `0.52.3` separately introduced the accepted response `deliveryId` used to skip stale
+durable events and return the accepted existing-session delivery. The initial `SendAsync`
+that creates a session and `RespondAsync` human-input continuation do not require that
+correlation; every `SendAsync` on an existing session does. eve is still a preview, so
+pin and test compatible versions before upgrading. See
+[Compatibility](docs/compatibility.md) and [Migration](docs/migration.md).
 
 ## Prerequisites
 
@@ -204,7 +205,7 @@ following `session.waiting` boundary before sending another turn:
 EveClearOutcome clear = await session.ClearAsync(cancellationToken);
 ```
 
-Context clear is covered by contract tests and by the pinned `0.54.0` fixture.
+Context clear is covered by contract tests and by the pinned `0.54.2` fixture.
 
 `ResetAsync` retires the durable session instead of only stopping the active turn:
 
@@ -274,8 +275,10 @@ protocol.
 `GetInfoAsync` validates agent-info schemas 1 through 4 and exposes the complete JSON
 through `EveAgentInfo.Raw`. Schema v3 includes canonical source ownership, bindings,
 composition diagnostics, and node identities; schema v4 adds first-class memory-provider
-inspection. Preserving the raw document keeps those preview inspection fields available
-without expanding the strong projection.
+inspection. Schema v3 retains the historical `task-update` kernel effect, while schema
+v4 accepts only `subagent-call`, `task-cancel`, and `workflow-tool-call`. Preserving the
+raw document keeps accepted preview inspection fields available without expanding the
+strong projection.
 
 `GetHealthAsync` accepts only the exact successful health shape. Invalid JSON or schema
 violations throw `EveHealthResponseException`, whose `Issues` collection contains at most

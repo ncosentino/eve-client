@@ -6,8 +6,9 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.54.0 | 25 | Minimum 0.52.3; current development target |
-| 0.1.0-alpha.10 | 0.46.1 | 24 | Current prerelease |
+| Unreleased | 0.54.2 | 25 | Minimum 0.54.2; current development target |
+| 0.1.0-alpha.11 | 0.54.0 | 25 | Current prerelease |
+| 0.1.0-alpha.10 | 0.46.1 | 24 | Previous compatibility target |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
 | 0.1.0-alpha.7 | 0.44.0 | 23 | Previous compatibility target |
@@ -20,9 +21,21 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 ## Minimum supported eve release
 
-**This package requires eve `0.52.3` or newer and cannot safely use an earlier server.**
-`EveProtocol.MinimumEveVersion` declares `0.52.3`, while
-`EveProtocol.ReferenceEveVersion` declares the tested development target, `0.54.0`.
+**This package requires eve `0.54.2` and cannot safely use an earlier server.**
+`EveProtocol.MinimumEveVersion` and `EveProtocol.ReferenceEveVersion` both declare
+`0.54.2`.
+
+Eve `0.54.2` is the first published release whose schema-v4 kernel-effect action set is
+exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier schema-v4
+servers can still advertise the obsolete `task-update` action while reporting the same
+schema version. There is no discriminator with which to validate both contracts
+strictly, so **upgrade the eve server to `0.54.2` before upgrading this client**.
+
+This server-first order is safe because older clients accept the narrower `0.54.2`
+payload, while the new client rejects a pre-`0.54.2` schema-v4 payload containing
+`task-update`.
+
+### Historical eve 0.52.3 delivery-correlation boundary
 
 Eve `0.52.3` is the first release whose accepted response for a message sent to an
 existing session includes a nonempty `deliveryId`. The resulting durable turn events
@@ -33,8 +46,8 @@ only the accepted delivery.
 There is no response-version negotiation. Accepted existing-session message responses
 from pre-`0.52.3` servers lack `deliveryId`, leaving no safe way to distinguish the
 accepted turn from older durable events. This client rejects that response instead of
-returning a potentially wrong turn. **Upgrade the eve server to `0.52.3` before
-upgrading this client.**
+returning a potentially wrong turn. That historical cutover also required upgrading the
+eve server before the client.
 
 Two operations do not require delivery correlation:
 
@@ -43,8 +56,8 @@ Two operations do not require delivery correlation:
   message delivery.
 
 Their accepted responses may omit `deliveryId`; every `SendAsync` on an existing session
-requires a nonempty value. This cutover does not change message-stream protocol `25` or
-agent-info schema version `4`.
+requires a nonempty value. The current `0.54.2` cutover does not change message-stream
+protocol `25` or agent-info schema version `4`.
 
 ## Historical eve 0.31.0 route boundary
 
@@ -78,7 +91,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.54.0` fixture with a deterministic
+The repository contains a pinned eve `0.54.2` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -186,7 +199,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.54.0` fixture exercises this schema through the real compatibility
+The pinned Eve `0.54.2` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -202,9 +215,11 @@ backings, and a required `direct` or `derived` form on source descriptors. The p
 schema rejects the pre-release memory `tools` field. Every valid field remains available
 through `EveAgentInfo.Raw`.
 
-The pinned Eve `0.54.0` fixture exercises schema v4 through the real compatibility probe.
-Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
-these effects remain available through `EveAgentInfo.Raw`.
+Eve `0.54.2` narrows the strict schema-v4 kernel-effect action set to `subagent-call`,
+`task-cancel`, and `workflow-tool-call`; the historical v3 validator continues to accept
+and preserve `task-update`. The pinned Eve `0.54.2` fixture asserts that its real
+schema-v4 payload contains no `task-update` effect and still exposes
+`workflow-tool-call` through `EveAgentInfo.Raw`.
 
 ## Strict health response validation
 
@@ -219,7 +234,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.54.0` fixture exercises this strict health response through the real
+The pinned Eve `0.54.2` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -263,7 +278,7 @@ the current turn, including model calls after tool execution. The value remains 
 eve does not append it to durable conversation history and clears it before the following
 turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
 
-The pinned Eve `0.54.0` fixture forces a deterministic tool loop, verifies that the
+The pinned Eve `0.54.2` fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.
 
@@ -289,14 +304,26 @@ protocol `25` and agent-info schema v4 remain unchanged.
 
 Released eve `0.53.0` through `0.54.0` leave the framework-neutral session routes,
 client request and response contracts, durable event union, message-stream protocol
-`25`, and agent-info schema version `4` unchanged. Eve `0.54.0` is therefore the current
-reference and pinned compatibility fixture, while the minimum remains `0.52.3`.
+`25`, and agent-info schema version `4` unchanged. At that point, eve `0.54.0` was the
+reference and pinned compatibility fixture while the minimum was `0.52.3`.
 
 The released server changes in this range tighten exact empty-delivery marker handling,
 redact credential-shaped agent-info provider options, and add semantic kinds to internal
 model history. They do not add a .NET request, response, route, or durable-event
 obligation; opaque agent-info values and unknown event data remain available through the
 existing raw JSON surfaces.
+
+## Eve 0.54.2
+
+Eve `0.54.2` is the first published tag containing the removal of child
+`task_update` progress callbacks and the corresponding `task-update` kernel effect.
+The agent-info payload still reports schema version `4`, so pre-`0.54.2` schema-v4
+servers cannot be distinguished from the narrowed contract by version number alone.
+
+The minimum and pinned reference therefore advance together to `0.54.2`. Framework-neutral
+session routes, request and response contracts, durable event shapes, and message-stream
+protocol `25` remain unchanged. Schema v3 remains a historical contract and continues to
+accept and preserve `task-update`.
 
 ## Stream event identity
 
