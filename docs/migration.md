@@ -4,14 +4,17 @@ description: Upgrade an eve deployment and NexusLabs.Eve client safely across th
 
 # Migrating to eve 0.52.3
 
-The current client requires eve `0.52.3` or newer. Eve `0.52.3` is the first release
-whose accepted response for a message sent to an existing session includes a nonempty
-`deliveryId`. The client uses that identifier and durable event `meta.deliveryIds` to
-consume stale replay events without returning an older turn.
+The current client targets eve `0.54.0` and requires eve `0.52.3` or newer. Eve `0.52.3`
+is the first release whose accepted response for a message sent to an existing session
+includes a nonempty `deliveryId`. The client uses that identifier and durable event
+`meta.deliveryIds` to consume stale replay events without returning an older turn.
 
 Accepted existing-session message responses from pre-`0.52.3` servers lack
 `deliveryId`. There is no response version negotiation and no safe fallback, so the new
 client rejects the accepted response rather than risk returning stale durable events.
+Advancing the tested reference to `0.54.0` does not change this server-first boundary:
+message-stream protocol `25`, agent-info schema v4, and the framework-neutral routes
+remain compatible.
 
 ## Required server-first order
 

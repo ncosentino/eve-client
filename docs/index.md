@@ -24,13 +24,13 @@ part of the .NET API.
 
 ## Compatibility
 
-This release requires and targets eve `0.52.3`, using message-stream protocol `25` and
-agent-info schema `v4`. Existing-session message sends require the accepted response's
-`deliveryId` so stale durable events can be consumed without being returned as the new
-turn. Pre-`0.52.3` servers omit that field, so upgrade the server before this client.
-Initial session creation and `RespondAsync` human-input continuation do not require
-delivery correlation. See [Compatibility](compatibility.md) and
-[Migration](migration.md).
+This release requires eve `0.52.3` or newer and targets eve `0.54.0`, using
+message-stream protocol `25` and agent-info schema `v4`. Existing-session message sends
+require the accepted response's `deliveryId` so stale durable events can be consumed
+without being returned as the new turn. Pre-`0.52.3` servers omit that field, so upgrade
+the server before this client. Initial session creation and `RespondAsync` human-input
+continuation do not require delivery correlation. See
+[Compatibility](compatibility.md) and [Migration](migration.md).
 
 ## Start here
 

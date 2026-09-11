@@ -20,12 +20,11 @@ health and agent inspection, authentication, durable sessions, human-input respo
 cooperative cancellation, session context clear, session reset, manual session compaction,
 NDJSON streaming, reconnect-by-index, attachments, and structured output.
 
-This package requires Vercel `eve` **0.52.3 or newer**. The minimum and reference
-version are both `eve` **0.52.3**, using message-stream protocol **25** and agent-info
-schema **v4**. Existing-session message sends depend on the accepted response's
-`deliveryId` to skip stale durable events and return the accepted delivery. Earlier
-servers accept the send but omit that identifier, so **upgrade the eve server before
-upgrading this client**.
+This package requires Vercel `eve` **0.52.3 or newer** and currently targets `eve`
+**0.54.0**, using message-stream protocol **25** and agent-info schema **v4**.
+Existing-session message sends depend on the accepted response's `deliveryId` to skip
+stale durable events and return the accepted delivery. Earlier servers accept the send
+but omit that identifier, so **upgrade the eve server before upgrading this client**.
 
 The initial `SendAsync` that creates a session has no prior session events to correlate,
 and `RespondAsync` continues a pending human-input turn rather than accepting a new
@@ -205,7 +204,7 @@ following `session.waiting` boundary before sending another turn:
 EveClearOutcome clear = await session.ClearAsync(cancellationToken);
 ```
 
-Context clear is covered by contract tests and by the pinned `0.52.3` fixture.
+Context clear is covered by contract tests and by the pinned `0.54.0` fixture.
 
 `ResetAsync` retires the durable session instead of only stopping the active turn:
 
