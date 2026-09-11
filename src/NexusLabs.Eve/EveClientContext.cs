@@ -3,8 +3,13 @@
 namespace NexusLabs.Eve;
 
 /// <summary>
-/// Wraps ephemeral context supplied to one eve model call.
+/// Wraps transient context supplied to every model call in one eve turn.
 /// </summary>
+/// <remarks>
+/// eve preserves this value across tool-loop model calls in the current turn. It is not
+/// appended to durable conversation history and does not carry into the next turn; supply it
+/// again for each later turn that needs it.
+/// </remarks>
 public sealed record EveClientContext
 {
     private EveClientContext(JsonElement json)

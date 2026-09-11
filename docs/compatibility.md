@@ -6,8 +6,9 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.50.0 | 25 | Development compatibility target |
-| 0.1.0-alpha.9 | 0.45.0 | 23 | Current prerelease |
+| Unreleased | 0.52.2 | 25 | Development compatibility target |
+| 0.1.0-alpha.10 | 0.46.1 | 24 | Current prerelease |
+| 0.1.0-alpha.9 | 0.45.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.8 | 0.44.4 | 23 | Previous compatibility target |
 | 0.1.0-alpha.7 | 0.44.0 | 23 | Previous compatibility target |
 | 0.1.0-alpha.6 | 0.35.0 | 22 | Previous compatibility target |
@@ -51,12 +52,13 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.50.0` fixture with a deterministic
+The repository contains a pinned eve `0.52.2` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
-clear, and session reset through the C# client, including the HTTP 409 refusal returned
-when a retired session identifier is reused.
+clear, turn-scoped client context across a tool loop and following turn, and session reset
+through the C# client, including the HTTP 409 refusal returned when a retired session
+identifier is reused.
 
 Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
@@ -158,7 +160,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.50.0` fixture exercises this schema through the real compatibility
+The pinned Eve `0.52.2` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -174,7 +176,7 @@ backings, and a required `direct` or `derived` form on source descriptors. The p
 schema rejects the pre-release memory `tools` field. Every valid field remains available
 through `EveAgentInfo.Raw`.
 
-The pinned Eve `0.50.0` fixture exercises schema v4 through the real compatibility probe.
+The pinned Eve `0.52.2` fixture exercises schema v4 through the real compatibility probe.
 Eve `0.48.0` may include `workflow-tool-call` kernel effects for durable workflow tools;
 these effects remain available through `EveAgentInfo.Raw`.
 
@@ -191,7 +193,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.50.0` fixture exercises this strict health response through the real
+The pinned Eve `0.52.2` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -227,6 +229,17 @@ For legacy stream events (v21–v24), cumulative properties (`messageSoFar`,
 of the event data so callers receive a consistent delta-only shape across server versions.
 Version 25 events containing legacy cumulative fields, missing deltas, invalid legacy snapshots,
 or unsupported/missing stream version headers raise `EveProtocolException`.
+
+## Turn-scoped client context
+
+Eve `0.52.x` keeps `clientContext` at a stable prompt position for every model call in
+the current turn, including model calls after tool execution. The value remains transient:
+eve does not append it to durable conversation history and clears it before the following
+turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
+
+The pinned Eve `0.52.2` fixture forces a deterministic tool loop, verifies that the
+second model call still receives the context, verifies that the next turn does not, and
+then resupplies it to prove the lifetime boundary is per turn.
 
 ## Stream event identity
 

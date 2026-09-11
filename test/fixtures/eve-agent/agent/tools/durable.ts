@@ -1,6 +1,6 @@
-import { defineTool } from "eve/tools";
+import { defineWorkflowTool } from "eve/tools";
 
-export default defineTool({
+export default defineWorkflowTool({
   description: "A deterministic durable workflow tool used by the compatibility probe.",
   inputSchema: {
     type: "object",
