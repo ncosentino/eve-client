@@ -1249,13 +1249,16 @@
 
 
 <h1 id="migrating-to-eve-0523">Migrating to eve 0.52.3<a class="headerlink" href="#migrating-to-eve-0523" title="Permanent link">&para;</a></h1>
-<p>The current client requires eve <code>0.52.3</code> or newer. Eve <code>0.52.3</code> is the first release
-whose accepted response for a message sent to an existing session includes a nonempty
-<code>deliveryId</code>. The client uses that identifier and durable event <code>meta.deliveryIds</code> to
-consume stale replay events without returning an older turn.</p>
+<p>The current client targets eve <code>0.54.0</code> and requires eve <code>0.52.3</code> or newer. Eve <code>0.52.3</code>
+is the first release whose accepted response for a message sent to an existing session
+includes a nonempty <code>deliveryId</code>. The client uses that identifier and durable event
+<code>meta.deliveryIds</code> to consume stale replay events without returning an older turn.</p>
 <p>Accepted existing-session message responses from pre-<code>0.52.3</code> servers lack
 <code>deliveryId</code>. There is no response version negotiation and no safe fallback, so the new
-client rejects the accepted response rather than risk returning stale durable events.</p>
+client rejects the accepted response rather than risk returning stale durable events.
+Advancing the tested reference to <code>0.54.0</code> does not change this server-first boundary:
+message-stream protocol <code>25</code>, agent-info schema v4, and the framework-neutral routes
+remain compatible.</p>
 <h2 id="required-server-first-order">Required server-first order<a class="headerlink" href="#required-server-first-order" title="Permanent link">&para;</a></h2>
 <p>This boundary is a server-first rolling upgrade:</p>
 <ol>
