@@ -1,4 +1,4 @@
-namespace NexusLabs.Eve.Tests;
+﻿namespace NexusLabs.Eve.Tests;
 
 internal sealed class BoundaryResponseStream : Stream
 {

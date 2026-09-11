@@ -1,4 +1,4 @@
-namespace NexusLabs.Eve.Tests;
+﻿namespace NexusLabs.Eve.Tests;
 
 public sealed class EveTracedStreamCleanupTests
 {
