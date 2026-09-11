@@ -28,6 +28,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- Release-preparation pushes now build documentation without deploying a development-only
+  Pages artifact, leaving the matching tag workflow as the first deployment for that
+  commit and allowing immutable versioned API documentation to publish immediately.
 - `GetInfoAsync` now rejects obsolete `task-update` kernel effects in schema v4 while
   continuing to accept and preserve them in historical schema v3 payloads. Accepted v4
   actions remain unchanged in `EveAgentInfo.Raw`, and unknown actions remain rejected.
