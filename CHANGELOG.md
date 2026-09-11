@@ -7,6 +7,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.11] - 2026-09-11
+
+### ⚠️ Breaking Changes
+
+- The minimum supported Eve server rises from `0.31.0` to `0.52.3`. Upgrade the
+  server before this client because older accepted follow-up message responses omit
+  the `deliveryId` required for safe durable-turn correlation.
+
 ### Compatibility
 
 - **Minimum eve version:** `0.52.3`; **reference eve version:** `0.54.0`; message-stream
@@ -420,7 +428,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.10...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.11...HEAD
+[0.1.0-alpha.11]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.10...v0.1.0-alpha.11
 [0.1.0-alpha.10]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.9...v0.1.0-alpha.10
 [0.1.0-alpha.9]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.8...v0.1.0-alpha.9
 [0.1.0-alpha.8]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.7...v0.1.0-alpha.8
