@@ -43,22 +43,27 @@ internal static class EveStreamFollower
         while (true)
         {
             bool deliveredEvent = false;
-            HttpResponseMessage? response = await OpenStreamOrNullAsync(
-                client,
-                sessionId,
-                startIndex,
-                !follow && tailIndex is null,
-                headers,
-                protectedHeaderOverrides,
-                policy,
-                cancellationToken);
-            if (response is null)
+            ConnectionReadState readState = new();
+            HttpResponseMessage? response = null;
+            IAsyncEnumerator<EveStreamEvent>? connection = null;
+            using CancellationTokenSource connectionAbortSource =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            try
             {
-                yield break;
-            }
+                response = await OpenStreamOrNullAsync(
+                    client,
+                    sessionId,
+                    startIndex,
+                    !follow && tailIndex is null,
+                    headers,
+                    protectedHeaderOverrides,
+                    policy,
+                    connectionAbortSource.Token);
+                if (response is null)
+                {
+                    yield break;
+                }
 
-            using (response)
-            {
                 if (!follow && tailIndex is null)
                 {
                     tailIndex = ReadTailIndex(response);
@@ -69,11 +74,13 @@ internal static class EveStreamFollower
                     yield break;
                 }
 
-                await using IAsyncEnumerator<EveStreamEvent> connection = ReadConnectionAsync(
-                    response,
-                    maximumEventBytes,
-                    client.TimeProvider,
-                    cancellationToken).GetAsyncEnumerator(cancellationToken);
+                connection = ReadConnectionAsync(
+                        response,
+                        maximumEventBytes,
+                        client.TimeProvider,
+                        readState,
+                        connectionAbortSource.Token)
+                    .GetAsyncEnumerator(connectionAbortSource.Token);
                 while (true)
                 {
                     bool hasEvent;
@@ -102,6 +109,30 @@ internal static class EveStreamFollower
                     if (tailIndex is int bound && startIndex > bound)
                     {
                         yield break;
+                    }
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (response is not null && !readState.ReachedEndOfStream)
+                    {
+                        await connectionAbortSource.CancelAsync();
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        if (connection is not null)
+                        {
+                            await connection.DisposeAsync();
+                        }
+                    }
+                    finally
+                    {
+                        response?.Dispose();
                     }
                 }
             }
@@ -135,6 +166,7 @@ internal static class EveStreamFollower
         HttpResponseMessage response,
         int? maximumEventBytes,
         TimeProvider timeProvider,
+        ConnectionReadState readState,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         int streamVersion = ReadStreamVersion(response);
@@ -165,6 +197,7 @@ internal static class EveStreamFollower
 
             if (line is null)
             {
+                readState.ReachedEndOfStream = true;
                 yield break;
             }
 
@@ -507,4 +540,9 @@ internal static class EveStreamFollower
         ResolvedRetryPolicy Idle,
         bool EnforceIdleAttemptLimit,
         HashSet<HttpStatusCode> RetryableStatusCodes);
+
+    private sealed class ConnectionReadState
+    {
+        internal bool ReachedEndOfStream { get; set; }
+    }
 }
