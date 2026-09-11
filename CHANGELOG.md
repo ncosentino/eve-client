@@ -7,6 +7,31 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+
+- The minimum supported Eve server rises from `0.52.3` to `0.54.2`. Upgrade the server
+  before this client because older schema-v4 agent-info payloads can still advertise the
+  obsolete `task-update` kernel effect without a schema-version discriminator.
+
+### Compatibility
+
+- **Minimum eve version:** `0.54.2`; **reference eve version:** `0.54.2`; message-stream
+  protocol `25`; agent-info schema version `4`.
+- Eve `0.54.2` is the first published release whose strict schema-v4 kernel-effect
+  action set is exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`.
+- This is a server-first cutover: older clients accept the narrower `0.54.2` payload,
+  while this client rejects pre-`0.54.2` schema-v4 payloads that advertise
+  `task-update`.
+- Eve `0.52.3` remains the historical delivery-correlation boundary: it introduced the
+  accepted existing-session message `deliveryId` and ordered durable
+  `meta.deliveryIds`.
+
+### Fixed
+
+- `GetInfoAsync` now rejects obsolete `task-update` kernel effects in schema v4 while
+  continuing to accept and preserve them in historical schema v3 payloads. Accepted v4
+  actions remain unchanged in `EveAgentInfo.Raw`, and unknown actions remain rejected.
+
 ## [0.1.0-alpha.11] - 2026-09-11
 
 ### ⚠️ Breaking Changes

@@ -46,7 +46,16 @@ if (string.IsNullOrWhiteSpace(info.AgentName)
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
 }
 
-if (!info.Raw.GetProperty("kernelEffects").EnumerateArray().Any(
+JsonElement kernelEffects = info.Raw.GetProperty("kernelEffects");
+if (kernelEffects.EnumerateArray().Any(
+        static effect => effect.TryGetProperty("action", out JsonElement action)
+            && action.GetString() == "task-update"))
+{
+    throw new InvalidOperationException(
+        "The Eve fixture exposed the obsolete task-update kernel effect.");
+}
+
+if (!kernelEffects.EnumerateArray().Any(
         static effect => effect.TryGetProperty("action", out JsonElement action)
             && action.GetString() == "workflow-tool-call"))
 {
