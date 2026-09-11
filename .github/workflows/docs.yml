@@ -32,8 +32,24 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      publish_site: ${{ steps.publication.outputs.publish_site }}
 
     steps:
+      - name: Resolve publication mode
+        id: publication
+        env:
+          IS_RELEASE_PREPARATION: >-
+            ${{ github.event_name == 'push'
+            && startsWith(github.event.head_commit.message, 'chore(release): prepare ') }}
+        shell: bash
+        run: |
+          if [ "$IS_RELEASE_PREPARATION" = "true" ]; then
+            echo "publish_site=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish_site=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -73,14 +89,18 @@ jobs:
         run: python -m mkdocs build --strict
 
       - name: Upload documentation site
-        if: github.event_name != 'pull_request'
+        if: >-
+          github.event_name != 'pull_request' &&
+          steps.publication.outputs.publish_site == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: documentation-site
           path: site
 
   publish:
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name != 'pull_request' &&
+      needs.build.outputs.publish_site == 'true'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -135,8 +155,10 @@ jobs:
           path: merged-site
 
   deploy:
-    if: github.event_name != 'pull_request'
-    needs: publish
+    if: >-
+      github.event_name != 'pull_request' &&
+      needs.build.outputs.publish_site == 'true'
+    needs: [build, publish]
     runs-on: ubuntu-latest
     permissions:
       pages: write
