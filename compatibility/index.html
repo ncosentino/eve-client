@@ -805,6 +805,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#historical-eve-0310-route-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historical eve 0.31.0 route boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#preliminary-tool-output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -952,6 +963,17 @@
     <span class="md-ellipsis">
       
         Turn-scoped client context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accepted-message-delivery-correlation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted message delivery correlation
       
     </span>
   </a>
@@ -1321,9 +1343,9 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.52.2</td>
+<td style="text-align: right;">0.52.3</td>
 <td style="text-align: right;">25</td>
-<td>Development compatibility target</td>
+<td>Minimum supported release and development target</td>
 </tr>
 <tr>
 <td>0.1.0-alpha.10</td>
@@ -1368,10 +1390,10 @@
 <td>Earlier compatibility target</td>
 </tr>
 <tr>
-<td>0.1.0-alpha.4+</td>
+<td>0.1.0-alpha.4</td>
 <td style="text-align: right;">0.31.0</td>
 <td style="text-align: right;">21</td>
-<td>Minimum supported release</td>
+<td>Historical minimum before the current cutover</td>
 </tr>
 <tr>
 <td>0.1.0-alpha.3</td>
@@ -1388,10 +1410,32 @@
 </tbody>
 </table>
 <h2 id="minimum-supported-eve-release">Minimum supported eve release<a class="headerlink" href="#minimum-supported-eve-release" title="Permanent link">&para;</a></h2>
-<p><strong>This package requires eve <code>0.31.0</code> or newer and cannot talk to an earlier server.</strong>
-<code>EveProtocol.MinimumEveVersion</code> declares the line in code.</p>
-<p>eve <code>0.31.0</code> moved session control operations from fixed continuation-token body routes to
-identifier-addressed routes:</p>
+<p><strong>This package requires eve <code>0.52.3</code> or newer and cannot safely use an earlier server.</strong>
+<code>EveProtocol.MinimumEveVersion</code> and <code>EveProtocol.ReferenceEveVersion</code> both declare
+<code>0.52.3</code>.</p>
+<p>Eve <code>0.52.3</code> is the first release whose accepted response for a message sent to an
+existing session includes a nonempty <code>deliveryId</code>. The resulting durable turn events
+carry that identifier in <code>meta.deliveryIds</code>. The client consumes older events from a
+stale cursor so its absolute stream index remains correct, but yields and aggregates
+only the accepted delivery.</p>
+<p>There is no response-version negotiation. Accepted existing-session message responses
+from pre-<code>0.52.3</code> servers lack <code>deliveryId</code>, leaving no safe way to distinguish the
+accepted turn from older durable events. This client rejects that response instead of
+returning a potentially wrong turn. <strong>Upgrade the eve server to <code>0.52.3</code> before
+upgrading this client.</strong></p>
+<p>Two operations do not require delivery correlation:</p>
+<ul>
+<li>The initial <code>SendAsync</code> creates the session, so no prior session events can be replayed.</li>
+<li><code>RespondAsync</code> submits responses to pending human input rather than accepting a new
+  message delivery.</li>
+</ul>
+<p>Their accepted responses may omit <code>deliveryId</code>; every <code>SendAsync</code> on an existing session
+requires a nonempty value. This cutover does not change message-stream protocol <code>25</code> or
+agent-info schema version <code>4</code>.</p>
+<h2 id="historical-eve-0310-route-boundary">Historical eve 0.31.0 route boundary<a class="headerlink" href="#historical-eve-0310-route-boundary" title="Permanent link">&para;</a></h2>
+<p>NexusLabs.Eve <code>0.1.0-alpha.4</code> through the releases before the <code>0.52.3</code> cutover used eve
+<code>0.31.0</code> as their minimum. That release moved session control operations from fixed
+continuation-token body routes to identifier-addressed routes:</p>
 <table>
 <thead>
 <tr>
@@ -1435,18 +1479,18 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.52.2</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.52.3</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
-clear, turn-scoped client context across a tool loop and following turn, and session reset
-through the C# client, including the HTTP 409 refusal returned when a retired session
-identifier is reused.</p>
+clear, turn-scoped client context across a tool loop and following turn, delivery
+correlation from a deliberately stale cursor, and session reset through the C# client,
+including the HTTP 409 refusal returned when a retired session identifier is reused.</p>
 <p>Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
 rather than causing a failure. That tolerance is covered by contract tests, not
-by the pinned fixture, and it does not extend the supported server range, which
-the identifier-addressed control routes fix at eve <code>0.31.0</code> and newer.</p>
+by the pinned fixture, and it does not extend the current supported server range below
+eve <code>0.52.3</code>.</p>
 <h2 id="preliminary-tool-output">Preliminary tool output<a class="headerlink" href="#preliminary-tool-output" title="Permanent link">&para;</a></h2>
 <p>Stream protocol <code>21</code> adds <code>action.partial</code>, emitted for each non-terminal snapshot
 yielded by an async-generator tool. <code>EveStreamEventKind.ActionPartial</code> recognizes it, and
@@ -1517,7 +1561,7 @@ alone. The client rejects relabeled v2 documents, missing canonical collections,
 duplicate public identities, normalized channel-route collisions, incorrect subagent or
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.</p>
-<p>The pinned Eve <code>0.52.2</code> fixture exercises this schema through the real compatibility
+<p>The pinned Eve <code>0.52.3</code> fixture exercises this schema through the real compatibility
 probe.</p>
 <h2 id="eve-0451-and-agent-info-schema-v4">Eve 0.45.1 and agent-info schema v4<a class="headerlink" href="#eve-0451-and-agent-info-schema-v4" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.45.1</code> raises agent inspection again to schema version <code>4</code>.
@@ -1529,7 +1573,7 @@ subagent summaries, optional dependency and parameter maps to programmatic sourc
 backings, and a required <code>direct</code> or <code>derived</code> form on source descriptors. The published
 schema rejects the pre-release memory <code>tools</code> field. Every valid field remains available
 through <code>EveAgentInfo.Raw</code>.</p>
-<p>The pinned Eve <code>0.52.2</code> fixture exercises schema v4 through the real compatibility probe.
+<p>The pinned Eve <code>0.52.3</code> fixture exercises schema v4 through the real compatibility probe.
 Eve <code>0.48.0</code> may include <code>workflow-tool-call</code> kernel effects for durable workflow tools;
 these effects remain available through <code>EveAgentInfo.Raw</code>.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
@@ -1542,7 +1586,7 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>The pinned Eve <code>0.52.2</code> fixture exercises this strict health response through the real
+<p>The pinned Eve <code>0.52.3</code> fixture exercises this strict health response through the real
 compatibility probe.</p>
 <h2 id="streamed-tool-inputs">Streamed tool inputs<a class="headerlink" href="#streamed-tool-inputs" title="Permanent link">&para;</a></h2>
 <p>Stream protocol <code>24</code>, published by Eve <code>0.46.1</code>, adds durable
@@ -1575,9 +1619,23 @@ or unsupported/missing stream version headers raise <code>EveProtocolException</
 the current turn, including model calls after tool execution. The value remains transient:
 eve does not append it to durable conversation history and clears it before the following
 turn. Set <code>EveTurnOptions.ClientContext</code> again for each later turn that needs context.</p>
-<p>The pinned Eve <code>0.52.2</code> fixture forces a deterministic tool loop, verifies that the
+<p>The pinned Eve <code>0.52.3</code> fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.</p>
+<h2 id="accepted-message-delivery-correlation">Accepted message delivery correlation<a class="headerlink" href="#accepted-message-delivery-correlation" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.52.3</code> adds a nonempty <code>deliveryId</code> to the accepted response for a message posted
+to an existing session. Durable events produced for that accepted message carry ordered
+<code>meta.deliveryIds</code>; one turn can name multiple identifiers when deliveries are
+coalesced.</p>
+<p><code>EveMessageResponse.DeliveryId</code> exposes the accepted identifier, while
+<code>EveStreamEventMetadata.DeliveryIds</code> preserves event order and duplicates. The client
+still consumes unrelated replay events to advance the absolute cursor, but it does not
+yield or aggregate them. Correlation begins at the first event naming the accepted
+identifier and must reach that turn's boundary.</p>
+<p>Initial session creation and <code>RespondAsync</code> are intentionally uncorrelated and do not
+require <code>deliveryId</code>. Existing-session <code>SendAsync</code> rejects a missing or empty identifier
+with <code>EveProtocolException</code>, which is why the server must be upgraded first. Stream
+protocol <code>25</code> and agent-info schema v4 remain unchanged.</p>
 <h2 id="stream-event-identity">Stream event identity<a class="headerlink" href="#stream-event-identity" title="Permanent link">&para;</a></h2>
 <p>Stream protocol version 20 stamps every persisted event with a stable
 <code>evt_</code>-prefixed identifier. <code>EveStreamEvent.Metadata.Id</code> projects it when
