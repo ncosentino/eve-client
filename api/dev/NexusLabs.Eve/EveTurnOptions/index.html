@@ -1074,11 +1074,15 @@ directly. Keeping it off this type makes the rejected combination impossible to 
 <h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
 <p><a name='NexusLabs.Eve.EveTurnOptions.ClientContext'></a></p>
 <h2 id="eveturnoptionsclientcontext-property">EveTurnOptions.ClientContext Property<a class="headerlink" href="#eveturnoptionsclientcontext-property" title="Permanent link">&para;</a></h2>
-<p>Gets ephemeral context used only for this model call.</p>
+<p>Gets transient context available to every model call in this turn.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveClientContext</span><span class="o">?</span><span class="w"> </span><span class="n">ClientContext</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
 <p><a href="../EveClientContext/" title="NexusLabs.Eve.EveClientContext">EveClientContext</a></p>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>eve preserves this value across tool-loop model calls in the current turn. It is not
+appended to durable conversation history and does not carry into the next turn; set it
+again on each later turn that needs it.</p>
 <p><a name='NexusLabs.Eve.EveTurnOptions.Headers'></a></p>
 <h2 id="eveturnoptionsheaders-property">EveTurnOptions.Headers Property<a class="headerlink" href="#eveturnoptionsheaders-property" title="Permanent link">&para;</a></h2>
 <p>Gets headers that apply to this POST and its stream reconnects.
@@ -1119,7 +1123,7 @@ Never populate this collection directly from untrusted inbound headers.</p>
 </code></pre></div>
 <h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="../EveTurnPolicy/" title="NexusLabs.Eve.EveTurnPolicy">EveTurnPolicy</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
-<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
 <p>This applies only to a message sent to an existing session. It is omitted when the turn
 creates the session, because a new session has no active turn, and when the turn carries
 only input responses, matching the upstream client. Leaving this unset sends no policy, so
