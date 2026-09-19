@@ -10,6 +10,9 @@ internal static class AgentInfoV4Fixture
     public static string WithoutMemories() =>
         Create(static root => root.Remove("memories"));
 
+    public static string WithoutWorkflow() =>
+        Create(static root => root.Remove("workflow"));
+
     public static string WithDuplicateMemorySlots() =>
         Create(static root =>
             root["memories"]!.AsArray().Add(
