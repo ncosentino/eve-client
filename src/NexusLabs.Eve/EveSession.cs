@@ -632,6 +632,10 @@ public sealed class EveSession
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         int eventCount = 0;
+        EveSessionState cursorState = initialState with
+        {
+            StreamIndex = startIndex,
+        };
 
         try
         {
@@ -648,6 +652,14 @@ public sealed class EveSession
                 cancellationToken))
             {
                 eventCount++;
+                if (startIndex >= 0)
+                {
+                    MergeState(AdvanceState(
+                        cursorState,
+                        initialState.SessionId!,
+                        eventCount));
+                }
+
                 yield return streamEvent;
             }
         }
@@ -655,10 +667,6 @@ public sealed class EveSession
         {
             if (startIndex >= 0)
             {
-                EveSessionState cursorState = initialState with
-                {
-                    StreamIndex = startIndex,
-                };
                 MergeState(AdvanceState(
                     cursorState,
                     initialState.SessionId!,

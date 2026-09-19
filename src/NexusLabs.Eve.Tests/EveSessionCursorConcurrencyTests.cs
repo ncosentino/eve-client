@@ -177,6 +177,55 @@ public sealed class EveSessionCursorConcurrencyTests
     }
 
     [Test]
+    public async Task StreamAsync_OpenStreamAdvancesCursorBeforeCompletion(
+        CancellationToken cancellationToken)
+    {
+        using IdleAfterPrefixStream liveStream = new(EncodeEvents(
+            CreateNonTerminalEvents(3)));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(liveStream)));
+        EveSession session = CreateSession(transport, streamIndex: 0);
+        using CancellationTokenSource streamCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        await using IAsyncEnumerator<EveStreamEvent> enumerator = session.StreamAsync(
+            new EveStreamOptions
+            {
+                ReconnectPolicy = EveStreamReconnectPolicy.Disabled,
+            },
+            streamCancellation.Token).GetAsyncEnumerator(streamCancellation.Token);
+
+        for (int expectedStreamIndex = 1; expectedStreamIndex <= 3; expectedStreamIndex++)
+        {
+            await Assert.That(await enumerator.MoveNextAsync())
+                .IsTrue()
+                .Because("The live stream must yield every event in its initial prefix.");
+            await Assert.That(session.State.StreamIndex).IsEqualTo(expectedStreamIndex);
+        }
+
+        Task<bool> pendingRead = enumerator.MoveNextAsync().AsTask();
+        await liveStream.IdleReadStarted.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        await Assert.That(pendingRead.IsCompleted)
+            .IsFalse()
+            .Because("The transport must remain open while session state exposes consumed progress.");
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+            StreamIndex = 3,
+        });
+
+        await streamCancellation.CancelAsync();
+        await Assert.That(await pendingRead)
+            .IsFalse()
+            .Because("Cancelling the open stream must stop its pending read.");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(3);
+    }
+
+    [Test]
     public async Task StreamAsync_ExplicitEarlierStartDoesNotRegressCursor(
         CancellationToken cancellationToken)
     {
