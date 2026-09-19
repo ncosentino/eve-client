@@ -43,6 +43,27 @@ EveSession resumed = client.AttachSession(sessionId);
 EveSession rewound = client.AttachSession(sessionId, streamIndex: 12);
 ```
 
+## Prewarm a remote session
+
+Eve `0.59.0` and newer can create a durable conversation before its first user
+message:
+
+```csharp
+EveSession session = await client.PrewarmSessionAsync(cancellationToken);
+
+await SaveAsync(session.State, cancellationToken);
+
+EveMessageResponse response = await session.SendAsync(
+    "Begin the conversation.",
+    cancellationToken);
+```
+
+Unlike `CreateSession()`, `PrewarmSessionAsync` performs remote I/O. It sends a
+message-free session request, returns the accepted session identifier at cursor
+zero, and makes the first later send use the existing-session route. The
+message-free request does not accept turn-scoped client context, output schemas,
+or delivery policies; supply those options with the first `SendAsync` call.
+
 ## Overlapping sends
 
 A message that reaches a session which already has an active turn is governed by

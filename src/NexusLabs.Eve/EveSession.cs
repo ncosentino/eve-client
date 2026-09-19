@@ -33,6 +33,40 @@ public sealed class EveSession
         _state = state;
     }
 
+    internal static async Task<EveSession> CreatePrewarmedAsync(
+        EveClient client,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = await client.CreateRequestAsync(
+            HttpMethod.Post,
+            EveRequestKind.CreateSession,
+            EveRoutes.CreateSession,
+            null,
+            null,
+            cancellationToken);
+        using HttpResponseMessage response = await client.SendTransportAsync(
+            request,
+            false,
+            cancellationToken);
+        string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw EveClient.CreateClientException(response, responseBody);
+        }
+
+        AcceptedTurn acceptedTurn = ParseAcceptedTurn(
+            response,
+            responseBody,
+            null,
+            false);
+        return new EveSession(
+            client,
+            new EveSessionState
+            {
+                SessionId = acceptedTurn.SessionId,
+            });
+    }
+
     /// <summary>
     /// Gets the current serializable session cursor.
     /// Consume a response stream before persisting a fully advanced cursor.
