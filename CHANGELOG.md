@@ -7,6 +7,30 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `EveClient.PrewarmSessionAsync` creates a remote conversation before its first user
+  message. The returned fixed session starts at cursor zero, and its first later
+  `SendAsync` uses the existing-session route with delivery correlation.
+- Compact named-agent hosts such as `/eve/support` now map internal protocol routes onto
+  `/eve/support/v1/*`.
+
+### Changed
+
+- **Reference eve version:** `0.59.0`; **minimum eve version:** `0.54.2`;
+  message-stream protocol `25`; agent-info schema version `4`.
+- Existing-session message sends retry `409 session_not_ready` for up to 20 seconds with
+  fresh headers, cancellation-aware exponential backoff from 250 milliseconds, and a
+  two-second cap. The earlier short `session_not_active` compatibility retry remains
+  separate, and `RespondAsync` does not use the readiness loop.
+
+### Fixed
+
+- Manual live streams advance the session cursor before yielding every consumed event,
+  preserving monotonic progress while the transport remains open.
+- Schema-v4 agent inspection accepts current responses without legacy `workflow`
+  metadata while remaining compatible with earlier schema-v4 responses that include it.
+
 ## [0.1.0-alpha.12] - 2026-09-11
 
 ### ⚠️ Breaking Changes

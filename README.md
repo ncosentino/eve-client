@@ -18,14 +18,19 @@ A C# client for the Vercel eve HTTP API.
 `NexusLabs.Eve` ports the framework-neutral `eve/client` protocol surface to .NET:
 health and agent inspection, authentication, durable sessions, human-input responses,
 cooperative cancellation, session context clear, session reset, manual session compaction,
-NDJSON streaming, reconnect-by-index, attachments, and structured output.
+remote session prewarming, compact named-agent mounts, NDJSON streaming,
+reconnect-by-index, attachments, and structured output.
 
-This package requires and currently targets Vercel `eve` **0.54.2**, using
-message-stream protocol **25** and agent-info schema **v4**. Eve `0.54.2` is the first
-published release whose strict schema-v4 kernel-effect action set is exactly
-`subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier schema-v4 servers can
-still advertise the obsolete `task-update` action under the same schema version, so
-**upgrade the eve server before upgrading this client**.
+This package requires Vercel `eve` **0.54.2** or newer and currently targets
+**0.59.0**, using message-stream protocol **25** and agent-info schema **v4**.
+Eve `0.54.2` is the first published release whose strict schema-v4 kernel-effect action
+set is exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier
+schema-v4 servers can still advertise the obsolete `task-update` action under the same
+schema version, so **upgrade the eve server before upgrading this client**.
+
+Eve `0.59.0` adds message-free remote session prewarming and readiness retries for the
+first later send. It also uses compact `/eve/<agent>/v1/*` routes for named workspace
+agents and advances live session cursors before yielding each consumed event.
 
 Eve `0.52.3` separately introduced the accepted response `deliveryId` used to skip stale
 durable events and return the accepted existing-session delivery. The initial `SendAsync`

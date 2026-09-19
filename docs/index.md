@@ -24,13 +24,14 @@ part of the .NET API.
 
 ## Compatibility
 
-This release requires and targets eve `0.54.2`, using message-stream protocol `25` and
-agent-info schema `v4`. It strictly accepts only the `subagent-call`, `task-cancel`, and
-`workflow-tool-call` kernel-effect actions. Earlier schema-v4 servers can advertise the
-obsolete `task-update` action without a schema-version discriminator, so upgrade the
-server before this client. Eve `0.52.3` remains the historical delivery-correlation
-boundary for existing-session sends; initial session creation and `RespondAsync`
-human-input continuation do not require that correlation. See
+This release requires eve `0.54.2` or newer and targets eve `0.59.0`, using
+message-stream protocol `25` and agent-info schema `v4`. It strictly accepts only the
+`subagent-call`, `task-cancel`, and `workflow-tool-call` kernel-effect actions while
+accepting schema-v4 responses both with and without legacy `workflow` metadata. Earlier
+schema-v4 servers can advertise the obsolete `task-update` action without a schema-version
+discriminator, so upgrade the server before this client. Eve `0.52.3` remains the
+historical delivery-correlation boundary for existing-session sends; initial session
+creation and `RespondAsync` human-input continuation do not require that correlation. See
 [Compatibility](compatibility.md) and [Migration](migration.md).
 
 ## Start here

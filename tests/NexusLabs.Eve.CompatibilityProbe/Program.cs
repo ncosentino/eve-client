@@ -24,7 +24,7 @@ if (!string.Equals(runningEveVersion, EveProtocol.ReferenceEveVersion, StringCom
         "Advance the fixture and the declared reference together.");
 }
 
-using CancellationTokenSource timeout = new(TimeSpan.FromMinutes(2));
+using CancellationTokenSource timeout = new(TimeSpan.FromMinutes(4));
 using SocketsHttpHandler handler = new()
 {
     AllowAutoRedirect = false,
@@ -44,6 +44,12 @@ if (string.IsNullOrWhiteSpace(info.AgentName)
     || !EveProtocol.SupportedAgentInfoVersions.Contains(info.Version))
 {
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
+}
+
+if (info.Version == 4 && info.Raw.TryGetProperty("workflow", out _))
+{
+    throw new InvalidOperationException(
+        "The current schema-v4 Eve fixture still exposed removed workflow metadata.");
 }
 
 JsonElement kernelEffects = info.Raw.GetProperty("kernelEffects");
@@ -76,6 +82,68 @@ if (info.ModelRouting == EveAgentModelRouting.Dynamic)
 else if (string.IsNullOrWhiteSpace(info.ModelId))
 {
     throw new InvalidOperationException("The Eve fixture returned no model identifier.");
+}
+
+using SocketsHttpHandler compactSockets = new()
+{
+    AllowAutoRedirect = false,
+};
+using CompactNamedAgentRouteHandler compactRoute = new(compactSockets);
+using HttpClient compactTransport = new(compactRoute);
+EveClient compactClient = new(
+    compactTransport,
+    new EveClientOptions(new Uri(baseUri, "/eve/support").ToString()));
+EveAgentInfo compactInfo = await compactClient.GetInfoAsync(timeout.Token);
+if (!string.Equals(compactInfo.AgentName, info.AgentName, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The compact named-agent route did not reach the real Eve fixture.");
+}
+
+EveSession prewarmedSession = await compactClient.PrewarmSessionAsync(timeout.Token);
+if (string.IsNullOrWhiteSpace(prewarmedSession.State.SessionId)
+    || prewarmedSession.State.StreamIndex != 0)
+{
+    throw new InvalidOperationException(
+        "The message-free create request did not return a fresh remote session.");
+}
+
+EveMessageResponse prewarmedResponse = await prewarmedSession.SendAsync(
+    "Return the deterministic compatibility response.",
+    timeout.Token);
+EveTurnOutcome prewarmedOutcome =
+    await prewarmedResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(prewarmedOutcome, "prewarmed first turn");
+if (compactRoute.ReadinessRefusalCount != 1)
+{
+    throw new InvalidOperationException(
+        "The prewarmed first send did not recover from exactly one session_not_ready response.");
+}
+
+string prewarmedSessionPath =
+    $"/eve/support/v1/session/{Uri.EscapeDataString(prewarmedResponse.SessionId)}";
+IReadOnlyList<string> compactRequestPaths = compactRoute.RequestPaths;
+if (compactRequestPaths.Count < 5
+    || !string.Equals(
+        compactRequestPaths[0],
+        "/eve/support/v1/info",
+        StringComparison.Ordinal)
+    || !string.Equals(
+        compactRequestPaths[1],
+        "/eve/support/v1/session",
+        StringComparison.Ordinal)
+    || compactRequestPaths
+        .Skip(2)
+        .SkipLast(1)
+        .Any(path => !string.Equals(path, prewarmedSessionPath, StringComparison.Ordinal))
+    || !string.Equals(
+        compactRequestPaths[^1],
+        $"{prewarmedSessionPath}/stream",
+        StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The compact named-agent route sequence was not preserved. " +
+        $"Observed: {string.Join(", ", compactRequestPaths)}.");
 }
 
 EveSession textSession = client.CreateSession();
