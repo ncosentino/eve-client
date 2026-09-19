@@ -41,6 +41,52 @@ public sealed class EveUrlBuilderTests
     }
 
     [Test]
+    [Arguments("/eve/support", "/eve/v1/info", "/eve/support/v1/info")]
+    [Arguments("/eve/support", "/eve/v1/session", "/eve/support/v1/session")]
+    [Arguments(
+        "/eve/support",
+        "/eve/v1/session/session_1",
+        "/eve/support/v1/session/session_1")]
+    [Arguments(
+        "https://app.example.com/eve/support",
+        "/eve/v1/info",
+        "https://app.example.com/eve/support/v1/info")]
+    [Arguments(
+        "https://app.example.com/eve/support",
+        "/eve/v1/session",
+        "https://app.example.com/eve/support/v1/session")]
+    [Arguments(
+        "https://app.example.com/eve/support",
+        "/eve/v1/session/session_1",
+        "https://app.example.com/eve/support/v1/session/session_1")]
+    [Arguments(
+        "https://app.example.com/eve/support/v1",
+        "/eve/v1/session",
+        "https://app.example.com/eve/support/v1/session")]
+    public async Task Create_MapsProtocolRoutesOntoCompactNamedAgentMount(
+        string host,
+        string route,
+        string expected)
+    {
+        Uri uri = EveUrlBuilder.Create(host, route);
+
+        await Assert.That(uri.ToString()).IsEqualTo(expected);
+    }
+
+    [Test]
+    [Arguments("/api/eve/support", "/api/eve/support/eve/v1/info")]
+    [Arguments("/eve/Support", "/eve/Support/eve/v1/info")]
+    [Arguments("/eve/support/extra", "/eve/support/extra/eve/v1/info")]
+    public async Task Create_PreservesOrdinaryPrefixesThatAreNotCompactMounts(
+        string host,
+        string expected)
+    {
+        Uri uri = EveUrlBuilder.Create(host, "/eve/v1/info");
+
+        await Assert.That(uri.ToString()).IsEqualTo(expected);
+    }
+
+    [Test]
     public async Task Create_PreservesEmbeddedRouteQueryForAbsoluteHost()
     {
         Uri uri = EveUrlBuilder.Create(

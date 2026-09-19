@@ -26,6 +26,19 @@ EveClient client = new(
     new EveClientOptions("https://agent.example.com"));
 ```
 
+For a named workspace agent mounted at `/eve/<agent>`, pass the compact mount as
+the host:
+
+```csharp
+EveClient supportClient = new(
+    transport,
+    new EveClientOptions("https://app.example.com/eve/support"));
+```
+
+The client maps its internal `/eve/v1/*` routes onto
+`/eve/support/v1/*`. Ordinary proxy prefixes such as `/api` remain additive and
+continue producing `/api/eve/v1/*`.
+
 Keep the transport alive until every active response stream has completed.
 
 ## Check the agent
