@@ -1031,6 +1031,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#eve-0591-steering-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eve 0.59.1 steering semantics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stream-event-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1756,6 +1767,15 @@ as stale.</p>
 <p>These releases retain message-stream protocol <code>25</code> and agent-info schema version <code>4</code>.
 The reference fixture advances to <code>0.59.0</code>; the minimum remains <code>0.54.2</code> because
 existing non-prewarm operations remain compatible with that server boundary.</p>
+<h2 id="eve-0591-steering-semantics">Eve 0.59.1 steering semantics<a class="headerlink" href="#eve-0591-steering-semantics" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.59.1</code> keeps <code>steer</code> as the default policy but applies a steering message
+at the next committed boundary inside the active turn. That message preserves
+the turn identifier and accumulated usage. A steering delivery accepted after
+the answer has settled instead starts a normal follow-up turn.</p>
+<p>The request wire shape is unchanged. Existing-session delivery correlation
+starts at the first event carrying the accepted <code>deliveryId</code>, whether that event
+continues the active turn or begins a follow-up turn; it does not require every
+steering response to begin with <code>turn.started</code>.</p>
 <h2 id="stream-event-identity">Stream event identity<a class="headerlink" href="#stream-event-identity" title="Permanent link">&para;</a></h2>
 <p>Stream protocol version 20 stamps every persisted event with a stable
 <code>evt_</code>-prefixed identifier. <code>EveStreamEvent.Metadata.Id</code> projects it when

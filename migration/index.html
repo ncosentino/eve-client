@@ -1307,9 +1307,11 @@ A <code>0.31.x</code> deployment can move anywhere in that range without changin
 and those client releases treated <code>0.31.0</code> through <code>0.52.2</code> as one supported range.
 Their hard boundary remained eve <code>0.31.0</code>.</p>
 <p>Two changes need no migration but are worth knowing. From eve <code>0.33.0</code>, a message
-that arrives while a turn is active cancels and replaces that turn instead of waiting
-for it; set <code>EveTurnOptions.TurnPolicy</code> to <code>EveTurnPolicy.Queue</code> to keep the earlier
-behavior. From eve <code>0.35.0</code>, agent inspection returns schema version <code>2</code>; use
+that arrives while a turn is active steers instead of waiting; set
+<code>EveTurnOptions.TurnPolicy</code> to <code>EveTurnPolicy.Queue</code> to keep the earlier behavior.
+Eve <code>0.59.1</code> changes steering from cancel-and-replace to an in-place update at the
+next committed boundary, preserving an active turn's identity and usage. From eve
+<code>0.35.0</code>, agent inspection returns schema version <code>2</code>; use
 <code>0.1.0-alpha.6</code> or newer, because earlier releases of this package reject it and
 <code>GetInfoAsync</code> throws. From eve <code>0.37.1</code>, active response streams remain connected
 until a turn boundary by default. From eve <code>0.38.0</code>, response-scoped cancellation

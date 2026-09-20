@@ -1127,7 +1127,9 @@ Never populate this collection directly from untrusted inbound headers.</p>
 <p>This applies only to a message sent to an existing session. It is omitted when the turn
 creates the session, because a new session has no active turn, and when the turn carries
 only input responses, matching the upstream client. Leaving this unset sends no policy, so
-eve <code>0.33.0</code> and later steer the active turn.</p>
+eve <code>0.33.0</code> and later steer the active turn. Eve <code>0.59.1</code> and later apply
+steering at the next committed boundary without replacing the active turn identity; a
+message accepted after settlement starts a follow-up turn.</p>
 
 
 

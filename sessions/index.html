@@ -1251,14 +1251,19 @@ cancellation. <code>RespondAsync</code> does not use this readiness retry.</p>
 <h2 id="overlapping-sends">Overlapping sends<a class="headerlink" href="#overlapping-sends" title="Permanent link">&para;</a></h2>
 <p>A message that reaches a session which already has an active turn is governed by
 a delivery policy. eve <code>0.33.0</code> changed the server-side default from waiting to
-steering, so an overlapping send now cancels the active turn and replaces it.</p>
+steering.</p>
 <div class="admonition warning">
 <p class="admonition-title">eve 0.33.0 steers by default</p>
-<p>Sending no policy means eve <code>0.33.0</code> and later cancel the active turn. Set
-<code>TurnPolicy</code> to <code>EveTurnPolicy.Queue</code> to keep the earlier
-wait-for-completion behavior. Nothing fails loudly, because the request
-format did not change.</p>
+<p>Sending no policy means eve <code>0.33.0</code> and later steer. Set <code>TurnPolicy</code> to
+<code>EveTurnPolicy.Queue</code> to keep the earlier wait-for-completion behavior.
+Nothing fails loudly, because the request format did not change.</p>
 </div>
+<p>Eve <code>0.59.1</code> changed steering from cancel-and-replace to an in-place update at
+the next committed boundary. Steering accepted while a turn is active preserves
+that turn's identifier and accumulated usage; the response can therefore begin
+with <code>message.received</code> or another same-turn event rather than a new
+<code>turn.started</code>. Steering accepted after the answer settles starts a normal
+follow-up turn with a new identifier.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">"Actually, summarize it instead."</span><span class="p">),</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveTurnOptions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">TurnPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveTurnPolicy</span><span class="p">.</span><span class="n">Queue</span><span class="w"> </span><span class="p">},</span>
