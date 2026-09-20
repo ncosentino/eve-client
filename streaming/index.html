@@ -763,6 +763,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#leased-stream-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leased stream renewal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cancel-the-exact-response-turn" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1392,6 +1403,16 @@ response an explicit finite budget. Progress resets any finite idle budget.</p>
 <p>Disable reconnection when a proxy owns cursor recovery:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">StreamReconnectPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveStreamReconnectPolicy</span><span class="p">.</span><span class="n">Disabled</span><span class="p">;</span>
 </code></pre></div>
+<h2 id="leased-stream-renewal">Leased stream renewal<a class="headerlink" href="#leased-stream-renewal" title="Permanent link">&para;</a></h2>
+<p>Against Eve <code>0.59.1</code> and newer, reconnecting streams with a nonnegative
+absolute cursor negotiate stream-control version <code>1</code>. The server may close a
+long-lived response after emitting an internal lease-end record. The client
+does not expose that record as an <code>EveStreamEvent</code>; it reconnects immediately
+from the current cursor without consuming an idle retry attempt or applying
+backoff.</p>
+<p>Lease negotiation remains off for <code>EveStreamReconnectPolicy.Disabled</code>,
+policies whose idle retry budget is zero, and negative tail-relative cursors.
+Blank heartbeat lines remain transport framing and are ignored.</p>
 <h2 id="cancel-the-exact-response-turn">Cancel the exact response turn<a class="headerlink" href="#cancel-the-exact-response-turn" title="Permanent link">&para;</a></h2>
 <p>Start consuming a response before requesting cancellation. <code>CancelAsync</code> waits
 for that response's <code>turn.started</code>, sends its turn identifier as a guard, and

@@ -1147,8 +1147,9 @@
 <code>eve/client</code>, such as React/Vue/Svelte integrations and <code>EveAgentStore</code>, are not
 part of the .NET API.</p>
 <h2 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h2>
-<p>This release requires eve <code>0.54.2</code> or newer and targets eve <code>0.59.0</code>, using
-message-stream protocol <code>25</code> and agent-info schema <code>v4</code>. It strictly accepts only the
+<p>This release requires eve <code>0.54.2</code> or newer and targets eve <code>0.63.0</code>, using
+message-stream protocol <code>25</code>, stream-control protocol <code>1</code>, and agent-info schema <code>v4</code>.
+It strictly accepts only the
 <code>subagent-call</code>, <code>task-cancel</code>, and <code>workflow-tool-call</code> kernel-effect actions while
 accepting schema-v4 responses both with and without legacy <code>workflow</code> metadata. Earlier
 schema-v4 servers can advertise the obsolete <code>task-update</code> action without a schema-version
