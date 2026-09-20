@@ -1147,13 +1147,14 @@
 <code>eve/client</code>, such as React/Vue/Svelte integrations and <code>EveAgentStore</code>, are not
 part of the .NET API.</p>
 <h2 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h2>
-<p>This release requires and targets eve <code>0.54.2</code>, using message-stream protocol <code>25</code> and
-agent-info schema <code>v4</code>. It strictly accepts only the <code>subagent-call</code>, <code>task-cancel</code>, and
-<code>workflow-tool-call</code> kernel-effect actions. Earlier schema-v4 servers can advertise the
-obsolete <code>task-update</code> action without a schema-version discriminator, so upgrade the
-server before this client. Eve <code>0.52.3</code> remains the historical delivery-correlation
-boundary for existing-session sends; initial session creation and <code>RespondAsync</code>
-human-input continuation do not require that correlation. See
+<p>This release requires eve <code>0.54.2</code> or newer and targets eve <code>0.59.0</code>, using
+message-stream protocol <code>25</code> and agent-info schema <code>v4</code>. It strictly accepts only the
+<code>subagent-call</code>, <code>task-cancel</code>, and <code>workflow-tool-call</code> kernel-effect actions while
+accepting schema-v4 responses both with and without legacy <code>workflow</code> metadata. Earlier
+schema-v4 servers can advertise the obsolete <code>task-update</code> action without a schema-version
+discriminator, so upgrade the server before this client. Eve <code>0.52.3</code> remains the
+historical delivery-correlation boundary for existing-session sends; initial session
+creation and <code>RespondAsync</code> human-input continuation do not require that correlation. See
 <a href="compatibility/">Compatibility</a> and <a href="migration/">Migration</a>.</p>
 <h2 id="start-here">Start here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>
 <p>Continue with <a href="getting-started/">Getting Started</a>, then read

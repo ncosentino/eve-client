@@ -1249,9 +1249,10 @@
 
 
 <h1 id="migrating-to-eve-0542">Migrating to eve 0.54.2<a class="headerlink" href="#migrating-to-eve-0542" title="Permanent link">&para;</a></h1>
-<p>The current client requires and targets eve <code>0.54.2</code>. This is the first published release
-whose agent-info schema-v4 kernel-effect action set is exactly <code>subagent-call</code>,
-<code>task-cancel</code>, and <code>workflow-tool-call</code>.</p>
+<p>The current client requires eve <code>0.54.2</code> or newer and uses eve <code>0.59.0</code> as its
+compatibility reference. Eve <code>0.54.2</code> is the first published release whose agent-info
+schema-v4 kernel-effect action set is exactly <code>subagent-call</code>, <code>task-cancel</code>, and
+<code>workflow-tool-call</code>.</p>
 <p>Earlier schema-v4 servers can still advertise the obsolete <code>task-update</code> action. The
 payload remains version <code>4</code>, so the client has no schema discriminator with which to
 accept both contracts strictly. It rejects <code>task-update</code> in v4 while historical schema

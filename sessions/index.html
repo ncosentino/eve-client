@@ -1243,6 +1243,11 @@ message-free session request, returns the accepted session identifier at cursor
 zero, and makes the first later send use the existing-session route. The
 message-free request does not accept turn-scoped client context, output schemas,
 or delivery policies; supply those options with the first <code>SendAsync</code> call.</p>
+<p>The remote workflow can accept the prewarm request before its session inbox is
+ready. If the first later message receives <code>409 session_not_ready</code>, <code>SendAsync</code>
+re-resolves dynamic headers and retries for up to 20 seconds. Backoff starts at
+250 milliseconds, doubles to a two-second cap, and stops immediately on
+cancellation. <code>RespondAsync</code> does not use this readiness retry.</p>
 <h2 id="overlapping-sends">Overlapping sends<a class="headerlink" href="#overlapping-sends" title="Permanent link">&para;</a></h2>
 <p>A message that reaches a session which already has an active turn is governed by
 a delivery policy. eve <code>0.33.0</code> changed the server-side default from waiting to

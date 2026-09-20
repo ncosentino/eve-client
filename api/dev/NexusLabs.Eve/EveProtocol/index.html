@@ -1106,7 +1106,7 @@ minimum. The message-stream protocol remains version <code>25</code>.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.ReferenceEveVersion'></a></p>
 <h2 id="eveprotocolreferenceeveversion-field">EveProtocol.ReferenceEveVersion Field<a class="headerlink" href="#eveprotocolreferenceeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the upstream TypeScript package version used as the compatibility reference.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.54.2"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.59.0"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_3">Field Value<a class="headerlink" href="#field-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1147,9 +1147,11 @@ composition diagnostics, node identities, and kernel effects. Eve <code>0.45.1</
 it to version <code>4</code> for first-class memory-provider inspection. Schema v3 preserves the
 historical <code>task-update</code> kernel-effect action, while the schema-v4 contract published
 by eve <code>0.54.2</code> accepts only <code>subagent-call</code>, <code>task-cancel</code>, and
-<code>workflow-tool-call</code>. Every supported version exposes the identity fields this package
-projects, and its complete payload remains available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>.
-A version outside this set is rejected rather than parsed optimistically.</p>
+<code>workflow-tool-call</code>. Eve <code>0.56.0</code> retained schema version <code>4</code> while making
+legacy <code>workflow</code> metadata optional, so both schema-v4 shapes are accepted. Every
+supported version exposes the identity fields this package projects, and its complete
+payload remains available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>. A version outside this set
+is rejected rather than parsed optimistically.</p>
 
 
 
