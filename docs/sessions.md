@@ -64,6 +64,12 @@ zero, and makes the first later send use the existing-session route. The
 message-free request does not accept turn-scoped client context, output schemas,
 or delivery policies; supply those options with the first `SendAsync` call.
 
+The remote workflow can accept the prewarm request before its session inbox is
+ready. If the first later message receives `409 session_not_ready`, `SendAsync`
+re-resolves dynamic headers and retries for up to 20 seconds. Backoff starts at
+250 milliseconds, doubles to a two-second cap, and stops immediately on
+cancellation. `RespondAsync` does not use this readiness retry.
+
 ## Overlapping sends
 
 A message that reaches a session which already has an active turn is governed by

@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.54.2";
+    public const string ReferenceEveVersion = "0.59.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -49,9 +49,11 @@ public static class EveProtocol
     /// it to version <c>4</c> for first-class memory-provider inspection. Schema v3 preserves the
     /// historical <c>task-update</c> kernel-effect action, while the schema-v4 contract published
     /// by eve <c>0.54.2</c> accepts only <c>subagent-call</c>, <c>task-cancel</c>, and
-    /// <c>workflow-tool-call</c>. Every supported version exposes the identity fields this package
-    /// projects, and its complete payload remains available through <see cref="EveAgentInfo.Raw"/>.
-    /// A version outside this set is rejected rather than parsed optimistically.
+    /// <c>workflow-tool-call</c>. Eve <c>0.56.0</c> retained schema version <c>4</c> while making
+    /// legacy <c>workflow</c> metadata optional, so both schema-v4 shapes are accepted. Every
+    /// supported version exposes the identity fields this package projects, and its complete
+    /// payload remains available through <see cref="EveAgentInfo.Raw"/>. A version outside this set
+    /// is rejected rather than parsed optimistically.
     /// </remarks>
     public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3, 4];
 

@@ -1994,10 +1994,159 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task SendAsync_RetriesSessionNotActiveWithFixedBackoffAndFreshHeaders(
+    public async Task SendAsync_RetriesSessionNotReadyWithCappedBackoffAndFreshHeaders(
         CancellationToken cancellationToken)
     {
-        FakeTimeProvider timeProvider = new();
+        TimeSpan[] retryDelays =
+        [
+            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+        ];
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        foreach (TimeSpan _ in retryDelays)
+        {
+            handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+                HttpStatusCode.Conflict,
+                """{"code":"session_not_ready","error":"The session is not ready."}""")));
+        }
+
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        int headerAttempt = 0;
+        EveClient client = new(
+            transport,
+            new EveClientOptions("https://agent.example.com")
+            {
+                TimeProvider = timeProvider,
+                HeadersProvider = _ => ValueTask.FromResult<IReadOnlyDictionary<string, string>>(
+                    new Dictionary<string, string>
+                    {
+                        ["x-attempt"] = (++headerAttempt).ToString(
+                            System.Globalization.CultureInfo.InvariantCulture),
+                    }),
+            });
+        EveSession session = client.AttachSession("session_1");
+
+        Task<EveMessageResponse> sendTask = session.SendAsync("Follow up", cancellationToken);
+        for (int index = 0; index < retryDelays.Length; index++)
+        {
+            await WaitForCallCountAsync(handler, index + 1, cancellationToken);
+            timeProvider.Advance(retryDelays[index]);
+        }
+
+        await sendTask;
+
+        await Assert.That(handler.Calls.Count).IsEqualTo(retryDelays.Length + 1);
+        await Assert.That(handler.Calls.Select(call => call.Headers["x-attempt"]))
+            .IsEquivalentTo(["1", "2", "3", "4", "5", "6", "7"]);
+        await Assert.That(session.State).IsEqualTo(new EveSessionState
+        {
+            SessionId = "session_1",
+        });
+    }
+
+    [Test]
+    public async Task SendAsync_SurfacesSessionNotReadyAfterTwentySecondBudget(
+        CancellationToken cancellationToken)
+    {
+        TimeSpan[] retryDelays =
+        [
+            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromMilliseconds(250),
+        ];
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        for (int attempt = 0; attempt <= retryDelays.Length; attempt++)
+        {
+            handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+                HttpStatusCode.Conflict,
+                """{"code":"session_not_ready","error":"The session is not ready."}""")));
+        }
+
+        EveSession session = new(
+            new EveClient(
+                transport,
+                new EveClientOptions("https://agent.example.com")
+                {
+                    TimeProvider = timeProvider,
+                }),
+            new EveSessionState
+            {
+                SessionId = "session_1",
+            });
+        Task sendTask = session.SendAsync("Follow up", cancellationToken);
+
+        for (int index = 0; index < retryDelays.Length; index++)
+        {
+            await WaitForCallCountAsync(handler, index + 1, cancellationToken);
+            timeProvider.Advance(retryDelays[index]);
+        }
+
+        await Assert.That(async () => await sendTask.WaitAsync(cancellationToken))
+            .Throws<EveClientException>()
+            .Because("The final readiness conflict must be surfaced at the deadline.");
+        await Assert.That(handler.Calls.Count).IsEqualTo(retryDelays.Length + 1);
+    }
+
+    [Test]
+    public async Task SendAsync_CancellationInterruptsSessionNotReadyBackoff(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
+        using CancellationTokenSource sendCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Conflict,
+            """{"code":"session_not_ready","error":"The session is not ready."}""")));
+        EveSession session = new(
+            new EveClient(
+                transport,
+                new EveClientOptions("https://agent.example.com")
+                {
+                    TimeProvider = timeProvider,
+                }),
+            new EveSessionState
+            {
+                SessionId = "session_1",
+            });
+        Task sendTask = session.SendAsync("Follow up", sendCancellation.Token);
+        await WaitForCallCountAsync(handler, 1, cancellationToken);
+
+        await sendCancellation.CancelAsync();
+
+        await Assert.That(async () => await sendTask.WaitAsync(cancellationToken))
+            .Throws<OperationCanceledException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task SendAsync_RetainsLegacySessionNotActiveBackoff(
+        CancellationToken cancellationToken)
+    {
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
@@ -2043,10 +2192,11 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task SendAsync_SurfacesFinalSessionNotActiveFailureAfterThreeRetries(
+    public async Task SendAsync_SurfacesLegacySessionNotActiveAfterThreeRetries(
         CancellationToken cancellationToken)
     {
-        FakeTimeProvider timeProvider = new();
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         for (int attempt = 0; attempt < 4; attempt++)
@@ -2082,7 +2232,7 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task SendAsync_DoesNotRetryUnrelatedConflictOrSessionCreation(
+    public async Task SendAsync_DoesNotRetryUnrelatedConflictResponseOrSessionCreation(
         CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
@@ -2092,34 +2242,40 @@ public sealed class EveSessionTests
             """{"code":"turn_conflict","error":"A different conflict."}""")));
         handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
             HttpStatusCode.Conflict,
-            """{"code":"session_not_active","error":"The session is not active."}""")));
+            """{"code":"session_not_ready","error":"The session is not ready."}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Conflict,
+            """{"code":"session_not_ready","error":"The session is not ready."}""")));
         EveClient client = CreateClient(transport);
 
         await Assert.That(async () => await client.AttachSession("session_1")
                 .SendAsync("Follow up", cancellationToken))
             .Throws<EveClientException>();
+        await Assert.That(async () => await client.AttachSession("session_1")
+                .RespondAsync(
+                    [new EveInputResponse("approval_1", "approve")],
+                    cancellationToken))
+            .Throws<EveClientException>();
         await Assert.That(async () => await client.CreateSession()
                 .SendAsync("Create", cancellationToken))
             .Throws<EveClientException>();
 
-        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+        await Assert.That(handler.Calls.Count).IsEqualTo(3);
     }
 
     [Test]
-    public async Task SendAsync_CancellationInterruptsSessionNotActiveBackoff(
+    public async Task SendAsync_CancellationInterruptsLegacySessionNotActiveBackoff(
         CancellationToken cancellationToken)
     {
-        FakeTimeProvider timeProvider = new();
-        using CancellationTokenSource sendCancellation = new();
+        FakeTimeProvider timeProvider = new(
+            new DateTimeOffset(2026, 9, 19, 0, 0, 0, TimeSpan.Zero));
+        using CancellationTokenSource sendCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
-        handler.Enqueue((_, _) =>
-        {
-            sendCancellation.CancelAfter(TimeSpan.FromMilliseconds(50));
-            return Task.FromResult(JsonResponse(
-                HttpStatusCode.Conflict,
-                """{"code":"session_not_active","error":"The session is not active."}"""));
-        });
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.Conflict,
+            """{"code":"session_not_active","error":"The session is not active."}""")));
         EveSession session = new(
             new EveClient(
                 transport,
@@ -2132,8 +2288,11 @@ public sealed class EveSessionTests
                 SessionId = "session_1",
             });
         Task sendTask = session.SendAsync("Follow up", sendCancellation.Token);
+        await WaitForCallCountAsync(handler, 1, cancellationToken);
 
-        await Assert.That(async () => await sendTask.WaitAsync(TimeSpan.FromSeconds(5)))
+        await sendCancellation.CancelAsync();
+
+        await Assert.That(async () => await sendTask.WaitAsync(cancellationToken))
             .Throws<OperationCanceledException>();
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(cancellationToken.IsCancellationRequested).IsFalse();

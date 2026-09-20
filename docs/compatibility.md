@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.54.2 | 25 | Minimum 0.54.2; current development target |
+| Unreleased | 0.59.0 | 25 | Minimum 0.54.2; current development target |
 | 0.1.0-alpha.11 | 0.54.0 | 25 | Current prerelease |
 | 0.1.0-alpha.10 | 0.46.1 | 24 | Previous compatibility target |
 | 0.1.0-alpha.9 | 0.45.0 | 23 | Previous compatibility target |
@@ -22,8 +22,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 ## Minimum supported eve release
 
 **This package requires eve `0.54.2` and cannot safely use an earlier server.**
-`EveProtocol.MinimumEveVersion` and `EveProtocol.ReferenceEveVersion` both declare
-`0.54.2`.
+`EveProtocol.MinimumEveVersion` declares `0.54.2`, while
+`EveProtocol.ReferenceEveVersion` tracks the current verified target, `0.59.0`.
 
 Eve `0.54.2` is the first published release whose schema-v4 kernel-effect action set is
 exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier schema-v4
@@ -91,13 +91,15 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.54.2` fixture with a deterministic
+The repository contains a pinned eve `0.59.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
 clear, turn-scoped client context across a tool loop and following turn, delivery
-correlation from a deliberately stale cursor, and session reset through the C# client,
-including the HTTP 409 refusal returned when a retired session identifier is reused.
+correlation from a deliberately stale cursor, live cursor advancement, compact named-agent
+route composition, message-free session prewarming, readiness retry, and session reset
+through the C# client, including the HTTP 409 refusal returned when a retired session
+identifier is reused.
 
 Event parsing stays tolerant of older stream protocols: durable event
 identifiers and input-request discriminators are both projected as absent
@@ -199,7 +201,7 @@ duplicate public identities, normalized channel-route collisions, incorrect suba
 remote-agent totals, module sources without bindings, and bindings whose owner or logical
 path disagrees with their source.
 
-The pinned Eve `0.54.2` fixture exercises this schema through the real compatibility
+The pinned Eve `0.59.0` fixture exercises this schema through the real compatibility
 probe.
 
 ## Eve 0.45.1 and agent-info schema v4
@@ -217,9 +219,10 @@ through `EveAgentInfo.Raw`.
 
 Eve `0.54.2` narrows the strict schema-v4 kernel-effect action set to `subagent-call`,
 `task-cancel`, and `workflow-tool-call`; the historical v3 validator continues to accept
-and preserve `task-update`. The pinned Eve `0.54.2` fixture asserts that its real
-schema-v4 payload contains no `task-update` effect and still exposes
-`workflow-tool-call` through `EveAgentInfo.Raw`.
+and preserve `task-update`. Eve `0.56.0` retained schema version `4` while removing
+legacy `workflow` metadata from current responses. The pinned Eve `0.59.0` fixture
+asserts that its real schema-v4 payload omits both `task-update` and `workflow` while
+still exposing `workflow-tool-call` through `EveAgentInfo.Raw`.
 
 ## Strict health response validation
 
@@ -234,7 +237,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.54.2` fixture exercises this strict health response through the real
+The pinned Eve `0.59.0` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -278,7 +281,7 @@ the current turn, including model calls after tool execution. The value remains 
 eve does not append it to durable conversation history and clears it before the following
 turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
 
-The pinned Eve `0.54.2` fixture forces a deterministic tool loop, verifies that the
+The pinned Eve `0.59.0` fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.
 
@@ -324,6 +327,30 @@ The minimum and pinned reference therefore advance together to `0.54.2`. Framewo
 session routes, request and response contracts, durable event shapes, and message-stream
 protocol `25` remain unchanged. Schema v3 remains a historical contract and continues to
 accept and preserve `task-update`.
+
+## Eve 0.56.0 through 0.59.0
+
+Eve `0.56.0` removes the legacy `workflow` member from current schema-v4 agent-info
+responses without incrementing the schema version. The client therefore accepts both
+the former and current schema-v4 shapes while continuing to require the member in
+historical schema v3.
+
+Eve `0.58.0` mounts named workspace agents at `/eve/<agent>/v1/*`.
+`EveClientOptions.Host` can target the compact `/eve/<agent>` mount directly; ordinary
+proxy prefixes remain additive.
+
+Eve `0.59.0` adds message-free conversation creation through
+`PrewarmSessionAsync`. The first later `SendAsync` retries only
+`409 session_not_ready` under a 20-second readiness budget with 250-millisecond
+exponential backoff capped at two seconds. Dynamic headers are resolved for every
+attempt, cancellation interrupts the delay, and `RespondAsync` does not use the
+readiness loop. Manual live streams also merge each consumed absolute cursor before
+yielding the event, so concurrent operations cannot observe already-consumed progress
+as stale.
+
+These releases retain message-stream protocol `25` and agent-info schema version `4`.
+The reference fixture advances to `0.59.0`; the minimum remains `0.54.2` because
+existing non-prewarm operations remain compatible with that server boundary.
 
 ## Stream event identity
 
