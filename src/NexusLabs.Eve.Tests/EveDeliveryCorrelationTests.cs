@@ -48,6 +48,118 @@ public sealed class EveDeliveryCorrelationTests
     }
 
     [Test]
+    public async Task ExistingSteer_PreservesActiveTurnIdentityAndUsage(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("delivery_new")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            Event("turn.started", "delivery_old", """{"sequence":0,"turnId":"turn_1"}"""),
+            Event(
+                "message.received",
+                "delivery_old",
+                """{"message":"First","sequence":0,"turnId":"turn_1"}"""),
+            Event(
+                "message.received",
+                "delivery_new",
+                """{"message":"Instead","sequence":0,"turnId":"turn_1"}"""),
+            Event(
+                "step.completed",
+                "delivery_new",
+                """{"finishReason":"stop","sequence":1,"stepIndex":1,"turnId":"turn_1","usage":{"cacheReadTokens":3,"cacheWriteTokens":0,"costUsd":0.01,"inputTokens":10,"outputTokens":2}}"""),
+            Event(
+                "message.completed",
+                "delivery_new",
+                """{"finishReason":"stop","message":"Updated reply.","sequence":2,"stepIndex":1,"turnId":"turn_1"}"""),
+            Event(
+                "session.waiting",
+                "delivery_new",
+                """{"wait":"next-user-message"}"""))));
+        EveSession session = CreateSession(transport);
+
+        EveTurnOutcome outcome = await (await session.SendAsync(
+            EveMessageContent.FromText("Instead"),
+            new EveTurnOptions
+            {
+                TurnPolicy = EveTurnPolicy.Steer,
+            },
+            cancellationToken)).GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(4);
+        await Assert.That(outcome.Events.Any(static streamEvent =>
+            streamEvent.Kind == EveStreamEventKind.TurnStarted))
+            .IsFalse()
+            .Because("In-flight steering continues the active turn without another turn.started.");
+        await Assert.That(outcome.Events
+            .Where(static streamEvent => streamEvent.Data.TryGetProperty("turnId", out _))
+            .Select(static streamEvent => streamEvent.Data.GetProperty("turnId").GetString()!))
+            .IsEquivalentTo(["turn_1", "turn_1", "turn_1"]);
+        EveStreamEvent completedStep = outcome.Events.Single(static streamEvent =>
+            streamEvent.Kind == EveStreamEventKind.StepCompleted);
+        await Assert.That(completedStep.Data.GetProperty("usage")
+            .GetProperty("inputTokens").GetInt32())
+            .IsEqualTo(10);
+        await Assert.That(outcome.Message).IsEqualTo("Updated reply.");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(6);
+    }
+
+    [Test]
+    public async Task ExistingSteer_AfterSettlementCorrelatesFollowUpTurn(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse("delivery_new")));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+            Event(
+                "message.received",
+                "delivery_old",
+                """{"message":"First","sequence":0,"turnId":"turn_1"}"""),
+            Event("turn.started", "delivery_old", """{"sequence":1,"turnId":"turn_1"}"""),
+            Event(
+                "message.completed",
+                "delivery_old",
+                """{"finishReason":"stop","message":"First reply.","sequence":2,"stepIndex":0,"turnId":"turn_1"}"""),
+            Event(
+                "session.waiting",
+                "delivery_old",
+                """{"wait":"next-user-message"}"""),
+            Event(
+                "message.received",
+                "delivery_new",
+                """{"message":"Instead","sequence":0,"turnId":"turn_2"}"""),
+            Event("turn.started", "delivery_new", """{"sequence":1,"turnId":"turn_2"}"""),
+            Event(
+                "message.completed",
+                "delivery_new",
+                """{"finishReason":"stop","message":"Follow-up reply.","sequence":2,"stepIndex":0,"turnId":"turn_2"}"""),
+            Event(
+                "session.waiting",
+                "delivery_new",
+                """{"wait":"next-user-message"}"""))));
+        EveSession session = CreateSession(transport);
+
+        EveTurnOutcome outcome = await (await session.SendAsync(
+            EveMessageContent.FromText("Instead"),
+            new EveTurnOptions
+            {
+                TurnPolicy = EveTurnPolicy.Steer,
+            },
+            cancellationToken)).GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Events.Count).IsEqualTo(4);
+        await Assert.That(outcome.Events[0].Kind).IsEqualTo(EveStreamEventKind.MessageReceived);
+        await Assert.That(outcome.Events[1].Kind).IsEqualTo(EveStreamEventKind.TurnStarted);
+        await Assert.That(outcome.Events
+            .Where(static streamEvent => streamEvent.Data.TryGetProperty("turnId", out _))
+            .Select(static streamEvent => streamEvent.Data.GetProperty("turnId").GetString()!))
+            .IsEquivalentTo(["turn_2", "turn_2", "turn_2"]);
+        await Assert.That(outcome.Message).IsEqualTo("Follow-up reply.");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(8);
+    }
+
+    [Test]
     public async Task ExistingSend_AcceptsCoalescedDeliveryIdentifier(
         CancellationToken cancellationToken)
     {

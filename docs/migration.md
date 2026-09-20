@@ -73,9 +73,11 @@ the client and the agent must move together.
     Their hard boundary remained eve `0.31.0`.
 
     Two changes need no migration but are worth knowing. From eve `0.33.0`, a message
-    that arrives while a turn is active cancels and replaces that turn instead of waiting
-    for it; set `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier
-    behavior. From eve `0.35.0`, agent inspection returns schema version `2`; use
+    that arrives while a turn is active steers instead of waiting; set
+    `EveTurnOptions.TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier behavior.
+    Eve `0.59.1` changes steering from cancel-and-replace to an in-place update at the
+    next committed boundary, preserving an active turn's identity and usage. From eve
+    `0.35.0`, agent inspection returns schema version `2`; use
     `0.1.0-alpha.6` or newer, because earlier releases of this package reject it and
     `GetInfoAsync` throws. From eve `0.37.1`, active response streams remain connected
     until a turn boundary by default. From eve `0.38.0`, response-scoped cancellation

@@ -16,8 +16,8 @@ public enum EveTurnPolicy
     Queue,
 
     /// <summary>
-    /// Cancels the active turn and replaces it with the new message after eve durably
-    /// buffers that message.
+    /// Applies the new message at the next committed boundary of the active turn.
+    /// If that turn has already settled, the message starts a follow-up turn.
     /// </summary>
     Steer,
 }

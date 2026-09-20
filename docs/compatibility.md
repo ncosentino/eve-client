@@ -354,6 +354,18 @@ These releases retain message-stream protocol `25` and agent-info schema version
 The reference fixture advances to `0.59.0`; the minimum remains `0.54.2` because
 existing non-prewarm operations remain compatible with that server boundary.
 
+## Eve 0.59.1 steering semantics
+
+Eve `0.59.1` keeps `steer` as the default policy but applies a steering message
+at the next committed boundary inside the active turn. That message preserves
+the turn identifier and accumulated usage. A steering delivery accepted after
+the answer has settled instead starts a normal follow-up turn.
+
+The request wire shape is unchanged. Existing-session delivery correlation
+starts at the first event carrying the accepted `deliveryId`, whether that event
+continues the active turn or begins a follow-up turn; it does not require every
+steering response to begin with `turn.started`.
+
 ## Stream event identity
 
 Stream protocol version 20 stamps every persisted event with a stable
