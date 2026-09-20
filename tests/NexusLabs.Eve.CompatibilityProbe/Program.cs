@@ -455,12 +455,29 @@ if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordi
         $"{catchUpRequests[0].Uri}.");
 }
 
+if (!catchUpRequests[0].Uri.Contains(
+        $"streamControlVersion={EveProtocol.StreamControlVersion}",
+        StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "The bounded catch-up read did not negotiate renewable stream control: " +
+        $"{catchUpRequests[0].Uri}.");
+}
+
 foreach (RecordedStreamRequest reconnect in catchUpRequests.Skip(1))
 {
     if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal))
     {
         throw new InvalidOperationException(
             $"A bounded catch-up reconnect requested the durable tail again: {reconnect.Uri}.");
+    }
+
+    if (!reconnect.Uri.Contains(
+            $"streamControlVersion={EveProtocol.StreamControlVersion}",
+            StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException(
+            $"A bounded catch-up reconnect omitted renewable stream control: {reconnect.Uri}.");
     }
 }
 

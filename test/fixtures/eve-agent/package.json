@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "ai": "7.0.105",
-    "eve": "0.59.0",
+    "eve": "0.63.0",
     "just-bash": "3.1.0"
   },
   "engines": {

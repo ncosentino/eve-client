@@ -207,6 +207,19 @@ Disable reconnection when a proxy owns cursor recovery:
 StreamReconnectPolicy = EveStreamReconnectPolicy.Disabled;
 ```
 
+## Leased stream renewal
+
+Against Eve `0.59.1` and newer, reconnecting streams with a nonnegative
+absolute cursor negotiate stream-control version `1`. The server may close a
+long-lived response after emitting an internal lease-end record. The client
+does not expose that record as an `EveStreamEvent`; it reconnects immediately
+from the current cursor without consuming an idle retry attempt or applying
+backoff.
+
+Lease negotiation remains off for `EveStreamReconnectPolicy.Disabled`,
+policies whose idle retry budget is zero, and negative tail-relative cursors.
+Blank heartbeat lines remain transport framing and are ignored.
+
 ## Cancel the exact response turn
 
 Start consuming a response before requesting cancellation. `CancelAsync` waits
