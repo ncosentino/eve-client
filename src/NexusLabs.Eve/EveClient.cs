@@ -193,6 +193,29 @@ public sealed class EveClient
     public EveSession CreateSession() => new(this, new EveSessionState());
 
     /// <summary>
+    /// Creates a remote conversation before its first user message.
+    /// </summary>
+    /// <remarks>
+    /// This method performs network I/O and requires eve <c>0.59.0</c> or newer.
+    /// The returned session has a fixed remote identifier and a zero stream cursor.
+    /// Its first <see cref="EveSession.SendAsync(string, CancellationToken)"/> uses the
+    /// existing-session route.
+    /// </remarks>
+    /// <param name="cancellationToken">Cancels remote session creation.</param>
+    /// <returns>A session accepted by the remote eve deployment.</returns>
+    /// <exception cref="EveClientException">
+    /// The eve session route returned a non-successful response.
+    /// </exception>
+    /// <exception cref="EveProtocolException">
+    /// The eve session route returned malformed JSON or omitted its session identifier.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// Remote session creation was cancelled.
+    /// </exception>
+    public Task<EveSession> PrewarmSessionAsync(CancellationToken cancellationToken) =>
+        EveSession.CreatePrewarmedAsync(this, cancellationToken);
+
+    /// <summary>
     /// Creates a handle from a previously persisted session cursor.
     /// </summary>
     /// <param name="state">The session state to resume.</param>
