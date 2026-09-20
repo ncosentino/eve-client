@@ -342,6 +342,7 @@ EveMessageResponse catchUpResponse = await catchUpSession.SendAsync(
     timeout.Token);
 EveTurnOutcome catchUpOutcome = await catchUpResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(catchUpOutcome, "catch-up turn");
+EveSession catchUpReader = client.AttachSession(catchUpResponse.SessionId, 0);
 
 int recordedBeforeCatchUp = streamRecorder.StreamRequests.Count;
 List<EveStreamEvent> catchUpEvents = [];
@@ -349,7 +350,7 @@ EveProtocolException? catchUpFailure = null;
 
 try
 {
-    await foreach (EveStreamEvent streamEvent in catchUpSession.StreamAsync(
+    await foreach (EveStreamEvent streamEvent in catchUpReader.StreamAsync(
         new EveStreamOptions
         {
             Follow = false,
@@ -358,6 +359,12 @@ try
         timeout.Token))
     {
         catchUpEvents.Add(streamEvent);
+        if (catchUpReader.State.StreamIndex != catchUpEvents.Count)
+        {
+            throw new InvalidOperationException(
+                "The bounded catch-up read did not expose its consumed cursor before yielding " +
+                $"event {catchUpEvents.Count}: {catchUpReader.State.StreamIndex}.");
+        }
     }
 }
 catch (EveProtocolException exception)
@@ -422,11 +429,11 @@ if (catchUpEvents.Count != tailIndex + 1)
         $"for tail index {tailIndex}.");
 }
 
-if (catchUpSession.State.StreamIndex != catchUpEvents.Count)
+if (catchUpReader.State.StreamIndex != catchUpEvents.Count)
 {
     throw new InvalidOperationException(
         "The bounded catch-up read did not advance the session cursor: " +
-        $"{catchUpSession.State.StreamIndex} of {catchUpEvents.Count} events.");
+        $"{catchUpReader.State.StreamIndex} of {catchUpEvents.Count} events.");
 }
 
 EveSession approvalSession = client.CreateSession();
