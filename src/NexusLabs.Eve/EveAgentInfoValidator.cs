@@ -148,7 +148,28 @@ internal static class EveAgentInfoValidator
     private static readonly string[] RootV4AllowedProperties =
         [.. RootV3AllowedProperties, "memories"];
     private static readonly string[] RootV4RequiredProperties =
-        [.. RootV3RequiredProperties, "memories"];
+    [
+        "agent",
+        "capabilities",
+        "channels",
+        "composition",
+        "connections",
+        "diagnostics",
+        "hooks",
+        "instructions",
+        "kernelEffects",
+        "kind",
+        "memories",
+        "mode",
+        "remoteAgents",
+        "sandbox",
+        "schedules",
+        "skills",
+        "subagents",
+        "tools",
+        "version",
+        "workspace",
+    ];
     private static readonly string[] GatewayRoutingAllowedProperties =
         ["byok", "kind", "target"];
     private static readonly string[] GatewayRoutingRequiredProperties = ["kind", "target"];
@@ -273,7 +294,11 @@ internal static class EveAgentInfoValidator
         ValidateSkills(RequireObject(root, "skills", "$"), isVersionFour);
         ValidateSubagents(RequireObject(root, "subagents", "$"), isVersionFour);
         ValidateTools(RequireObject(root, "tools", "$"), isVersionFour);
-        ValidateWorkflow(RequireObject(root, "workflow", "$"), isVersionFour);
+        if (root.TryGetProperty("workflow", out JsonElement workflow))
+        {
+            ValidateWorkflow(workflow, isVersionFour);
+        }
+
         ValidateWorkspace(RequireObject(root, "workspace", "$"));
         if (root.TryGetProperty("instrumentation", out JsonElement instrumentation))
         {

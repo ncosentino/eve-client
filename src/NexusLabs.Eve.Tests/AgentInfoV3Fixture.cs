@@ -285,6 +285,9 @@ internal static class AgentInfoV3Fixture
     public static string WithoutChannels() =>
         Mutate(static root => root.Remove("channels"));
 
+    public static string WithoutWorkflow() =>
+        Mutate(static root => root.Remove("workflow"));
+
     private static string Mutate(Action<JsonObject> mutation)
     {
         JsonObject root = JsonNode.Parse(ValidJson)!.AsObject();

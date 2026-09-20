@@ -537,6 +537,20 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFourWithoutLegacyWorkflowMetadata(
+        CancellationToken cancellationToken)
+    {
+        EveAgentInfo info = await GetInfoAsync(
+            AgentInfoV4Fixture.WithoutWorkflow(),
+            cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(4);
+        await Assert.That(info.Raw.TryGetProperty("workflow", out _))
+            .IsFalse()
+            .Because("Current schema-v4 responses no longer include legacy workflow metadata.");
+    }
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionFourSubagentMemorySummary(
         CancellationToken cancellationToken)
     {
@@ -742,6 +756,14 @@ public sealed class EveClientTests
         await AssertInfoRejectedAsync(
             AgentInfoV3Fixture.WithoutChannels(),
             "Schema v3 requires every canonical top-level collection.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionThreeMissingWorkflowMetadata(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV3Fixture.WithoutWorkflow(),
+            "Historical schema v3 requires workflow metadata.",
             cancellationToken);
 
     [Test]
