@@ -119,8 +119,10 @@ public sealed class EveSession
     /// <see cref="RespondAsync(IReadOnlyList{EveInputResponse}, EveTurnOptions, CancellationToken)"/>.
     /// <para>
     /// When this message reaches a session that already has an active turn, eve <c>0.33.0</c> and
-    /// later cancel and replace that turn unless
-    /// <see cref="EveTurnOptions.TurnPolicy"/> is <see cref="EveTurnPolicy.Queue"/>. The policy is
+    /// later steer unless <see cref="EveTurnOptions.TurnPolicy"/> is
+    /// <see cref="EveTurnPolicy.Queue"/>. Eve <c>0.59.1</c> and later apply steering at the next
+    /// committed boundary inside the active turn, preserving its turn identity and accumulated
+    /// usage. A message accepted after that turn settles starts a follow-up turn. The policy is
     /// sent only for a message continuing an existing session.
     /// </para>
     /// </remarks>

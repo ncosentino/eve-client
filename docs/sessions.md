@@ -74,13 +74,19 @@ cancellation. `RespondAsync` does not use this readiness retry.
 
 A message that reaches a session which already has an active turn is governed by
 a delivery policy. eve `0.33.0` changed the server-side default from waiting to
-steering, so an overlapping send now cancels the active turn and replaces it.
+steering.
 
 !!! warning "eve 0.33.0 steers by default"
-    Sending no policy means eve `0.33.0` and later cancel the active turn. Set
-    `TurnPolicy` to `EveTurnPolicy.Queue` to keep the earlier
-    wait-for-completion behavior. Nothing fails loudly, because the request
-    format did not change.
+    Sending no policy means eve `0.33.0` and later steer. Set `TurnPolicy` to
+    `EveTurnPolicy.Queue` to keep the earlier wait-for-completion behavior.
+    Nothing fails loudly, because the request format did not change.
+
+Eve `0.59.1` changed steering from cancel-and-replace to an in-place update at
+the next committed boundary. Steering accepted while a turn is active preserves
+that turn's identifier and accumulated usage; the response can therefore begin
+with `message.received` or another same-turn event rather than a new
+`turn.started`. Steering accepted after the answer settles starts a normal
+follow-up turn with a new identifier.
 
 ```csharp
 EveMessageResponse response = await session.SendAsync(

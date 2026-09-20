@@ -55,7 +55,9 @@ public sealed record EveTurnOptions
     /// This applies only to a message sent to an existing session. It is omitted when the turn
     /// creates the session, because a new session has no active turn, and when the turn carries
     /// only input responses, matching the upstream client. Leaving this unset sends no policy, so
-    /// eve <c>0.33.0</c> and later steer the active turn.
+    /// eve <c>0.33.0</c> and later steer the active turn. Eve <c>0.59.1</c> and later apply
+    /// steering at the next committed boundary without replacing the active turn identity; a
+    /// message accepted after settlement starts a follow-up turn.
     /// </remarks>
     public EveTurnPolicy? TurnPolicy { get; init; }
 }
