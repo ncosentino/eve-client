@@ -1070,8 +1070,8 @@
 <p>Waits for the active turn to finish before the new message runs.</p>
 <p><a name='NexusLabs.Eve.EveTurnPolicy.Steer'></a></p>
 <p><code>Steer</code> 1</p>
-<p>Cancels the active turn and replaces it with the new message after eve durably
-buffers that message.</p>
+<p>Applies the new message at the next committed boundary of the active turn.
+If that turn has already settled, the message starts a follow-up turn.</p>
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
 <p>eve <code>0.33.0</code> made <a href="./#NexusLabs.Eve.EveTurnPolicy.Steer" title="NexusLabs.Eve.EveTurnPolicy.Steer">Steer</a> the server-side default. A client that sends no
 policy therefore steers. Send <a href="./#NexusLabs.Eve.EveTurnPolicy.Queue" title="NexusLabs.Eve.EveTurnPolicy.Queue">Queue</a> to keep the wait-for-completion behavior

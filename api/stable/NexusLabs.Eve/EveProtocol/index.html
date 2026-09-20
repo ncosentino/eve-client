@@ -1106,7 +1106,7 @@ minimum. The message-stream protocol remains version <code>25</code>.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.ReferenceEveVersion'></a></p>
 <h2 id="eveprotocolreferenceeveversion-field">EveProtocol.ReferenceEveVersion Field<a class="headerlink" href="#eveprotocolreferenceeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the upstream TypeScript package version used as the compatibility reference.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.59.0"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.63.0"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_3">Field Value<a class="headerlink" href="#field-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1117,29 +1117,40 @@ minimum. The message-stream protocol remains version <code>25</code>.</p>
 </code></pre></div>
 <h4 id="field-value_4">Field Value<a class="headerlink" href="#field-value_4" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p><a name='NexusLabs.Eve.EveProtocol.StreamControlVersion'></a></p>
+<h2 id="eveprotocolstreamcontrolversion-field">EveProtocol.StreamControlVersion Field<a class="headerlink" href="#eveprotocolstreamcontrolversion-field" title="Permanent link">&para;</a></h2>
+<p>Gets the transport-control version used to renew leased session stream responses.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">StreamControlVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"1"</span><span class="p">;</span>
+</code></pre></div>
+<h4 id="field-value_5">Field Value<a class="headerlink" href="#field-value_5" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
+<p>Eligible absolute-cursor streams send this version through the internal
+<code>streamControlVersion</code> query parameter. Lease control records remain internal and
+are never projected as durable <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a> values.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.StreamVersionHeaderName'></a></p>
 <h2 id="eveprotocolstreamversionheadername-field">EveProtocol.StreamVersionHeaderName Field<a class="headerlink" href="#eveprotocolstreamversionheadername-field" title="Permanent link">&para;</a></h2>
 <p>Gets the response header that carries the stream protocol version.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">StreamVersionHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"x-eve-stream-version"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">StreamVersionHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"x-eve-stream-version"</span><span class="p">;</span>
 </code></pre></div>
-<h4 id="field-value_5">Field Value<a class="headerlink" href="#field-value_5" title="Permanent link">&para;</a></h4>
+<h4 id="field-value_6">Field Value<a class="headerlink" href="#field-value_6" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <p><a name='NexusLabs.Eve.EveProtocol.VercelTrustedOidcTokenHeaderName'></a></p>
 <h2 id="eveprotocolverceltrustedoidctokenheadername-field">EveProtocol.VercelTrustedOidcTokenHeaderName Field<a class="headerlink" href="#eveprotocolverceltrustedoidctokenheadername-field" title="Permanent link">&para;</a></h2>
 <p>Gets the Vercel header used to present a trusted OIDC identity-provider token.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">VercelTrustedOidcTokenHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"x-vercel-trusted-oidc-idp-token"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">VercelTrustedOidcTokenHeaderName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"x-vercel-trusted-oidc-idp-token"</span><span class="p">;</span>
 </code></pre></div>
-<h4 id="field-value_6">Field Value<a class="headerlink" href="#field-value_6" title="Permanent link">&para;</a></h4>
+<h4 id="field-value_7">Field Value<a class="headerlink" href="#field-value_7" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <h3 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h3>
 <p><a name='NexusLabs.Eve.EveProtocol.SupportedAgentInfoVersions'></a></p>
 <h2 id="eveprotocolsupportedagentinfoversions-property">EveProtocol.SupportedAgentInfoVersions Property<a class="headerlink" href="#eveprotocolsupportedagentinfoversions-property" title="Permanent link">&para;</a></h2>
 <p>Gets the agent-info payload schema versions this package understands.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SupportedAgentInfoVersions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SupportedAgentInfoVersions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
+<h3 id="remarks_3">Remarks<a class="headerlink" href="#remarks_3" title="Permanent link">&para;</a></h3>
 <p>eve raised the schema to <code>2</code> in <code>0.35.0</code>, where static instructions became a
 list whose entries carry <code>content</code> and a <code>system</code> or <code>user</code> role.
 Eve <code>0.45.0</code> uses version <code>3</code> for canonical source ownership, bindings,
