@@ -22,7 +22,8 @@ remote session prewarming, compact named-agent mounts, NDJSON streaming,
 reconnect-by-index, attachments, and structured output.
 
 This package requires Vercel `eve` **0.54.2** or newer and currently targets
-**0.59.0**, using message-stream protocol **25** and agent-info schema **v4**.
+**0.63.0**, using message-stream protocol **25**, stream-control protocol **1**, and
+agent-info schema **v4**.
 Eve `0.54.2` is the first published release whose strict schema-v4 kernel-effect action
 set is exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier
 schema-v4 servers can still advertise the obsolete `task-update` action under the same
@@ -31,6 +32,7 @@ schema version, so **upgrade the eve server before upgrading this client**.
 Eve `0.59.0` adds message-free remote session prewarming and readiness retries for the
 first later send. It also uses compact `/eve/<agent>/v1/*` routes for named workspace
 agents and advances live session cursors before yielding each consumed event.
+Eve `0.59.1` adds renewable leased stream responses and in-place steering semantics.
 
 Eve `0.52.3` separately introduced the accepted response `deliveryId` used to skip stale
 durable events and return the accepted existing-session delivery. The initial `SendAsync`

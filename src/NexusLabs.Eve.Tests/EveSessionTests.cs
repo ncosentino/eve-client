@@ -67,7 +67,8 @@ public sealed class EveSessionTests
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
             "https://agent.example.com/eve/v1/session");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1");
         await Assert.That(handler.Calls[0].Headers["x-request-id"]).IsEqualTo("request_1");
         await Assert.That(handler.Calls[1].Headers["x-request-id"]).IsEqualTo("request_1");
 
@@ -229,7 +230,8 @@ public sealed class EveSessionTests
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
             "https://agent.example.com/eve/v1/session/session_attached");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_attached/stream?startIndex=7");
+            "https://agent.example.com/eve/v1/session/session_attached/stream"
+            + "?streamControlVersion=1&startIndex=7");
         await Assert.That(session.State).IsEqualTo(new EveSessionState
         {
             SessionId = "session_attached",
@@ -1106,9 +1108,11 @@ public sealed class EveSessionTests
         await Assert.That(outcome.Events.Count).IsEqualTo(2);
         await Assert.That(handler.Calls.Count).IsEqualTo(3);
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1");
         await Assert.That(handler.Calls[2].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=1");
     }
 
     [Test]
@@ -1152,7 +1156,8 @@ public sealed class EveSessionTests
         await Assert.That(outcome.Events[1].Kind).IsEqualTo(EveStreamEventKind.SessionWaiting);
         await Assert.That(handler.Calls.Count).IsEqualTo(3);
         await Assert.That(handler.Calls[2].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=1");
         await Assert.That(idleStream.IsDisposed)
             .IsTrue()
             .Because("The timed-out response must release its idle connection.");
@@ -1217,7 +1222,8 @@ public sealed class EveSessionTests
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
         await Assert.That(handler.Calls.Count).IsEqualTo(3);
         await Assert.That(handler.Calls[2].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=3");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=3");
         await Assert.That(session.State).IsEqualTo(new EveSessionState
         {
             SessionId = "session_1",
@@ -1625,7 +1631,8 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(2);
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&includeTailIndex=1");
         await Assert.That(session.State).IsEqualTo(initialState with
         {
             StreamIndex = 2,
@@ -1665,9 +1672,11 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(3);
         await Assert.That(handler.Calls.Count).IsEqualTo(2);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&includeTailIndex=1");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=1");
         await Assert.That(session.State).IsEqualTo(initialState with
         {
             StreamIndex = 3,
@@ -1721,9 +1730,11 @@ public sealed class EveSessionTests
         await Assert.That(events[1].Kind).IsEqualTo(EveStreamEventKind.SessionCompleted);
         await Assert.That(handler.Calls.Count).IsEqualTo(2);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?includeTailIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&includeTailIndex=1");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=1");
         await Assert.That(idleStream.IsDisposed)
             .IsTrue()
             .Because("The bounded read must release its timed-out connection.");
@@ -1763,7 +1774,8 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(0);
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=5&includeTailIndex=1");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=5&includeTailIndex=1");
         await Assert.That(session.State).IsEqualTo(initialState);
     }
 

@@ -242,7 +242,8 @@ public sealed class EveDeliveryCorrelationTests
         await Assert.That(outcome.Events.Count).IsEqualTo(2);
         await Assert.That(handler.Calls.Count).IsEqualTo(3);
         await Assert.That(handler.Calls[2].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=4");
+            "https://agent.example.com/eve/v1/session/session_1/stream"
+            + "?streamControlVersion=1&startIndex=4");
         await Assert.That(session.State.StreamIndex).IsEqualTo(6);
     }
 

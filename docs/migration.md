@@ -4,7 +4,7 @@ description: Upgrade an eve deployment and NexusLabs.Eve client safely across th
 
 # Migrating to eve 0.54.2
 
-The current client requires eve `0.54.2` or newer and uses eve `0.59.0` as its
+The current client requires eve `0.54.2` or newer and uses eve `0.63.0` as its
 compatibility reference. Eve `0.54.2` is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly `subagent-call`, `task-cancel`, and
 `workflow-tool-call`.

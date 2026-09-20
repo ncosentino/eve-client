@@ -2,12 +2,15 @@
 using System.Globalization;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace NexusLabs.Eve;
 
 internal static class EveStreamFollower
 {
     private const string TailIndexHeader = "x-eve-stream-tail-index";
+    private const string StreamControlVersionQuery = "streamControlVersion";
+    private const string LeaseEndedControlName = "stream.lease-ended";
     private static readonly TimeSpan StreamReadIdleTimeout = TimeSpan.FromSeconds(15);
 
     private static readonly HttpStatusCode[] DefaultRetryableStatusCodes =
@@ -44,6 +47,8 @@ internal static class EveStreamFollower
         {
             bool deliveredEvent = false;
             ConnectionReadState readState = new();
+            bool streamControlEnabled =
+                startIndex >= 0 && policy.Idle.MaxAttempts > 0;
             HttpResponseMessage? response = null;
             IAsyncEnumerator<EveStreamEvent>? connection = null;
             using CancellationTokenSource connectionAbortSource =
@@ -55,6 +60,7 @@ internal static class EveStreamFollower
                     sessionId,
                     startIndex,
                     !follow && tailIndex is null,
+                    streamControlEnabled,
                     headers,
                     protectedHeaderOverrides,
                     policy,
@@ -79,6 +85,7 @@ internal static class EveStreamFollower
                         maximumEventBytes,
                         client.TimeProvider,
                         readState,
+                        streamControlEnabled,
                         connectionAbortSource.Token)
                     .GetAsyncEnumerator(connectionAbortSource.Token);
                 while (true)
@@ -144,6 +151,11 @@ internal static class EveStreamFollower
                 yield break;
             }
 
+            if (readState.LeaseEnded)
+            {
+                continue;
+            }
+
             if (policy.EnforceIdleAttemptLimit
                 && !deliveredEvent
                 && !initialConnection
@@ -167,6 +179,7 @@ internal static class EveStreamFollower
         int? maximumEventBytes,
         TimeProvider timeProvider,
         ConnectionReadState readState,
+        bool streamControlEnabled,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         int streamVersion = ReadStreamVersion(response);
@@ -207,6 +220,14 @@ internal static class EveStreamFollower
                 continue;
             }
 
+            if (streamControlEnabled
+                && trimmed.Contains("\"$eve\"", StringComparison.Ordinal)
+                && IsLeaseEndedControl(trimmed))
+            {
+                readState.LeaseEnded = true;
+                continue;
+            }
+
             yield return decoder.Decode(trimmed);
         }
     }
@@ -216,6 +237,7 @@ internal static class EveStreamFollower
         string sessionId,
         int startIndex,
         bool requestTailIndex,
+        bool streamControlEnabled,
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
@@ -234,6 +256,7 @@ internal static class EveStreamFollower
                 sessionId,
                 startIndex,
                 requestTailIndex,
+                streamControlEnabled,
                 headers,
                 protectedHeaderOverrides,
                 policy,
@@ -251,6 +274,7 @@ internal static class EveStreamFollower
         string sessionId,
         int startIndex,
         bool requestTailIndex,
+        bool streamControlEnabled,
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
@@ -261,6 +285,11 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, IReadOnlyList<string>>? lastHeaders = null;
         TimeSpan retryDelay = policy.Open.BaseDelay;
         Dictionary<string, string> queryParameters = [];
+        if (streamControlEnabled)
+        {
+            queryParameters[StreamControlVersionQuery] = EveProtocol.StreamControlVersion;
+        }
+
         if (startIndex != 0)
         {
             queryParameters["startIndex"] = startIndex.ToString(CultureInfo.InvariantCulture);
@@ -375,6 +404,30 @@ internal static class EveStreamFollower
         }
 
         return version;
+    }
+
+    private static bool IsLeaseEndedControl(string json)
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement root = document.RootElement;
+            return root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("$eve", out JsonElement name)
+                && name.ValueKind == JsonValueKind.String
+                && string.Equals(
+                    name.GetString(),
+                    LeaseEndedControlName,
+                    StringComparison.Ordinal)
+                && root.TryGetProperty("version", out JsonElement version)
+                && version.ValueKind == JsonValueKind.Number
+                && version.TryGetInt32(out int value)
+                && value == 1;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     // A negative tail index is valid upstream and reports an empty durable stream,
@@ -543,6 +596,8 @@ internal static class EveStreamFollower
 
     private sealed class ConnectionReadState
     {
+        internal bool LeaseEnded { get; set; }
+
         internal bool ReachedEndOfStream { get; set; }
     }
 }

@@ -7,6 +7,20 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- **Reference eve version:** `0.63.0`; **minimum eve version:** `0.54.2`;
+  message-stream protocol `25`; stream-control protocol `1`; agent-info schema
+  version `4`.
+- Steering semantics now document and verify Eve `0.59.1` in-place active-turn
+  updates and late follow-up turns.
+
+### Fixed
+
+- Eligible session streams negotiate renewable leases, consume lease-end
+  transport records internally, and reconnect immediately from their absolute
+  cursor without spending idle retry attempts.
+
 ## [0.1.0-alpha.13] - 2026-09-19
 
 ### Added

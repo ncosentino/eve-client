@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.59.0";
+    public const string ReferenceEveVersion = "0.63.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -71,6 +71,16 @@ public static class EveProtocol
     /// Gets the response header that carries the stream protocol version.
     /// </summary>
     public const string StreamVersionHeaderName = "x-eve-stream-version";
+
+    /// <summary>
+    /// Gets the transport-control version used to renew leased session stream responses.
+    /// </summary>
+    /// <remarks>
+    /// Eligible absolute-cursor streams send this version through the internal
+    /// <c>streamControlVersion</c> query parameter. Lease control records remain internal and
+    /// are never projected as durable <see cref="EveStreamEvent"/> values.
+    /// </remarks>
+    public const string StreamControlVersion = "1";
 
     /// <summary>
     /// Gets the Vercel header used to present a trusted OIDC identity-provider token.
