@@ -7,7 +7,8 @@ description: Understand supported eve versions, stream protocol compatibility, a
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
 | Unreleased | 0.63.0 | 25 | Stream control 1; minimum 0.54.2 |
-| 0.1.0-alpha.13 | 0.59.0 | 25 | Current prerelease; minimum 0.54.2 |
+| 0.1.0-alpha.14 | 0.63.0 | 25 | Current prerelease; stream control 1 |
+| 0.1.0-alpha.13 | 0.59.0 | 25 | Previous compatibility target |
 | 0.1.0-alpha.12 | 0.54.2 | 25 | Previous compatibility target |
 | 0.1.0-alpha.11 | 0.54.0 | 25 | Previous compatibility target |
 | 0.1.0-alpha.10 | 0.46.1 | 24 | Previous compatibility target |
