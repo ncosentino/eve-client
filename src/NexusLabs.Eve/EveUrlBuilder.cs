@@ -4,6 +4,9 @@ namespace NexusLabs.Eve;
 
 internal static class EveUrlBuilder
 {
+    private const string EveNamedAgentMountPrefix = "/eve/";
+    private const string EveRoutePrefix = "/eve/v1";
+
     internal static Uri Create(
         string host,
         string routePath,
@@ -21,7 +24,9 @@ internal static class EveUrlBuilder
         {
             UriBuilder builder = new(absoluteHost)
             {
-                Path = $"{TrimTrailingSlash(absoluteHost.AbsolutePath)}{normalizedRoute}",
+                Path = JoinRoutePath(
+                    TrimTrailingSlash(absoluteHost.AbsolutePath),
+                    normalizedRoute),
                 Fragment = string.Empty,
             };
             List<KeyValuePair<string, string>> absoluteQuery = ParseQuery(absoluteHost.Query);
@@ -37,8 +42,71 @@ internal static class EveUrlBuilder
             parts.Length == 2 ? parts[1] : string.Empty);
         query.AddRange(ParseQuery(embeddedQuery));
         string formattedQuery = FormatQuery(MergeQuery(query, routeQuery));
-        return new Uri($"{basePath}{normalizedRoute}{PrefixQuery(formattedQuery)}", UriKind.Relative);
+        return new Uri(
+            $"{JoinRoutePath(basePath, normalizedRoute)}{PrefixQuery(formattedQuery)}",
+            UriKind.Relative);
     }
+
+    private static string JoinRoutePath(string basePath, string routePath)
+    {
+        if (!IsEveProtocolRoute(routePath))
+        {
+            return $"{basePath}{routePath}";
+        }
+
+        if (IsCompactNamedAgentMount(basePath))
+        {
+            return $"{basePath}{routePath["/eve".Length..]}";
+        }
+
+        if (IsCompactNamedAgentProtocolMount(basePath))
+        {
+            return $"{basePath}{routePath[EveRoutePrefix.Length..]}";
+        }
+
+        return $"{basePath}{routePath}";
+    }
+
+    private static bool IsEveProtocolRoute(string path) =>
+        string.Equals(path, EveRoutePrefix, StringComparison.Ordinal)
+        || path.StartsWith($"{EveRoutePrefix}/", StringComparison.Ordinal);
+
+    private static bool IsCompactNamedAgentMount(string path) =>
+        path.StartsWith(EveNamedAgentMountPrefix, StringComparison.Ordinal)
+        && IsValidAgentName(path.AsSpan(EveNamedAgentMountPrefix.Length));
+
+    private static bool IsCompactNamedAgentProtocolMount(string path)
+    {
+        const string protocolSuffix = "/v1";
+        return path.StartsWith(EveNamedAgentMountPrefix, StringComparison.Ordinal)
+            && path.EndsWith(protocolSuffix, StringComparison.Ordinal)
+            && IsValidAgentName(path.AsSpan(
+                EveNamedAgentMountPrefix.Length,
+                path.Length - EveNamedAgentMountPrefix.Length - protocolSuffix.Length));
+    }
+
+    private static bool IsValidAgentName(ReadOnlySpan<char> name)
+    {
+        if (name.IsEmpty || !IsAsciiLowerLetterOrDigit(name[0]))
+        {
+            return false;
+        }
+
+        for (int index = 1; index < name.Length; index++)
+        {
+            char character = name[index];
+            if (!IsAsciiLowerLetterOrDigit(character)
+                && character is not '_' and not '-')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsAsciiLowerLetterOrDigit(char value) =>
+        value is >= 'a' and <= 'z' or >= '0' and <= '9';
 
     private static string TrimTrailingSlash(string value) =>
         value == "/"
