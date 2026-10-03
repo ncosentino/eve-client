@@ -28,6 +28,9 @@ internal sealed class StreamRequestRecorder : DelegatingHandler
                 uri,
                 response.Headers.TryGetValues(TailIndexHeader, out IEnumerable<string>? values)
                     ? values.FirstOrDefault()
+                    : null,
+                response.Headers.TryGetValues("x-eve-stream-version", out IEnumerable<string>? versions)
+                    ? versions.FirstOrDefault()
                     : null));
         }
 

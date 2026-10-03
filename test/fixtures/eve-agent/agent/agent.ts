@@ -15,11 +15,13 @@ const usage = {
   },
 };
 
-const model = new MockLanguageModelV3({
+export const model = new MockLanguageModelV3({
   modelId: "nexuslabs-eve-compatibility",
   provider: "nexuslabs-test",
   doStream: async (options) => {
     const prompt = JSON.stringify(options.prompt);
+    const shouldCallChild =
+      prompt.includes("REQUEST_CHILD_STREAM") && !prompt.includes("CHILD_TOOL_OK");
     const shouldWaitForCancellation = prompt.includes("WAIT_FOR_CANCEL");
     const shouldRequestApproval =
       prompt.includes("REQUEST_APPROVAL") && !prompt.includes("APPROVAL_TOOL_OK");
@@ -55,6 +57,23 @@ const model = new MockLanguageModelV3({
       stream: new ReadableStream({
         start(controller) {
           controller.enqueue({ type: "stream-start", warnings: [] });
+
+          if (shouldCallChild) {
+            const input = "{}";
+            controller.enqueue({
+              input,
+              toolCallId: "call_child",
+              toolName: "child_stream",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
 
           if (shouldRequestApproval) {
             const input = JSON.stringify({ reason: "compatibility" });
@@ -181,6 +200,13 @@ const model = new MockLanguageModelV3({
             return;
           }
 
+          controller.enqueue({ id: "thought", type: "reasoning-start" });
+          controller.enqueue({
+            delta: "DETERMINISTIC_REASONING",
+            id: "thought",
+            type: "reasoning-delta",
+          });
+          controller.enqueue({ id: "thought", type: "reasoning-end" });
           controller.enqueue({ id: "answer", type: "text-start" });
 
           if (shouldWaitForCancellation) {
@@ -202,7 +228,11 @@ const model = new MockLanguageModelV3({
             return;
           }
 
-          const responseText = isFollowingTurnClientContextProbe
+          const responseText = prompt.includes("STRUCTURED_RESPONSE")
+            ? '{"status":"STRUCTURED_OK"}'
+            : prompt.includes("CHILD_STREAM_RESPONSE")
+            ? "CHILD_STREAM_OK"
+            : isFollowingTurnClientContextProbe
             ? hasTurnScopedClientContext
               ? "CLIENT_CONTEXT_PRESENT_ON_FOLLOWING_TURN"
               : "CLIENT_CONTEXT_ABSENT_ON_FOLLOWING_TURN"

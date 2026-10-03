@@ -46,10 +46,14 @@ if (string.IsNullOrWhiteSpace(info.AgentName)
     throw new InvalidOperationException("The Eve fixture returned invalid agent information.");
 }
 
-if (info.Version == 4 && info.Raw.TryGetProperty("workflow", out _))
+if (info.Version != 5
+    || info.Raw.TryGetProperty("workflow", out _)
+    || info.Raw.GetProperty("agent").GetProperty("config")
+        .GetProperty("binding").GetProperty("backing").GetProperty("kind").GetString()
+        != "filesystem")
 {
     throw new InvalidOperationException(
-        "The current schema-v4 Eve fixture still exposed removed workflow metadata.");
+        "The current Eve fixture did not expose schema-v5 filesystem-backed configuration.");
 }
 
 JsonElement kernelEffects = info.Raw.GetProperty("kernelEffects");
@@ -153,6 +157,90 @@ EveMessageResponse textResponse = await textSession.SendAsync(
 EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
 RequireDurableEventEnvelope(textOutcome, "text turn");
+if (!textOutcome.Events.Any(static streamEvent =>
+    streamEvent.Kind == EveStreamEventKind.ReasoningAppended
+    && streamEvent.Data.GetProperty("reasoningDelta").GetString() == "DETERMINISTIC_REASONING"
+    && !streamEvent.Data.TryGetProperty("reasoningSoFar", out _)))
+{
+    throw new InvalidOperationException("The fixture did not preserve streamed reasoning deltas.");
+}
+if (streamRecorder.StreamRequests.Count == 0
+    || streamRecorder.StreamRequests.Any(static request => request.StreamVersion != "26"))
+{
+    throw new InvalidOperationException("The real Eve stream did not advertise protocol version 26.");
+}
+
+EveSession childParentSession = client.CreateSession();
+EveMessageResponse childParentResponse = await childParentSession.SendAsync(
+    "REQUEST_CHILD_STREAM",
+    timeout.Token);
+EveTurnOutcome childParentOutcome = await childParentResponse.GetOutcomeAsync(timeout.Token);
+RequireSuccessfulResponse(childParentOutcome, "child parent turn");
+EveStreamEvent childDescriptor = childParentOutcome.Events.Single(
+    static streamEvent => streamEvent.Type == "agent.started");
+string childSessionId = childDescriptor.Data.GetProperty("sessionId").GetString()
+    ?? throw new InvalidOperationException("The child announcement omitted its session identifier.");
+if (childSessionId == childParentResponse.SessionId
+    || childDescriptor.Data.GetProperty("name").GetString() != "probe_child"
+    || childDescriptor.Data.GetProperty("callId").GetString() != "call_child"
+    || childDescriptor.Data.TryGetProperty("remote", out _)
+    || childParentOutcome.Events.Any(static streamEvent => streamEvent.Type == "subagent.called"))
+{
+    throw new InvalidOperationException("The real child announcement did not use local agent.started coordinates.");
+}
+
+EveSessionState parentCursorBeforeChild = childParentSession.State;
+int recordedBeforeChild = streamRecorder.StreamRequests.Count;
+List<EveStreamEvent> childEvents = [];
+await foreach (EveStreamEvent streamEvent in childParentSession.StreamSubagentAsync(
+    childDescriptor,
+    new EveStreamOptions { Follow = false, StartIndex = 0 },
+    timeout.Token))
+{
+    childEvents.Add(streamEvent);
+    if (childParentSession.State != parentCursorBeforeChild)
+    {
+        throw new InvalidOperationException("Consuming the child changed the parent stream cursor.");
+    }
+}
+
+RecordedStreamRequest childRequest = streamRecorder.StreamRequests[recordedBeforeChild];
+string expectedChildPath = $"/eve/v1/session/{Uri.EscapeDataString(childSessionId)}/stream";
+if (new Uri(childRequest.Uri).AbsolutePath != expectedChildPath
+    || childDescriptor.Data.GetProperty("streamPath").GetString() != expectedChildPath
+    || !childRequest.Uri.Contains("startIndex=0", StringComparison.Ordinal)
+    || childRequest.StreamVersion != "26"
+    || !childEvents.Any(static streamEvent =>
+        streamEvent.Kind == EveStreamEventKind.MessageCompleted
+        && streamEvent.Data.GetProperty("message").GetString() == "CHILD_STREAM_OK"))
+{
+    throw new InvalidOperationException("The direct child route did not return its independent durable stream.");
+}
+foreach (EveStreamEvent childEvent in childEvents)
+{
+    if (childEvent.Metadata is not EveStreamEventMetadata childMetadata
+        || string.IsNullOrWhiteSpace(childMetadata.At)
+        || childMetadata.Id is not string childIdentifier
+        || !IsEventIdentifier(childIdentifier))
+    {
+        throw new InvalidOperationException("The child stream omitted its independent durable metadata.");
+    }
+}
+
+using JsonDocument outputSchema = JsonDocument.Parse(
+    """{"type":"object","properties":{"status":{"type":"string"}},"required":["status"],"additionalProperties":false}""");
+EveSession structuredSession = client.CreateSession();
+EveMessageResponse structuredResponse = await structuredSession.SendAsync(
+    EveMessageContent.FromText("STRUCTURED_RESPONSE"),
+    new EveTurnOptions { OutputSchema = outputSchema.RootElement },
+    timeout.Token);
+EveTurnOutcome structuredOutcome = await structuredResponse.GetOutcomeAsync(timeout.Token);
+if (structuredOutcome.Status != EveTurnStatus.Waiting
+    || structuredOutcome.Data is not JsonElement structuredData
+    || structuredData.GetProperty("status").GetString() != "STRUCTURED_OK")
+{
+    throw new InvalidOperationException("The real Eve fixture did not return schema-constrained output.");
+}
 
 EveSession deliveryCorrelationSession = client.CreateSession();
 EveMessageResponse priorDeliveryResponse = await deliveryCorrelationSession.SendAsync(
@@ -293,7 +381,8 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
         // fixture's selected port. The framework-owned path and token remain authoritative.
         authorizationWebhook = new Uri(baseUri, reportedWebhook.PathAndQuery);
     }
-    else if (streamEvent.Kind == EveStreamEventKind.SessionWaiting
+    else if (streamEvent.Kind == EveStreamEventKind.TurnWaiting
+        && streamEvent.Data.GetProperty("on").GetString() == "input"
         && authorizationWebhook is not null
         && !authorizationCallbackSent)
     {
@@ -311,11 +400,24 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
     }
 }
 
+if (authorizationCallbackSent)
+{
+    await foreach (EveStreamEvent streamEvent in authorizationSession.StreamAsync(timeout.Token))
+    {
+        authorizationEvents.Add(streamEvent);
+        if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
+        {
+            break;
+        }
+    }
+}
+
 int authorizationRequiredIndex = authorizationEvents.FindIndex(
     static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationRequired);
 int interimWaitingIndex = authorizationEvents.FindIndex(
     authorizationRequiredIndex + 1,
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.SessionWaiting);
+    static streamEvent => streamEvent.Kind == EveStreamEventKind.TurnWaiting
+        && streamEvent.Data.GetProperty("on").GetString() == "input");
 int authorizationCompletedIndex = authorizationEvents.FindIndex(
     static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationCompleted);
 int finalWaitingIndex = authorizationEvents.FindLastIndex(
@@ -327,7 +429,7 @@ if (!authorizationCallbackSent
     || finalWaitingIndex <= authorizationCompletedIndex)
 {
     throw new InvalidOperationException(
-        "The callback authorization stream did not continue across its interim waiting boundary. " +
+        "The callback authorization did not resume across its held input boundary. " +
         $"Observed: {string.Join(", ", authorizationEvents.Select(static value => value.Type))}.");
 }
 
@@ -566,10 +668,13 @@ if (!string.Equals(
     || !approvalInput.Data.GetProperty("stepIndex").TryGetInt32(out _))
 {
     throw new InvalidOperationException(
-        "The streamed approval input did not retain its protocol-v25 delta coordinates.");
+        "The streamed approval input did not retain its protocol-v26 delta coordinates.");
 }
 
-if (approvalOutcome.InputRequests.Count != 1)
+if (approvalOutcome.InputRequests.Count != 1
+    || approvalOutcome.PendingInputRequests.Count != 1
+    || approvalOutcome.Events[^1].Kind != EveStreamEventKind.TurnWaiting
+    || approvalOutcome.Events[^1].Data.GetProperty("on").GetString() != "input")
 {
     throw new InvalidOperationException(
         $"The approval turn emitted {approvalOutcome.InputRequests.Count} input requests.");
@@ -596,6 +701,11 @@ EveMessageResponse resumedResponse = await approvalSession.RespondAsync(
     timeout.Token);
 EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resumedOutcome, "approved tool turn");
+if (resumedOutcome.PendingInputRequests.Count != 0
+    || resumedOutcome.Events.Any(static streamEvent => streamEvent.Kind == EveStreamEventKind.TurnCancelled))
+{
+    throw new InvalidOperationException("The approved tool turn did not resume without pending input.");
+}
 if (resumedOutcome.InputResolutions.Count != 1)
 {
     throw new InvalidOperationException(
@@ -636,6 +746,40 @@ if (resolutionIndex < 0 || resumedStepIndex <= resolutionIndex)
 {
     throw new InvalidOperationException(
         "The durable input resolution did not precede the resumed step.");
+}
+
+EveSession cancelledApprovalSession = client.CreateSession();
+EveMessageResponse cancelledApprovalResponse = await cancelledApprovalSession.SendAsync(
+    "REQUEST_APPROVAL",
+    timeout.Token);
+EveTurnOutcome cancelledApprovalHeld =
+    await cancelledApprovalResponse.GetOutcomeAsync(timeout.Token);
+if (cancelledApprovalHeld.Status != EveTurnStatus.Waiting
+    || cancelledApprovalHeld.PendingInputRequests.Count != 1
+    || cancelledApprovalHeld.Events[^1].Kind != EveStreamEventKind.TurnWaiting)
+{
+    throw new InvalidOperationException("The cancellation probe did not hold an approval request.");
+}
+
+EveCancellationOutcome cancelledApproval =
+    await cancelledApprovalResponse.CancelAsync(timeout.Token);
+List<EveStreamEvent> cancelledApprovalEvents = [];
+await foreach (EveStreamEvent streamEvent in cancelledApprovalSession.StreamAsync(timeout.Token))
+{
+    cancelledApprovalEvents.Add(streamEvent);
+    if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
+    {
+        break;
+    }
+}
+
+if (cancelledApproval.Status != EveCancellationStatus.Accepted
+    || !cancelledApprovalEvents.Any(static streamEvent =>
+        streamEvent.Kind == EveStreamEventKind.TurnCancelled)
+    || cancelledApprovalEvents.Any(static streamEvent =>
+        streamEvent.Kind == EveStreamEventKind.MessageCompleted))
+{
+    throw new InvalidOperationException("Cancelling the held input turn did not settle without executing it.");
 }
 
 EveSession resetSession = client.CreateSession();
@@ -716,6 +860,21 @@ if (string.Equals(afterResetResponse.SessionId, resetSessionId, StringComparison
 
 EveTurnOutcome afterResetOutcome = await afterResetResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(afterResetOutcome, "post-reset turn");
+
+EveCompactOutcome compact = await afterResetSession.CompactAsync(timeout.Token);
+if (compact.Status != EveCompactStatus.Accepted
+    || compact.SessionId != afterResetResponse.SessionId)
+{
+    throw new InvalidOperationException("The Eve fixture did not accept compaction for the active session.");
+}
+
+EveClearOutcome clear = await afterResetSession.ClearAsync(timeout.Token);
+if (clear.Status != EveClearStatus.Accepted
+    || clear.SessionId != afterResetResponse.SessionId
+    || afterResetSession.State.SessionId != afterResetResponse.SessionId)
+{
+    throw new InvalidOperationException("The Eve fixture did not clear context without retiring the session.");
+}
 
 return 0;
 

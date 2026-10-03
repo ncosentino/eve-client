@@ -3,4 +3,7 @@
 /// <summary>
 /// One observed stream request and the durable tail index the server reported for it.
 /// </summary>
-internal sealed record RecordedStreamRequest(string Uri, string? TailIndex);
+internal sealed record RecordedStreamRequest(
+    string Uri,
+    string? TailIndex,
+    string? StreamVersion);
