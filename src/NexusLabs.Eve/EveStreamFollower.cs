@@ -65,8 +65,8 @@ internal static class EveStreamFollower
                     headers,
                     protectedHeaderOverrides,
                     policy,
-                    connectionAbortSource.Token,
-                    streamRoutePath);
+                    streamRoutePath,
+                    connectionAbortSource.Token);
                 if (response is null)
                 {
                     yield break;
@@ -243,8 +243,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
-        CancellationToken cancellationToken,
-        string? streamRoutePath)
+        string? streamRoutePath,
+        CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -263,8 +263,8 @@ internal static class EveStreamFollower
                 headers,
                 protectedHeaderOverrides,
                 policy,
-                cancellationToken,
-                streamRoutePath);
+                streamRoutePath,
+                cancellationToken);
 #pragma warning restore IDISP011
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -282,8 +282,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
-        CancellationToken cancellationToken,
-        string? streamRoutePath)
+        string? streamRoutePath,
+        CancellationToken cancellationToken)
     {
         HttpStatusCode? lastStatusCode = null;
         string? lastBody = null;

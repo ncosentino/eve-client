@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text;
 using System.Text.Json;
+
 using static NexusLabs.Eve.Tests.EveTestResponses;
 
 namespace NexusLabs.Eve.Tests;
