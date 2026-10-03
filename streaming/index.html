@@ -1338,6 +1338,16 @@ enum, so a future outcome added upstream is still readable.</p>
 <p>An agent older than eve <code>0.34.0</code> never emits these events. Because the client maps
 by wire type, they simply do not appear.</p>
 <h2 id="callback-authorization-parking">Callback authorization parking<a class="headerlink" href="#callback-authorization-parking" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.70.0</code> parks an active turn with <code>turn.waiting</code>. Its required <code>on</code>
+discriminator distinguishes human input from task work. A response returns a
+<code>Waiting</code> outcome for unresolved input requests, or an <code>input</code> park without an
+outstanding callback. It continues through task waits and callback-backed sign-ins.
+Callback attempts are correlated by <code>attemptId</code> when supplied, otherwise by the
+connection name.</p>
+<p>Text completed before a <code>turn.waiting</code> park is interim and is not exposed as the
+final <code>EveTurnOutcome.Message</code>. <code>PendingInputRequests</code> reports unresolved requests
+observed by this response; <code>InputRequests</code> retains their full history. A parked
+turn remains active, so the consumed response can still cancel its guarded turn.</p>
 <p>eve <code>0.41.0</code> may emit <code>authorization.required</code> with a <code>webhookUrl</code>, followed by an
 interim <code>session.waiting</code>, while a framework-owned callback is pending. Keep enumerating
 the active <code>EveMessageResponse</code>: it remains attached until the matching
