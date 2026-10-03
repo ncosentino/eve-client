@@ -34,7 +34,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         EveStreamReconnectPolicy? configuredPolicy,
         int? maximumEventBytes,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        string? streamRoutePath = null)
     {
         ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy, mode);
         int startIndex = initialStartIndex;
@@ -64,6 +65,7 @@ internal static class EveStreamFollower
                     headers,
                     protectedHeaderOverrides,
                     policy,
+                    streamRoutePath,
                     connectionAbortSource.Token);
                 if (response is null)
                 {
@@ -241,6 +243,7 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
+        string? streamRoutePath,
         CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -260,6 +263,7 @@ internal static class EveStreamFollower
                 headers,
                 protectedHeaderOverrides,
                 policy,
+                streamRoutePath,
                 cancellationToken);
 #pragma warning restore IDISP011
         }
@@ -278,6 +282,7 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
+        string? streamRoutePath,
         CancellationToken cancellationToken)
     {
         HttpStatusCode? lastStatusCode = null;
@@ -309,7 +314,7 @@ internal static class EveStreamFollower
             using HttpRequestMessage request = await client.CreateRequestAsync(
                 HttpMethod.Get,
                 EveRequestKind.StreamSession,
-                EveRoutes.StreamSession(sessionId),
+                streamRoutePath ?? EveRoutes.StreamSession(sessionId),
                 headers,
                 null,
                 cancellationToken,

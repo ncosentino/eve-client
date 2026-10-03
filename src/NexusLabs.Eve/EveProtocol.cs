@@ -51,11 +51,13 @@ public static class EveProtocol
     /// by eve <c>0.54.2</c> accepts only <c>subagent-call</c>, <c>task-cancel</c>, and
     /// <c>workflow-tool-call</c>. Eve <c>0.56.0</c> retained schema version <c>4</c> while making
     /// legacy <c>workflow</c> metadata optional, so both schema-v4 shapes are accepted. Every
-    /// supported version exposes the identity fields this package projects, and its complete
+    /// supported version exposes the identity fields this package projects. Schema <c>5</c>
+    /// uses sandbox provider/environment/revision metadata, optional extension mount identities,
+    /// and tolerant kernel-effect options. The complete
     /// payload remains available through <see cref="EveAgentInfo.Raw"/>. A version outside this set
     /// is rejected rather than parsed optimistically.
     /// </remarks>
-    public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3, 4];
+    public static IReadOnlyList<int> SupportedAgentInfoVersions { get; } = [1, 2, 3, 4, 5];
 
     /// <summary>
     /// Gets the media type returned by eve session streams.

@@ -497,6 +497,122 @@ public sealed class EveSession
             cancellationToken);
     }
 
+    /// <summary>
+    /// Follows a child announced by this parent's <c>subagent.called</c> or
+    /// <c>agent.started</c> event, without advancing the parent's cursor.
+    /// </summary>
+    /// <param name="childEvent">The child descriptor received from this parent's stream.</param>
+    /// <param name="cancellationToken">Stops local consumption, not the remote child turn.</param>
+    /// <returns>The boundary-blind child stream, starting at index zero.</returns>
+    /// <exception cref="ArgumentNullException">The descriptor is null.</exception>
+    /// <exception cref="ArgumentException">The descriptor or its route is invalid or foreign.</exception>
+    /// <exception cref="InvalidOperationException">The parent has no session identifier.</exception>
+    /// <exception cref="EveProtocolException">The child stream protocol is invalid.</exception>
+    /// <exception cref="EveClientException">The server rejects the stream request.</exception>
+    public IAsyncEnumerable<EveStreamEvent> StreamSubagentAsync(
+        EveStreamEvent childEvent,
+        CancellationToken cancellationToken) =>
+        StreamSubagentAsync(childEvent, null, cancellationToken);
+
+    /// <summary>
+    /// Follows a local child's direct route or a remote child's parent-origin proxy.
+    /// </summary>
+    /// <remarks>
+    /// Uses this client's host, authentication, dynamic headers, limits and reconnect policy.
+    /// The independent child cursor defaults to zero and is not stored on this session.
+    /// Current <c>agent.started</c> descriptors do not carry parent identity;
+    /// callers must pass an event consumed from this parent's stream. Remote URLs in event
+    /// data are never contacted directly. Dispose or cancel enumeration to release transport
+    /// resources; neither operation cancels the child's server-side turn.
+    /// </remarks>
+    /// <param name="childEvent">A <c>subagent.called</c> or <c>agent.started</c> descriptor.</param>
+    /// <param name="options">Optional independent child cursor, bound and reconnect overrides.</param>
+    /// <param name="cancellationToken">Stops local child stream consumption.</param>
+    /// <returns>The boundary-blind durable child event stream.</returns>
+    /// <exception cref="ArgumentNullException">The descriptor is null.</exception>
+    /// <exception cref="ArgumentException">The descriptor or its route is invalid or foreign.</exception>
+    /// <exception cref="InvalidOperationException">The parent has no session identifier.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A bounded cursor is negative.</exception>
+    /// <exception cref="EveProtocolException">The stream protocol or bounded tail is invalid.</exception>
+    /// <exception cref="EveClientException">The server rejects the stream request.</exception>
+    public IAsyncEnumerable<EveStreamEvent> StreamSubagentAsync(
+        EveStreamEvent childEvent,
+        EveStreamOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(childEvent);
+        string parentId = State.SessionId
+            ?? throw new InvalidOperationException("The eve parent session has no session identifier.");
+        bool legacy = childEvent.Type == "subagent.called";
+        if ((!legacy && childEvent.Type != "agent.started")
+            || childEvent.Data.ValueKind != JsonValueKind.Object)
+        {
+            throw new ArgumentException("Expected a child stream descriptor.", nameof(childEvent));
+        }
+
+        JsonElement data = childEvent.Data;
+        if (legacy && ReadChildDescriptorString(data, "sessionId") != parentId)
+        {
+            throw new ArgumentException("The child descriptor belongs to a different parent.", nameof(childEvent));
+        }
+
+        string childId = ReadChildDescriptorString(data, legacy ? "childSessionId" : "sessionId");
+        string callId = ReadChildDescriptorString(data, "callId");
+        string path = ReadChildDescriptorString(data, legacy ? "childStreamPath" : "streamPath");
+        bool isRemote = data.TryGetProperty("remote", out JsonElement remote)
+            && remote.ValueKind != JsonValueKind.Null;
+        if (isRemote && remote.ValueKind != JsonValueKind.Object)
+        {
+            throw new ArgumentException("The child remote descriptor must be an object.", nameof(childEvent));
+        }
+
+        string expectedPath = isRemote
+            ? EveRoutes.StreamSubagent(parentId, callId, childId)
+            : EveRoutes.StreamSession(childId);
+        if (!string.Equals(path, expectedPath, StringComparison.Ordinal)
+            || childId is "." or ".."
+            || callId is "." or ".."
+            || parentId is "." or "..")
+        {
+            throw new ArgumentException(
+                "The child stream route must be the descriptor's direct or parent-proxy route.",
+                nameof(childEvent));
+        }
+
+        int startIndex = options?.StartIndex ?? 0;
+        bool follow = options?.Follow ?? true;
+        if (!follow && startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options), startIndex, "A bounded child stream requires a nonnegative cursor.");
+        }
+
+        return EveStreamFollower.FollowAsync(
+            _client,
+            childId,
+            startIndex,
+            follow,
+            EveStreamFollowMode.SessionStream,
+            null,
+            null,
+            options?.ReconnectPolicy,
+            _client.MaxStreamEventBytes,
+            cancellationToken,
+            path);
+    }
+
+    private static string ReadChildDescriptorString(JsonElement data, string name)
+    {
+        if (!data.TryGetProperty(name, out JsonElement value)
+            || value.ValueKind != JsonValueKind.String
+            || string.IsNullOrWhiteSpace(value.GetString()))
+        {
+            throw new ArgumentException($"The child descriptor requires a nonempty '{name}'.", nameof(data));
+        }
+
+        return value.GetString()!;
+    }
+
     private async Task<AcceptedTurn> PostTurnAsync(
         EveTurnOptions? options,
         bool mustDeliver,
