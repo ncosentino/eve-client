@@ -369,6 +369,7 @@ bool authorizationCallbackSent = false;
 await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellation(timeout.Token))
 {
     authorizationEvents.Add(streamEvent);
+    Console.Error.WriteLine($"Callback probe event: {streamEvent.Type}.");
 
     if (streamEvent.Kind == EveStreamEventKind.AuthorizationRequired)
     {
@@ -398,6 +399,7 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
         && authorizationWebhook is not null
         && !authorizationCallbackSent)
     {
+        probeScenario = "callback authorization webhook request";
         using HttpResponseMessage callbackResponse = await transport.GetAsync(
             authorizationWebhook,
             timeout.Token);
@@ -409,15 +411,18 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
         }
 
         authorizationCallbackSent = true;
+        probeScenario = "callback authorization resumed response";
     }
 }
 
 if (authorizationCallbackSent
     && authorizationEvents[^1].Kind != EveStreamEventKind.SessionWaiting)
 {
+    probeScenario = "callback authorization resumed attachment";
     await foreach (EveStreamEvent streamEvent in authorizationSession.StreamAsync(timeout.Token))
     {
         authorizationEvents.Add(streamEvent);
+        Console.Error.WriteLine($"Callback continuation event: {streamEvent.Type}.");
         if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
         {
             break;
