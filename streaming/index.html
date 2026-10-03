@@ -796,6 +796,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#child-agent-streams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Child agent streams
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bounded-catch-up-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1455,18 +1466,41 @@ and an observed turn identifier are available.</p>
 </code></pre></div>
 <p>Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.</p>
+<h2 id="child-agent-streams">Child agent streams<a class="headerlink" href="#child-agent-streams" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.66.1</code> introduced <code>subagent.called</code> child descriptors; Eve <code>0.69.0</code>
+renamed the descriptor to <code>agent.started</code>. Pass either event from the parent's
+stream to the same API:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">childEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamSubagentAsync</span><span class="p">(</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="n">descriptor</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">StartIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">savedChildIndex</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">{</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">ProcessChildEvent</span><span class="p">(</span><span class="n">childEvent</span><span class="p">);</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>The child cursor defaults to zero, advances independently during reconnects,
+and never changes <code>session.State</code>. Persist your own child index to resume a later
+enumeration. These reads are boundary-blind; stop explicitly at the desired child
+boundary or use <code>Follow = false</code> for bounded catch-up.</p>
+<p>Local children use their direct stream route; remote children use the parent's
+proxy route with the parent's host and credentials. Event remote URLs are never
+contacted directly. Legacy descriptor parent ownership is checked, and routes must
+exactly match the child and call identifiers. Current local <code>agent.started</code>
+descriptors do not carry parent identity, so callers must supply events from
+this parent's stream. Cancellation or disposal releases the local stream without
+cancelling the child's server-side turn.</p>
 <h2 id="bounded-catch-up-reads">Bounded catch-up reads<a class="headerlink" href="#bounded-catch-up-reads" title="Permanent link">&para;</a></h2>
 <p>Set <code>Follow = false</code> to read everything recorded through the durable tail
 observed when the stream opens, then stop instead of waiting for future events:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">{</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveStreamOptions</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">        </span><span class="n">Follow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">{</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>The first bounded request sends <code>includeTailIndex=1</code> and the server answers with
 the <code>x-eve-stream-tail-index</code> response header. That first tail is an immutable
@@ -1482,10 +1516,10 @@ never reported the header, so bounded reads against that release fail.</p>
 <h2 id="bound-individual-events">Bound individual events<a class="headerlink" href="#bound-individual-events" title="Permanent link">&para;</a></h2>
 <p>The upstream TypeScript client does not limit NDJSON event size. Preserve that
 behavior by default, or opt into a client-wide UTF-8 byte limit for defense in depth:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">"https://agent.example.com"</span><span class="p">)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="p">{</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">};</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">EveClientOptions</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">"https://agent.example.com"</span><span class="p">)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="n">MaxStreamEventBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">_048_576</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">};</span>
 </code></pre></div>
 <p>The limit applies to one raw NDJSON line before trimming, excluding its line ending.
 An oversized event throws <code>EveProtocolException</code> without including the rejected

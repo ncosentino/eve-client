@@ -1187,6 +1187,15 @@
 </ul>
 <p>When the body contains <code>{ "error": "..." }</code>, that value becomes the exception
 message.</p>
+<p>If JSON parsing fails and the response content type is <code>text/html</code> (including
+case variations and charset parameters), the message summarizes the HTTP status
+and asks you to check the eve route and development server configuration instead
+of displaying the HTML document. Verify the configured host points to the agent,
+not a web application's page route. <code>ResponseBody</code> and <code>ResponseHeaders</code> still
+retain the complete response for inspection. Valid JSON error messages take
+precedence even when the server labels the response as HTML; other non-JSON
+responses keep their raw body as the message. An empty non-HTML response keeps
+the HTTP status-only message.</p>
 <h2 id="branch-on-a-stable-error-code">Branch on a stable error code<a class="headerlink" href="#branch-on-a-stable-error-code" title="Permanent link">&para;</a></h2>
 <p>eve <code>0.31.0</code> reports a stable <code>code</code> alongside the human-readable message. Branch
 on <code>ErrorCode</code> instead of matching message text, which is not a contract:</p>

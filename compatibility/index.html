@@ -943,6 +943,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agent-info-schema-v5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-info schema v5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#strict-health-response-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1686,6 +1697,23 @@ and preserve <code>task-update</code>. Eve <code>0.56.0</code> retained schema v
 legacy <code>workflow</code> metadata from current responses. The pinned Eve <code>0.63.0</code> fixture
 asserts that its real schema-v4 payload omits both <code>task-update</code> and <code>workflow</code> while
 still exposing <code>workflow-tool-call</code> through <code>EveAgentInfo.Raw</code>.</p>
+<h2 id="agent-info-schema-v5">Agent-info schema v5<a class="headerlink" href="#agent-info-schema-v5" title="Permanent link">&para;</a></h2>
+<p>Agent inspection accepts schema <code>5</code> as published in Eve <code>0.64.0</code> through <code>0.70.2</code>.
+Its sandbox source requires a string <code>revisionHash</code>; <code>provider</code> and
+<code>environmentExportName</code> are optional strings, replacing the v4 bootstrap/session
+fields. Agent <code>outputSchema</code> is optional and remains opaque.</p>
+<p>Extension owners may include a nonempty <code>mountId</code>. Filesystem and programmatic
+module backings may independently include an optional string <code>mountId</code>, including
+legacy backings without one. Source and binding owners must agree, including any
+mount identity. Dependency and parameter maps remain available without projection.</p>
+<p>Schema-v5 kernel-effect options deliberately tolerate retired and unknown actions,
+audiences, and kinds. Unlike the TypeScript client's <code>unrecognized</code> substitution,
+<code>EveAgentInfo.Raw</code> retains the original values losslessly, including options that
+are not strings. The enclosing effect must still be an exact object with a string
+<code>sourceId</code>, an <code>audience</code> array, and a <code>kind</code> property. Malformed identities,
+bindings, required collections, and sandbox metadata remain protocol errors.
+Schema-v3/v4 validation remains strict, including their historical kernel-effect
+sets; accepting v5 does not change the minimum supported Eve release.</p>
 <h2 id="strict-health-response-validation">Strict health response validation<a class="headerlink" href="#strict-health-response-validation" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.45.0</code> strictly validates successful <code>GET /eve/v1/health</code> responses. The exact
 shape is <code>ok: true</code>, <code>status: "ready"</code>, and a nonempty string <code>workflowId</code>; unknown

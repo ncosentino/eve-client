@@ -1160,7 +1160,9 @@ historical <code>task-update</code> kernel-effect action, while the schema-v4 co
 by eve <code>0.54.2</code> accepts only <code>subagent-call</code>, <code>task-cancel</code>, and
 <code>workflow-tool-call</code>. Eve <code>0.56.0</code> retained schema version <code>4</code> while making
 legacy <code>workflow</code> metadata optional, so both schema-v4 shapes are accepted. Every
-supported version exposes the identity fields this package projects, and its complete
+supported version exposes the identity fields this package projects. Schema <code>5</code>
+uses sandbox provider/environment/revision metadata, optional extension mount identities,
+and tolerant kernel-effect options. The complete
 payload remains available through <a href="../EveAgentInfo/#NexusLabs.Eve.EveAgentInfo.Raw" title="NexusLabs.Eve.EveAgentInfo.Raw">Raw</a>. A version outside this set
 is rejected rather than parsed optimistically.</p>
 
