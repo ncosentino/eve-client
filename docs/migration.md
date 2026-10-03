@@ -4,7 +4,7 @@ description: Upgrade an eve deployment and NexusLabs.Eve client safely across th
 
 # Migrating to eve 0.54.2
 
-The current client requires eve `0.54.2` or newer and uses eve `0.70.2` as its
+The current client requires eve `0.54.2` or newer and uses eve `0.70.3` as its
 compatibility reference. Eve `0.54.2` is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly `subagent-call`, `task-cancel`, and
 `workflow-tool-call`.
@@ -14,7 +14,7 @@ payload remains version `4`, so the client has no schema discriminator with whic
 accept both contracts strictly. It rejects `task-update` in v4 while historical schema
 v3 continues accepting and preserving that action through `EveAgentInfo.Raw`.
 
-## Moving from Eve 0.63.0 to 0.70.2
+## Moving from Eve 0.63.0 to 0.70.3
 
 This is not a version-only server upgrade. Eve 0.64.0 changes inspection to schema
 v5, 0.69.0 changes the response stream version to 26 and reshapes child descriptors,

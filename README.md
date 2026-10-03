@@ -22,7 +22,7 @@ remote session prewarming, compact named-agent mounts, NDJSON streaming,
 reconnect-by-index, attachments, and structured output.
 
 This package requires Vercel `eve` **0.54.2** or newer and currently targets
-**0.70.2**, using message-stream protocol **26**, stream-control protocol **1**, and
+**0.70.3**, using message-stream protocol **26**, stream-control protocol **1**, and
 agent-info schema **v5**. Earlier supported stream and inspection schemas remain accepted.
 Eve `0.54.2` is the first published release whose strict schema-v4 kernel-effect action
 set is exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier
