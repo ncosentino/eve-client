@@ -6,6 +6,7 @@
     "^refs/tags/v\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
   ],
   "cloudBuild": {
+    "setVersionVariables": false,
     "buildNumber": {
       "enabled": true
     }
