@@ -32,7 +32,7 @@ export const model = new MockLanguageModelV3({
     const isPriorDeliveryCorrelationProbe = prompt.includes(
       "STALE_CURSOR_PRIOR_DELIVERY",
     );
-    const callbackToolDiscovered = prompt.includes("callback-auth__probeHealth");
+    const callbackToolDiscovered = prompt.includes('"tool":"probeHealth"');
     const callbackToolCompleted = prompt.includes('"status":"ready"');
     const isFollowingTurnClientContextProbe = prompt.includes(
       "VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT",
@@ -127,7 +127,8 @@ export const model = new MockLanguageModelV3({
           if (shouldSearchCallbackConnection) {
             const input = JSON.stringify({
               connection: "callback-auth",
-              keywords: "probe health",
+              query: "probe health",
+              signIn: true,
               limit: 1,
             });
             controller.enqueue({
@@ -160,10 +161,14 @@ export const model = new MockLanguageModelV3({
           }
 
           if (shouldCallCallbackConnection) {
-            const input = "{}";
+            const input = JSON.stringify({
+              connection: "callback-auth",
+              tool: "probeHealth",
+              input: {},
+            });
             controller.enqueue({
               id: "call_callback_auth",
-              toolName: "callback-auth__probeHealth",
+              toolName: "connection_execute",
               type: "tool-input-start",
             });
             controller.enqueue({
@@ -178,7 +183,7 @@ export const model = new MockLanguageModelV3({
             controller.enqueue({
               input,
               toolCallId: "call_callback_auth",
-              toolName: "callback-auth__probeHealth",
+              toolName: "connection_execute",
               type: "tool-call",
             });
             controller.enqueue({
