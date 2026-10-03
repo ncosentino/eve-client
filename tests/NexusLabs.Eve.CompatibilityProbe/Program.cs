@@ -412,7 +412,8 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
     }
 }
 
-if (authorizationCallbackSent)
+if (authorizationCallbackSent
+    && authorizationEvents[^1].Kind != EveStreamEventKind.SessionWaiting)
 {
     await foreach (EveStreamEvent streamEvent in authorizationSession.StreamAsync(timeout.Token))
     {
