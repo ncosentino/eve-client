@@ -821,10 +821,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#moving-from-eve-0630-to-0703" class="md-nav__link">
+  <a href="#moving-from-eve-0630-to-0710" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Moving from Eve 0.63.0 to 0.70.3
+        Moving from Eve 0.63.0 to 0.71.0
       
     </span>
   </a>
@@ -1260,7 +1260,7 @@
 
 
 <h1 id="migrating-to-eve-0542">Migrating to eve 0.54.2<a class="headerlink" href="#migrating-to-eve-0542" title="Permanent link">&para;</a></h1>
-<p>The current client requires eve <code>0.54.2</code> or newer and uses eve <code>0.70.3</code> as its
+<p>The current client requires eve <code>0.54.2</code> or newer and uses eve <code>0.71.0</code> as its
 compatibility reference. Eve <code>0.54.2</code> is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly <code>subagent-call</code>, <code>task-cancel</code>, and
 <code>workflow-tool-call</code>.</p>
@@ -1268,7 +1268,7 @@ schema-v4 kernel-effect action set is exactly <code>subagent-call</code>, <code>
 payload remains version <code>4</code>, so the client has no schema discriminator with which to
 accept both contracts strictly. It rejects <code>task-update</code> in v4 while historical schema
 v3 continues accepting and preserving that action through <code>EveAgentInfo.Raw</code>.</p>
-<h2 id="moving-from-eve-0630-to-0703">Moving from Eve 0.63.0 to 0.70.3<a class="headerlink" href="#moving-from-eve-0630-to-0703" title="Permanent link">&para;</a></h2>
+<h2 id="moving-from-eve-0630-to-0710">Moving from Eve 0.63.0 to 0.71.0<a class="headerlink" href="#moving-from-eve-0630-to-0710" title="Permanent link">&para;</a></h2>
 <p>This is not a version-only server upgrade. Eve 0.64.0 changes inspection to schema
 v5, 0.69.0 changes the response stream version to 26 and reshapes child descriptors,
 and 0.70.0 parks human input with <code>turn.waiting</code> instead of ending the turn.
@@ -1282,6 +1282,13 @@ Rollback to a compatible pair rather than putting alpha.14 against a version-26 
 API changes. C# transport qualification does not prove application tool inventories,
 prompts, model-backed workflows, or evaluation telemetry. Prove those on a nonproduction
 candidate before cutover; a production smoke of every business workflow is not required.</p>
+<p>Eve 0.71.0 also changes the built-in <code>bash</code> tool: commands still running after
+30 seconds return a <code>running</code> result and continue as sandbox jobs across turns.
+Cancelling a later turn does not stop an already-detached job. Applications that
+inspect bash results must handle the new <code>completed</code>/<code>running</code> discriminator and
+review their cleanup policy. The C# client preserves these tool outputs as raw JSON;
+it does not own sandbox processes. The <code>just-bash</code> provider still runs commands to
+completion and does not create background processes.</p>
 <p>Applications that consumed <code>subagent.called</code> directly must also recognize the newer
 <code>agent.started</code> descriptor. <code>StreamSubagentAsync</code> supports both. A human-input park
 returns a <code>Waiting</code> outcome; <code>PendingInputRequests</code> exposes unresolved requests while

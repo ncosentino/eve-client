@@ -1426,7 +1426,7 @@
 <tbody>
 <tr>
 <td>Unreleased</td>
-<td style="text-align: right;">0.70.3</td>
+<td style="text-align: right;">0.71.0</td>
 <td style="text-align: right;">26</td>
 <td>Agent-info v5; stream control 1; minimum 0.54.2</td>
 </tr>
@@ -1519,7 +1519,7 @@
 <h2 id="minimum-supported-eve-release">Minimum supported eve release<a class="headerlink" href="#minimum-supported-eve-release" title="Permanent link">&para;</a></h2>
 <p><strong>This package requires eve <code>0.54.2</code> and cannot safely use an earlier server.</strong>
 <code>EveProtocol.MinimumEveVersion</code> declares <code>0.54.2</code>, while
-<code>EveProtocol.ReferenceEveVersion</code> tracks the current verified target, <code>0.70.3</code>.</p>
+<code>EveProtocol.ReferenceEveVersion</code> tracks the current verified target, <code>0.71.0</code>.</p>
 <p>Eve <code>0.54.2</code> is the first published release whose schema-v4 kernel-effect action set is
 exactly <code>subagent-call</code>, <code>task-cancel</code>, and <code>workflow-tool-call</code>. Earlier schema-v4
 servers can still advertise the obsolete <code>task-update</code> action while reporting the same
@@ -1595,7 +1595,7 @@ two routes did not exist in eve <code>0.29.x</code>.</p>
 <li>The public HTTP route and body contracts.</li>
 <li>The durable message-stream protocol version and event shapes.</li>
 </ol>
-<p>The repository contains a pinned eve <code>0.70.3</code> fixture with a deterministic
+<p>The repository contains a pinned eve <code>0.71.0</code> fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -1724,7 +1724,7 @@ therefore valid.</p>
 path-qualified diagnostics without requiring callers to parse an exception message.
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use <code>EveClientException</code>.</p>
-<p>The pinned Eve <code>0.70.3</code> fixture exercises this strict health response through the real
+<p>The pinned Eve <code>0.71.0</code> fixture exercises this strict health response through the real
 compatibility probe.</p>
 <h2 id="streamed-tool-inputs">Streamed tool inputs<a class="headerlink" href="#streamed-tool-inputs" title="Permanent link">&para;</a></h2>
 <p>Stream protocol <code>24</code>, published by Eve <code>0.46.1</code>, adds durable
@@ -1757,7 +1757,7 @@ or unsupported/missing stream version headers raise <code>EveProtocolException</
 the current turn, including model calls after tool execution. The value remains transient:
 eve does not append it to durable conversation history and clears it before the following
 turn. Set <code>EveTurnOptions.ClientContext</code> again for each later turn that needs context.</p>
-<p>The pinned Eve <code>0.70.3</code> fixture forces a deterministic tool loop, verifies that the
+<p>The pinned Eve <code>0.71.0</code> fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.</p>
 <h2 id="accepted-message-delivery-correlation">Accepted message delivery correlation<a class="headerlink" href="#accepted-message-delivery-correlation" title="Permanent link">&para;</a></h2>
