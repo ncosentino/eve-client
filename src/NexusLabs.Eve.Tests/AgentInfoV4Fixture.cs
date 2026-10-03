@@ -8,7 +8,19 @@ internal static class AgentInfoV4Fixture
         Create(static _ => { });
 
     public static string VersionFiveWithSubagent() =>
-        VersionFive(WithSubagentSummary(), static _ => { });
+        VersionFiveWithSubagent(static _ => { });
+
+    public static string VersionFiveWithSubagent(Action<JsonObject> mutation) =>
+        VersionFive(WithSubagentSummary(), mutation);
+
+    public static string VersionFiveWithUnboundSubagent() =>
+        VersionFiveWithSubagent(RemoveSubagentBinding);
+
+    public static string WithUnboundSubagent() =>
+        Mutate(WithSubagentSummary(), RemoveSubagentBinding);
+
+    private static void RemoveSubagentBinding(JsonObject root) =>
+        root["subagents"]!["local"]![0]!.AsObject().Remove("binding");
 
     public static string VersionFive(Action<JsonObject> mutation) =>
         VersionFive(WithProgrammaticBackingMetadata(), mutation);

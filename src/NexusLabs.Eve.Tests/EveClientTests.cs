@@ -606,6 +606,52 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFiveUnboundLocalSubagent(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFiveWithUnboundSubagent();
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(5);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+        await Assert.That(info.Raw.GetProperty("subagents").GetProperty("local").GetArrayLength())
+            .IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("subagents").GetProperty("local")[0]
+            .TryGetProperty("binding", out _)).IsFalse()
+            .Because("Schema-v5 local directory entries are not compiled module bindings.");
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RetainsSchemaVersionFourSubagentBindingRequirement(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.WithUnboundSubagent();
+        await AssertInfoRejectedAsync(
+            json,
+            "Legacy schemas retain their compiled-module source contract.",
+            cancellationToken);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_RequiresSchemaVersionFiveSubagentResolverBinding(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFiveWithSubagent(static root =>
+        {
+            JsonObject resolver = root["agent"]!["config"]!.DeepClone().AsObject();
+            resolver.Remove("binding");
+            resolver["eventNames"] = new JsonArray("onMessage");
+            resolver["slug"] = "subagent-config";
+            root["subagents"]!["local"]![0]!["configResolver"] = resolver;
+        });
+        await AssertInfoRejectedAsync(
+            json,
+            "A local subagent's dynamic resolver remains a compiled bound source in schema v5.",
+            cancellationToken);
+    }
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionFiveEmptyBackingMountIdentity(
         CancellationToken cancellationToken)
     {

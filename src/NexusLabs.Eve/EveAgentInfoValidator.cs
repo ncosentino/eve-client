@@ -789,7 +789,8 @@ internal sealed class EveAgentInfoValidator
                 entryPath,
                 isVersionFour,
                 SubagentRequiredProperties,
-                SubagentAllowedProperties);
+                SubagentAllowedProperties,
+                isBoundSource: !_isVersionFive);
             RequireString(subagent, "name", entryPath);
             RequireString(subagent, "entryPath", entryPath);
             RequireString(subagent, "nodeId", entryPath);
@@ -922,7 +923,8 @@ internal sealed class EveAgentInfoValidator
         string path,
         bool isVersionFour,
         ReadOnlySpan<string> requiredAdditionalProperties = default,
-        ReadOnlySpan<string> allowedAdditionalProperties = default)
+        ReadOnlySpan<string> allowedAdditionalProperties = default,
+        bool isBoundSource = true)
     {
         if (source.ValueKind != JsonValueKind.Object)
         {
@@ -952,11 +954,11 @@ internal sealed class EveAgentInfoValidator
         }
 
         bool hasBinding = source.TryGetProperty("binding", out JsonElement binding);
-        if (sourceKind == "module")
+        if (hasBinding)
         {
-            if (!hasBinding)
+            if (isBoundSource && sourceKind != "module")
             {
-                ThrowInvalid($"{path}.binding is required for a module source.");
+                ThrowInvalid($"{path}.binding is only allowed for a module source.");
             }
 
             ValidateBinding(
@@ -964,11 +966,12 @@ internal sealed class EveAgentInfoValidator
                 $"{path}.binding",
                 logicalPath,
                 source.GetProperty("owner"),
-                isVersionFour);
+                isVersionFour,
+                isBoundSource);
         }
-        else if (hasBinding)
+        else if (isBoundSource && sourceKind == "module")
         {
-            ThrowInvalid($"{path}.binding is only allowed for a module source.");
+            ThrowInvalid($"{path}.binding is required for a module source.");
         }
 
         ValidateOptionalString(source, "exportName", path);
@@ -979,7 +982,8 @@ internal sealed class EveAgentInfoValidator
         string path,
         string logicalPath,
         JsonElement owner,
-        bool isVersionFour)
+        bool isVersionFour,
+        bool enforceSourceIdentity)
     {
         ValidateExactObject(binding, path, BindingProperties, BindingProperties);
         ValidateModuleBacking(
@@ -987,7 +991,8 @@ internal sealed class EveAgentInfoValidator
             $"{path}.backing",
             isVersionFour);
         string bindingLogicalPath = RequireString(binding, "logicalPath", path);
-        if (!string.Equals(bindingLogicalPath, logicalPath, StringComparison.Ordinal))
+        if (enforceSourceIdentity
+            && !string.Equals(bindingLogicalPath, logicalPath, StringComparison.Ordinal))
         {
             ThrowInvalid($"{path}.logicalPath must match its source logicalPath.");
         }
@@ -1000,7 +1005,7 @@ internal sealed class EveAgentInfoValidator
                 GetOwnerIdentity(bindingOwner),
                 GetOwnerIdentity(owner),
                 StringComparison.Ordinal);
-        if (!ownersMatch)
+        if (enforceSourceIdentity && !ownersMatch)
         {
             ThrowInvalid($"{path}.owner must match its source owner.");
         }
