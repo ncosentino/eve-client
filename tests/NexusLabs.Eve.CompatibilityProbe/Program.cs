@@ -208,13 +208,16 @@ RecordedStreamRequest childRequest = streamRecorder.StreamRequests[recordedBefor
 string expectedChildPath = $"/eve/v1/session/{Uri.EscapeDataString(childSessionId)}/stream";
 if (new Uri(childRequest.Uri).AbsolutePath != expectedChildPath
     || childDescriptor.Data.GetProperty("streamPath").GetString() != expectedChildPath
-    || !childRequest.Uri.Contains("startIndex=0", StringComparison.Ordinal)
+    || childRequest.Uri.Contains("startIndex=", StringComparison.Ordinal)
     || childRequest.StreamVersion != "26"
     || !childEvents.Any(static streamEvent =>
         streamEvent.Kind == EveStreamEventKind.MessageCompleted
         && streamEvent.Data.GetProperty("message").GetString() == "CHILD_STREAM_OK"))
 {
-    throw new InvalidOperationException("The direct child route did not return its independent durable stream.");
+    throw new InvalidOperationException(
+        "The direct child route did not return its independent durable stream. "
+        + $"Route: {childRequest.Uri}; version: {childRequest.StreamVersion}; "
+        + $"events: {string.Join(", ", childEvents.Select(static streamEvent => streamEvent.Type))}.");
 }
 foreach (EveStreamEvent childEvent in childEvents)
 {
