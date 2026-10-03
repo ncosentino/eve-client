@@ -6,7 +6,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 | NexusLabs.Eve | Reference eve | Stream protocol | Status |
 |---|---:|---:|---|
-| Unreleased | 0.70.3 | 26 | Agent-info v5; stream control 1; minimum 0.54.2 |
+| Unreleased | 0.71.0 | 26 | Agent-info v5; stream control 1; minimum 0.54.2 |
 | 0.1.0-alpha.14 | 0.63.0 | 25 | Current prerelease; stream control 1 |
 | 0.1.0-alpha.13 | 0.59.0 | 25 | Previous compatibility target |
 | 0.1.0-alpha.12 | 0.54.2 | 25 | Previous compatibility target |
@@ -26,7 +26,7 @@ description: Understand supported eve versions, stream protocol compatibility, a
 
 **This package requires eve `0.54.2` and cannot safely use an earlier server.**
 `EveProtocol.MinimumEveVersion` declares `0.54.2`, while
-`EveProtocol.ReferenceEveVersion` tracks the current verified target, `0.70.3`.
+`EveProtocol.ReferenceEveVersion` tracks the current verified target, `0.71.0`.
 
 Eve `0.54.2` is the first published release whose schema-v4 kernel-effect action set is
 exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier schema-v4
@@ -94,7 +94,7 @@ eve remains preview software. Package upgrades should therefore validate both:
 1. The public HTTP route and body contracts.
 2. The durable message-stream protocol version and event shapes.
 
-The repository contains a pinned eve `0.70.3` fixture with a deterministic
+The repository contains a pinned eve `0.71.0` fixture with a deterministic
 model. CI builds the real server and verifies health, info, text turns,
 attachment staging, streaming, bounded catch-up reads, cooperative cancellation,
 approval-gated human input, callback-backed connection authorization, session context
@@ -261,7 +261,7 @@ path-qualified diagnostics without requiring callers to parse an exception messa
 Invalid JSON preserves the parser failure as the inner exception and reports no
 structured issues. Non-success HTTP responses continue to use `EveClientException`.
 
-The pinned Eve `0.70.3` fixture exercises this strict health response through the real
+The pinned Eve `0.71.0` fixture exercises this strict health response through the real
 compatibility probe.
 
 ## Streamed tool inputs
@@ -305,7 +305,7 @@ the current turn, including model calls after tool execution. The value remains 
 eve does not append it to durable conversation history and clears it before the following
 turn. Set `EveTurnOptions.ClientContext` again for each later turn that needs context.
 
-The pinned Eve `0.70.3` fixture forces a deterministic tool loop, verifies that the
+The pinned Eve `0.71.0` fixture forces a deterministic tool loop, verifies that the
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.
 
