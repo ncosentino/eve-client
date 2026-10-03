@@ -3381,6 +3381,217 @@ public sealed class EveSessionTests
         await Assert.That(outcome.Message).IsEqualTo("Hello World!");
     }
 
+    [Test]
+    public async Task TurnWaiting_InputReturnsBeforeTransportCloses(
+        CancellationToken cancellationToken)
+    {
+        using IdleAfterPrefixStream stream = new(Encoding.UTF8.GetBytes(
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Interim","turnId":"turn_1"}}"""
+            + "\n"
+            + """{"type":"input.requested","data":{"requests":[{"requestId":"question_1","kind":"question","prompt":"Continue?"}]}}"""
+            + "\n"
+            + """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1","usage":{"totalTokens":7}}}"""
+            + "\n"));
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(stream, "26")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(outcome.Message).IsNull();
+        await Assert.That(outcome.Events.Count).IsEqualTo(3);
+        await Assert.That(outcome.Events[2].Kind).IsEqualTo(EveStreamEventKind.TurnWaiting);
+        await Assert.That(outcome.Events[2].Data.GetProperty("usage")
+            .GetProperty("totalTokens").GetInt32()).IsEqualTo(7);
+        await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(1);
+        await Assert.That(outcome.PendingInputRequests[0].RequestId).IsEqualTo("question_1");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(3);
+        await Assert.That(stream.IsDisposed).IsTrue()
+            .Because("An input boundary releases its response transport without waiting for EOF.");
+        await Assert.That(stream.IdleReadStarted.IsCompleted).IsFalse()
+            .Because("Input waiting is a durable boundary, not a read-idle timeout.");
+    }
+
+    [Test]
+    public async Task TurnWaiting_TasksContinuesToFinalReply(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Interim","turnId":"turn_1"}}""",
+            """{"type":"turn.waiting","data":{"on":"tasks","turnId":"turn_1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Final","turnId":"turn_1"}}""",
+            """{"type":"session.completed"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Completed);
+        await Assert.That(outcome.Message).IsEqualTo("Final");
+        await Assert.That(outcome.Events.Count).IsEqualTo(4);
+        await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(0);
+        await Assert.That(session.State.StreamIndex).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task TurnWaiting_CallbackAttemptsSettleIndependently(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"authorization.required","data":{"name":"github","attemptId":"first","webhookUrl":"https://agent.example.com/callback/first"}}""",
+            """{"type":"authorization.required","data":{"name":"github","attemptId":"second","webhookUrl":"https://agent.example.com/callback/second"}}""",
+            """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1"}}""",
+            """{"type":"authorization.completed","data":{"name":"github","attemptId":"first"}}""",
+            """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1"}}""",
+            """{"type":"authorization.completed","data":{"name":"github","attemptId":"second"}}""",
+            """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(outcome.Events.Count).IsEqualTo(7);
+        await Assert.That(session.State.StreamIndex).IsEqualTo(7);
+    }
+
+    [Test]
+    public async Task TurnWaiting_UnresolvedRequestOverridesTasksAndCallbacks(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"authorization.required","data":{"name":"github","webhookUrl":"https://agent.example.com/callback"}}""",
+            """{"type":"input.requested","data":{"requests":[{"requestId":"question_1","kind":"question","prompt":"First?"},{"requestId":"question_2","kind":"question","prompt":"Second?"}]}}""",
+            """{"type":"input.resolved","data":{"resolutions":[{"requestId":"question_1","kind":"question","outcome":"answered"}],"turnId":"turn_1","stepIndex":0,"sequence":1}}""",
+            """{"type":"turn.waiting","data":{"on":"tasks","turnId":"turn_1"}}""",
+            """{"type":"session.completed"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(outcome.Events.Count).IsEqualTo(4);
+        await Assert.That(outcome.InputRequests.Count).IsEqualTo(2);
+        await Assert.That(outcome.InputResolutions.Count).IsEqualTo(1);
+        await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(1);
+        await Assert.That(outcome.PendingInputRequests[0].RequestId).IsEqualTo("question_2");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task TurnWaiting_SettledApprovalDoesNotEndTaskWait(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"input.requested","data":{"requests":[{"requestId":"approval_1","kind":"tool-approval","prompt":"Approve?"}]}}""",
+            """{"type":"approval.settled","data":{"requestId":"approval_1","outcome":"approved"}}""",
+            """{"type":"turn.waiting","data":{"on":"tasks","turnId":"turn_1"}}""",
+            """{"type":"session.completed"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Completed);
+        await Assert.That(outcome.Events.Count).IsEqualTo(4);
+        await Assert.That(outcome.InputRequests.Count).IsEqualTo(1);
+        await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task TurnWaiting_PendingRequestsKeepLatestDescriptorAndIdentityOrder(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"input.requested","data":{"requests":[{"requestId":"Question","kind":"question","prompt":"Original"},{"requestId":"question","kind":"question","prompt":"Other"}]}}""",
+            """{"type":"input.requested","data":{"requests":[{"requestId":"Question","kind":"question","prompt":"Updated"}]}}""",
+            """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.InputRequests.Count).IsEqualTo(3);
+        await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(2);
+        await Assert.That(outcome.PendingInputRequests[0].RequestId).IsEqualTo("Question");
+        await Assert.That(outcome.PendingInputRequests[0].Prompt).IsEqualTo("Updated");
+        await Assert.That(outcome.PendingInputRequests[1].RequestId).IsEqualTo("question");
+        await Assert.That(outcome.PendingInputRequests[1].Prompt).IsEqualTo("Other");
+    }
+
+    [Test]
+    public async Task TurnWaiting_ResponseCanCancelItsHeldTurn(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
+            "26",
+            """{"type":"turn.waiting","data":{"on":"input","turnId":"turn_1"}}""")));
+        handler.Enqueue(static (_, _) => Task.FromResult(JsonResponse(
+            HttpStatusCode.OK,
+            """{"ok":true,"sessionId":"session_1","status":"accepted"}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+        EveCancellationOutcome cancellation = await response.CancelAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(cancellation.SessionId).IsEqualTo("session_1");
+        await Assert.That(handler.Calls.Count).IsEqualTo(3);
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[2].Body!);
+        await Assert.That(body.RootElement.GetProperty("turnId").GetString()).IsEqualTo("turn_1");
+    }
+
+    [Test]
+    [Arguments("""{"type":"turn.waiting","data":{"turnId":"turn_1"}}""")]
+    [Arguments("""{"type":"turn.waiting","data":{"turnId":"turn_1","on":"unknown"}}""")]
+    [Arguments("""{"type":"turn.waiting","data":{"turnId":"turn_1","on":null}}""")]
+    [Arguments("""{"type":"turn.waiting","data":{"on":"input"}}""")]
+    public async Task TurnWaiting_RejectsMalformedBoundary(
+        string streamEvent,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponseWithVersion("26", streamEvent)));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+
+        await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
+            .Throws<EveProtocolException>();
+    }
+
     private static HttpResponseMessage StreamResponse(params string[] events) =>
         StreamResponseWithVersion(EveProtocol.MessageStreamVersion, events);
 

@@ -194,12 +194,8 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     private async IAsyncEnumerable<EveStreamEvent> ObserveStreamAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Connection names are path-derived protocol identifiers, so correlation must mirror
-        // JavaScript Set semantics and distinguish names that differ only by case.
-#pragma warning disable NLF0016
-        HashSet<string> pendingAuthorizations =
-            new HashSet<string>(StringComparer.Ordinal);
-#pragma warning restore NLF0016
+        HashSet<string> pendingAuthorizations = CreatePendingIdentitySet();
+        HashSet<string> pendingInputRequestIds = CreatePendingIdentitySet();
         bool correlationStarted = !_correlateDelivery;
         bool reachedBoundary = false;
 
@@ -215,8 +211,10 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
 
                 bool isCurrentTurnBoundary = IsResponseTurnBoundary(
                     streamEvent,
-                    pendingAuthorizations);
-                if (streamEvent.Kind == EveStreamEventKind.TurnStarted)
+                    pendingAuthorizations,
+                    pendingInputRequestIds);
+                if (streamEvent.Kind is EveStreamEventKind.TurnStarted
+                    or EveStreamEventKind.TurnWaiting)
                 {
                     try
                     {
@@ -230,7 +228,8 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                         throw;
                     }
                 }
-                else if (isCurrentTurnBoundary)
+                if (isCurrentTurnBoundary
+                    && streamEvent.Kind != EveStreamEventKind.TurnWaiting)
                 {
                     lock (_stateGate)
                     {
@@ -316,16 +315,92 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
 
     private static bool IsResponseTurnBoundary(
         EveStreamEvent streamEvent,
-        HashSet<string> pendingAuthorizations)
+        HashSet<string> pendingAuthorizations,
+        HashSet<string> pendingInputRequestIds)
     {
         UpdatePendingAuthorizations(streamEvent, pendingAuthorizations);
+        UpdatePendingInputRequests(streamEvent, pendingInputRequestIds);
 
         return streamEvent.Kind switch
         {
+            EveStreamEventKind.TurnWaiting =>
+                pendingInputRequestIds.Count > 0
+                || (streamEvent.Data.GetProperty("on").GetString() == "input"
+                    && pendingAuthorizations.Count == 0),
             EveStreamEventKind.SessionWaiting => pendingAuthorizations.Count == 0,
             EveStreamEventKind.SessionFailed or EveStreamEventKind.SessionCompleted => true,
             _ => false,
         };
+    }
+
+    private static HashSet<string> CreatePendingIdentitySet()
+    {
+        // Durable identities use case-sensitive JavaScript Map/Set equality.
+#pragma warning disable NLF0016
+        return new HashSet<string>(StringComparer.Ordinal);
+#pragma warning restore NLF0016
+    }
+
+    private static void UpdatePendingInputRequests(
+        EveStreamEvent streamEvent,
+        HashSet<string> pendingInputRequestIds)
+    {
+        string? arrayProperty = streamEvent.Kind switch
+        {
+            EveStreamEventKind.InputRequested => "requests",
+            EveStreamEventKind.InputResolved => "resolutions",
+            _ => null,
+        };
+        if (arrayProperty is not null)
+        {
+            if (streamEvent.Data.ValueKind != JsonValueKind.Object
+                || !streamEvent.Data.TryGetProperty(arrayProperty, out JsonElement entries)
+                || entries.ValueKind != JsonValueKind.Array)
+            {
+                throw new EveProtocolException(
+                    $"An {streamEvent.Type} event requires an array '{arrayProperty}'.");
+            }
+
+            foreach (JsonElement entry in entries.EnumerateArray())
+            {
+                if (entry.ValueKind != JsonValueKind.Object)
+                {
+                    throw new EveProtocolException(
+                        $"An {streamEvent.Type} entry must be an object.");
+                }
+
+                string requestId = RequireEventString(entry, "requestId", streamEvent.Type);
+                if (streamEvent.Kind == EveStreamEventKind.InputRequested)
+                {
+                    pendingInputRequestIds.Add(requestId);
+                }
+                else
+                {
+                    pendingInputRequestIds.Remove(requestId);
+                }
+            }
+        }
+        else if (streamEvent.Kind == EveStreamEventKind.ApprovalSettled)
+        {
+            if (streamEvent.Data.ValueKind != JsonValueKind.Object)
+            {
+                throw new EveProtocolException(
+                    "An approval.settled event must contain an object data value.");
+            }
+
+            pendingInputRequestIds.Remove(RequireEventString(
+                streamEvent.Data,
+                "requestId",
+                streamEvent.Type));
+        }
+    }
+
+    private static string ReadAuthorizationKey(JsonElement data, string context)
+    {
+        string name = RequireEventString(data, "name", context);
+        return data.TryGetProperty("attemptId", out _)
+            ? "attempt:" + RequireEventString(data, "attemptId", context)
+            : "name:" + name;
     }
 
     private static void UpdatePendingAuthorizations(
@@ -351,9 +426,8 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                     "An eve authorization.required event webhookUrl must be a string.");
             }
 
-            pendingAuthorizations.Add(RequireEventString(
+            pendingAuthorizations.Add(ReadAuthorizationKey(
                 streamEvent.Data,
-                "name",
                 "authorization.required"));
             return;
         }
@@ -370,9 +444,8 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 "An eve authorization.completed event must contain an object data value.");
         }
 
-        pendingAuthorizations.Remove(RequireEventString(
+        pendingAuthorizations.Remove(ReadAuthorizationKey(
             streamEvent.Data,
-            "name",
             "authorization.completed"));
     }
 
@@ -393,14 +466,14 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             || turnId.ValueKind != JsonValueKind.String)
         {
             throw new EveProtocolException(
-                "An eve turn.started event did not contain a string turnId.");
+                $"An eve {streamEvent.Type} event did not contain a string turnId.");
         }
 
         string? value = turnId.GetString();
         if (string.IsNullOrWhiteSpace(value))
         {
             throw new EveProtocolException(
-                "An eve turn.started event did not contain a string turnId.");
+                $"An eve {streamEvent.Type} event did not contain a string turnId.");
         }
 
         return value;
@@ -418,11 +491,25 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         string? message = null;
         List<EveInputRequest> inputRequests = [];
         List<EveInputResolution> inputResolutions = [];
+        HashSet<string> pendingAuthorizations = CreatePendingIdentitySet();
+        HashSet<string> pendingInputRequestIds = CreatePendingIdentitySet();
+        EveStreamEventKind boundaryKind = EveStreamEventKind.Unknown;
 
         foreach (EveStreamEvent streamEvent in events)
         {
+            if (IsResponseTurnBoundary(
+                streamEvent,
+                pendingAuthorizations,
+                pendingInputRequestIds))
+            {
+                boundaryKind = streamEvent.Kind;
+            }
+
             switch (streamEvent.Kind)
             {
+                case EveStreamEventKind.TurnWaiting:
+                    message = null;
+                    break;
                 case EveStreamEventKind.ResultCompleted:
                     if (streamEvent.Data.TryGetProperty("result", out JsonElement result))
                     {
@@ -456,15 +543,10 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             }
         }
 
-        EveTurnStatus status = events
-            .Select(static streamEvent => streamEvent.Kind)
-            .Reverse()
-            .FirstOrDefault(static kind =>
-                kind is EveStreamEventKind.SessionWaiting
-                    or EveStreamEventKind.SessionFailed
-                    or EveStreamEventKind.SessionCompleted) switch
+        EveTurnStatus status = boundaryKind switch
         {
-            EveStreamEventKind.SessionWaiting => EveTurnStatus.Waiting,
+            EveStreamEventKind.SessionWaiting
+                or EveStreamEventKind.TurnWaiting => EveTurnStatus.Waiting,
             EveStreamEventKind.SessionFailed => EveTurnStatus.Failed,
             _ => EveTurnStatus.Completed,
         };
@@ -474,9 +556,29 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             message,
             events,
             inputRequests,
+            CreatePendingInputRequests(inputRequests, pendingInputRequestIds),
             inputResolutions,
             sessionId,
             status);
+    }
+
+    private static IReadOnlyList<EveInputRequest> CreatePendingInputRequests(
+        IReadOnlyList<EveInputRequest> requests,
+        HashSet<string> pendingRequestIds)
+    {
+#pragma warning disable NLF0016
+        Dictionary<string, EveInputRequest> latestRequests =
+            new(StringComparer.Ordinal);
+#pragma warning restore NLF0016
+        foreach (EveInputRequest request in requests)
+        {
+            if (pendingRequestIds.Contains(request.RequestId))
+            {
+                latestRequests[request.RequestId] = request;
+            }
+        }
+
+        return latestRequests.Values.ToArray();
     }
 
     private static void AddInputRequests(

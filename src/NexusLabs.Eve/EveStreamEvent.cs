@@ -135,8 +135,26 @@ public sealed record EveStreamEvent
             EveStreamEventKind.MessageAppended => ValidateAndNormalizeMessageAppended(data, streamVersion, decoder),
             EveStreamEventKind.ReasoningAppended => ValidateAndNormalizeReasoningAppended(data, streamVersion, decoder),
             EveStreamEventKind.ActionInputAppended => ValidateAndNormalizeActionInputAppended(data, streamVersion, decoder),
+            EveStreamEventKind.TurnWaiting => ValidateTurnWaiting(data),
             _ => data,
         };
+    }
+
+    private static JsonElement ValidateTurnWaiting(JsonElement data)
+    {
+        if (data.ValueKind != JsonValueKind.Object
+            || !data.TryGetProperty("on", out JsonElement waitingOn)
+            || waitingOn.ValueKind != JsonValueKind.String
+            || waitingOn.GetString() is not ("input" or "tasks")
+            || !data.TryGetProperty("turnId", out JsonElement turnId)
+            || turnId.ValueKind != JsonValueKind.String
+            || string.IsNullOrWhiteSpace(turnId.GetString()))
+        {
+            throw new EveProtocolException(
+                "A turn.waiting event requires a non-empty turnId and an 'on' value of 'input' or 'tasks'.");
+        }
+
+        return data;
     }
 
     private static JsonElement ValidateAndNormalizeMessageAppended(
@@ -430,6 +448,7 @@ public sealed record EveStreamEvent
         {
             "session.started" => EveStreamEventKind.SessionStarted,
             "turn.started" => EveStreamEventKind.TurnStarted,
+            "turn.waiting" => EveStreamEventKind.TurnWaiting,
             "message.received" => EveStreamEventKind.MessageReceived,
             "actions.requested" => EveStreamEventKind.ActionsRequested,
             "action.input.appended" => EveStreamEventKind.ActionInputAppended,

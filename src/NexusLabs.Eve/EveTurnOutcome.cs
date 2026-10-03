@@ -13,6 +13,7 @@ public sealed record EveTurnOutcome
         string? message,
         IReadOnlyList<EveStreamEvent> events,
         IReadOnlyList<EveInputRequest> inputRequests,
+        IReadOnlyList<EveInputRequest> pendingInputRequests,
         IReadOnlyList<EveInputResolution> inputResolutions,
         string sessionId,
         EveTurnStatus status)
@@ -21,6 +22,7 @@ public sealed record EveTurnOutcome
         Message = message;
         Events = events;
         InputRequests = inputRequests;
+        PendingInputRequests = pendingInputRequests;
         InputResolutions = inputResolutions;
         SessionId = sessionId;
         Status = status;
@@ -45,6 +47,15 @@ public sealed record EveTurnOutcome
     /// Gets all human-input requests emitted during the turn.
     /// </summary>
     public IReadOnlyList<EveInputRequest> InputRequests { get; }
+
+    /// <summary>
+    /// Gets requests observed in this response that remain unresolved at its boundary.
+    /// </summary>
+    /// <remarks>
+    /// Authoritative <c>input.resolved</c> and <c>approval.settled</c> events remove matching
+    /// requests. <see cref="InputRequests"/> retains the complete observed request history.
+    /// </remarks>
+    public IReadOnlyList<EveInputRequest> PendingInputRequests { get; }
 
     /// <summary>
     /// Gets all authoritative human-input resolutions emitted while this response was consumed.
