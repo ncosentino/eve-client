@@ -27,9 +27,11 @@ upstream release lands, and never cut a release while it lags. A package that
 sends and interprets a newer protocol while declaring an older one misleads
 consumers, and a published compatibility claim cannot be corrected.
 
-Before declaring a newer reference, confirm the range is non-breaking from
-upstream source: session routes unchanged, stream event vocabulary additive with
-nothing removed, and the live probe green against that release.
+Before declaring a newer reference, audit upstream routes, inspection schemas,
+stream versions, and event lifetimes. Do not assume the range is additive. When
+upstream replaces a contract, retain older supported contracts through explicit
+version-aware handling or raise the minimum with a documented migration. Verify
+the new reference through the real compatibility probe before delivery.
 
 Read every declared protocol value from the upstream constant that owns it rather
 than inferring it. The message-stream version is declared by

@@ -36,8 +36,8 @@ and structured-output support without using the TypeScript SDK.
 - `EveStreamFollower` mirrors upstream absolute-index reconnect and idle-budget behavior.
 - Preview event and inspection payloads retain raw `JsonElement` values so unknown
   upstream fields and event types remain available.
-- The compatibility baseline is Vercel eve 0.63.0 and the minimum supported release is
-  0.54.2, using message-stream protocol version 25 and agent-info schema version 4.
+- The compatibility baseline is Vercel eve 0.70.2 and the minimum supported release is
+  0.54.2, using message-stream protocol version 26 and agent-info schema version 5.
   Earlier servers are not supported.
 - Pre-0.54.2 schema-v4 agent-info payloads can advertise the obsolete `task-update`
   kernel effect without a schema-version discriminator; upgrade the server before this
