@@ -1342,6 +1342,71 @@ Unlike a sent-turn response, this stream remains boundary-blind.</p>
 <h4 id="returns_12">Returns<a class="headerlink" href="#returns_12" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
 The durable session event stream.</p>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken)'></a></p>
+<h2 id="evesessionstreamsubagentasyncevestreamevent-evestreamoptions-cancellationtoken-method">EveSession.StreamSubagentAsync(EveStreamEvent, EveStreamOptions, CancellationToken) Method<a class="headerlink" href="#evesessionstreamsubagentasyncevestreamevent-evestreamoptions-cancellationtoken-method" title="Permanent link">&para;</a></h2>
+<p>Follows a local child's direct route or a remote child's parent-origin proxy.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IAsyncEnumerable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">StreamSubagentAsync</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">childEvent</span><span class="p">,</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters_13">Parameters<a class="headerlink" href="#parameters_13" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).childEvent'></a></p>
+<p><code>childEvent</code> <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a></p>
+<p>A <code>subagent.called</code> or <code>agent.started</code> descriptor.</p>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).options'></a></p>
+<p><code>options</code> <a href="../EveStreamOptions/" title="NexusLabs.Eve.EveStreamOptions">EveStreamOptions</a></p>
+<p>Optional independent child cursor, bound and reconnect overrides.</p>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,NexusLabs.Eve.EveStreamOptions,System.Threading.CancellationToken).cancellationToken'></a></p>
+<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
+<p>Stops local child stream consumption.</p>
+<h4 id="returns_13">Returns<a class="headerlink" href="#returns_13" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
+The boundary-blind durable child event stream.</p>
+<h4 id="exceptions_5">Exceptions<a class="headerlink" href="#exceptions_5" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentnullexception" title="System.ArgumentNullException">System.ArgumentNullException</a><br />
+The descriptor is null.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentexception" title="System.ArgumentException">System.ArgumentException</a><br />
+The descriptor or its route is invalid or foreign.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception" title="System.InvalidOperationException">System.InvalidOperationException</a><br />
+The parent has no session identifier.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception" title="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</a><br />
+A bounded cursor is negative.</p>
+<p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
+The stream protocol or bounded tail is invalid.</p>
+<p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
+The server rejects the stream request.</p>
+<h3 id="remarks_7">Remarks<a class="headerlink" href="#remarks_7" title="Permanent link">&para;</a></h3>
+<p>Uses this client's host, authentication, dynamic headers, limits and reconnect policy.
+The independent child cursor defaults to zero and is not stored on this session.
+Current <code>agent.started</code> descriptors do not carry parent identity;
+callers must pass an event consumed from this parent's stream. Remote URLs in event
+data are never contacted directly. Dispose or cancel enumeration to release transport
+resources; neither operation cancels the child's server-side turn.</p>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,System.Threading.CancellationToken)'></a></p>
+<h2 id="evesessionstreamsubagentasyncevestreamevent-cancellationtoken-method">EveSession.StreamSubagentAsync(EveStreamEvent, CancellationToken) Method<a class="headerlink" href="#evesessionstreamsubagentasyncevestreamevent-cancellationtoken-method" title="Permanent link">&para;</a></h2>
+<p>Follows a child announced by this parent's <code>subagent.called</code> or
+<code>agent.started</code> event, without advancing the parent's cursor.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IAsyncEnumerable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">StreamSubagentAsync</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">childEvent</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters_14">Parameters<a class="headerlink" href="#parameters_14" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,System.Threading.CancellationToken).childEvent'></a></p>
+<p><code>childEvent</code> <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a></p>
+<p>The child descriptor received from this parent's stream.</p>
+<p><a name='NexusLabs.Eve.EveSession.StreamSubagentAsync(NexusLabs.Eve.EveStreamEvent,System.Threading.CancellationToken).cancellationToken'></a></p>
+<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
+<p>Stops local consumption, not the remote child turn.</p>
+<h4 id="returns_14">Returns<a class="headerlink" href="#returns_14" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">System.Collections.Generic.IAsyncEnumerable&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.iasyncenumerable-1" title="System.Collections.Generic.IAsyncEnumerable`1">&gt;</a><br />
+The boundary-blind child stream, starting at index zero.</p>
+<h4 id="exceptions_6">Exceptions<a class="headerlink" href="#exceptions_6" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentnullexception" title="System.ArgumentNullException">System.ArgumentNullException</a><br />
+The descriptor is null.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentexception" title="System.ArgumentException">System.ArgumentException</a><br />
+The descriptor or its route is invalid or foreign.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception" title="System.InvalidOperationException">System.InvalidOperationException</a><br />
+The parent has no session identifier.</p>
+<p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
+The child stream protocol is invalid.</p>
+<p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
+The server rejects the stream request.</p>
 
 
 
