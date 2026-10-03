@@ -361,8 +361,9 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                     $"An {streamEvent.Type} event requires an array '{arrayProperty}'.");
             }
 
-            foreach (JsonElement entry in entries.EnumerateArray())
+            for (int entryIndex = 0; entryIndex < entries.GetArrayLength(); entryIndex++)
             {
+                JsonElement entry = entries[entryIndex];
                 if (entry.ValueKind != JsonValueKind.Object)
                 {
                     throw new EveProtocolException(
