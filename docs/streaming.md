@@ -53,8 +53,13 @@ Eve `0.46.1` introduced `action.input.appended`
 (`EveStreamEventKind.ActionInputAppended`) while the model generates one tool
 call's input. Starting in protocol v25 (Eve `0.50.0`), text append events are
 persisted as deltas only. Stream responses carry the required `x-eve-stream-version`
-header (versions 21 through 25), and legacy cumulative properties (`inputTextOffset`,
+header (versions 21 through 26), and legacy cumulative properties (`inputTextOffset`,
 `messageSoFar`, `reasoningSoFar`) are normalized out of the event payload at the decode boundary.
+
+Versions 25 and 26 share delta-only text, reasoning, and tool-input semantics.
+Their events reject legacy cumulative snapshots and offsets rather than silently
+accepting mixed wire formats. Version 26 is independent of the version-1 lease
+control records used to renew streaming connections.
 
 ```csharp
 await foreach (EveStreamEvent streamEvent in

@@ -86,4 +86,16 @@ public static class EveProtocol
     /// Gets the Vercel header used to present a trusted OIDC identity-provider token.
     /// </summary>
     public const string VercelTrustedOidcTokenHeaderName = "x-vercel-trusted-oidc-idp-token";
+
+    internal static void ValidateMessageStreamVersion(int version)
+    {
+        if (version is < 21 or > 26)
+        {
+            throw new EveProtocolException(
+                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 26.");
+        }
+    }
+
+    internal static bool IsDeltaMessageStreamVersion(int version) =>
+        version is 25 or 26;
 }

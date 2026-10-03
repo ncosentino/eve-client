@@ -9,12 +9,7 @@ internal sealed class EveStreamDecoder
 
     public EveStreamDecoder(int streamVersion)
     {
-        if (streamVersion is < 21 or > 25)
-        {
-            throw new EveProtocolException(
-                $"Unsupported eve stream protocol version '{streamVersion}'. Supported versions are 21 through 25.");
-        }
-
+        EveProtocol.ValidateMessageStreamVersion(streamVersion);
         _streamVersion = streamVersion;
     }
 
