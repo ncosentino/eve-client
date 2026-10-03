@@ -7,6 +7,37 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.15] - 2026-10-03
+
+### Added
+
+- `EveSession.StreamSubagentAsync` follows local and remote children using the parent's
+  authenticated client, independent child cursors, and shared reconnection and lease handling.
+  Both historical `subagent.called` and current `agent.started` descriptors are supported.
+- `EveTurnOutcome.PendingInputRequests` exposes unresolved requests while `InputRequests`
+  retains the complete observed history.
+
+### Changed
+
+- **Reference eve version:** `0.71.0`; **minimum eve version:** `0.54.2`;
+  message-stream protocol `26`; stream-control protocol `1`; agent-info schema
+  version `5`. Legacy supported response and inspection versions remain accepted.
+- Agent inspection validates schema-v5 sandbox, source and mount metadata, retains unknown
+  kernel-effect options losslessly, and accepts local subagent directory sources without
+  weakening compiled resolver or legacy binding requirements.
+
+### Fixed
+
+- Message-stream version 26 is accepted consistently by the transport, decoder and event
+  parser, using the same delta-only text, reasoning and tool-input semantics as version 25.
+- Human-input turn parks return `Waiting` outcomes without waiting for transport closure.
+  Task work and outstanding sign-in callbacks continue; callback attempts settle independently
+  and held turns remain cancellable.
+- HTML response errors use a concise route/configuration diagnostic while preserving raw
+  response data and JSON error-message precedence.
+- Parallel hosted builds no longer race while exporting implicit NBGV environment variables.
+  A deterministic preflight guard prevents re-enabling the competing writes.
+
 ## [0.1.0-alpha.14] - 2026-09-20
 
 ### Changed
@@ -500,7 +531,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.14...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.15...HEAD
+[0.1.0-alpha.15]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.14...v0.1.0-alpha.15
 [0.1.0-alpha.14]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.13...v0.1.0-alpha.14
 [0.1.0-alpha.13]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.12...v0.1.0-alpha.13
 [0.1.0-alpha.12]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.11...v0.1.0-alpha.12
