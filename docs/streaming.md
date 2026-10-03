@@ -274,6 +274,35 @@ await foreach (EveStreamEvent streamEvent in
 Negative start indexes are relative to the current tail and intentionally do
 not advance the stored absolute cursor.
 
+## Child agent streams
+
+Eve `0.66.1` introduced `subagent.called` child descriptors; Eve `0.69.0`
+renamed the descriptor to `agent.started`. Pass either event from the parent's
+stream to the same API:
+
+```csharp
+await foreach (EveStreamEvent childEvent in session.StreamSubagentAsync(
+    descriptor,
+    new EveStreamOptions { StartIndex = savedChildIndex },
+    cancellationToken))
+{
+    ProcessChildEvent(childEvent);
+}
+```
+
+The child cursor defaults to zero, advances independently during reconnects,
+and never changes `session.State`. Persist your own child index to resume a later
+enumeration. These reads are boundary-blind; stop explicitly at the desired child
+boundary or use `Follow = false` for bounded catch-up.
+
+Local children use their direct stream route; remote children use the parent's
+proxy route with the parent's host and credentials. Event remote URLs are never
+contacted directly. Legacy descriptor parent ownership is checked, and routes must
+exactly match the child and call identifiers. Current local `agent.started`
+descriptors do not carry parent identity, so callers must supply events from
+this parent's stream. Cancellation or disposal releases the local stream without
+cancelling the child's server-side turn.
+
 ## Bounded catch-up reads
 
 Set `Follow = false` to read everything recorded through the durable tail

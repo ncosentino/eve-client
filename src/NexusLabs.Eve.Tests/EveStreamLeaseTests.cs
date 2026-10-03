@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Text;
+﻿using static NexusLabs.Eve.Tests.EveTestResponses;
 
 namespace NexusLabs.Eve.Tests;
 
@@ -203,29 +202,4 @@ public sealed class EveStreamLeaseTests
         "{\"type\":\"test.event."
         + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
         + "\",\"meta\":{\"at\":\"2026-09-20T12:00:00.000Z\"}}";
-
-    private static HttpResponseMessage StreamResponse(
-        string body,
-        int? tailIndex = null,
-        string streamVersion = EveProtocol.MessageStreamVersion)
-    {
-        HttpResponseMessage response = new(HttpStatusCode.OK)
-        {
-            Content = new StringContent(
-                body,
-                Encoding.UTF8,
-                EveProtocol.MessageStreamContentType),
-        };
-        response.Headers.TryAddWithoutValidation(
-            EveProtocol.StreamVersionHeaderName,
-            streamVersion);
-        if (tailIndex is int value)
-        {
-            response.Headers.TryAddWithoutValidation(
-                "x-eve-stream-tail-index",
-                value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        }
-
-        return response;
-    }
 }

@@ -34,7 +34,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         EveStreamReconnectPolicy? configuredPolicy,
         int? maximumEventBytes,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        string? streamRoutePath = null)
     {
         ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy, mode);
         int startIndex = initialStartIndex;
@@ -64,7 +65,8 @@ internal static class EveStreamFollower
                     headers,
                     protectedHeaderOverrides,
                     policy,
-                    connectionAbortSource.Token);
+                    connectionAbortSource.Token,
+                    streamRoutePath);
                 if (response is null)
                 {
                     yield break;
@@ -241,7 +243,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? streamRoutePath)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -260,7 +263,8 @@ internal static class EveStreamFollower
                 headers,
                 protectedHeaderOverrides,
                 policy,
-                cancellationToken);
+                cancellationToken,
+                streamRoutePath);
 #pragma warning restore IDISP011
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -278,7 +282,8 @@ internal static class EveStreamFollower
         IReadOnlyDictionary<string, string>? headers,
         IReadOnlyDictionary<string, string>? protectedHeaderOverrides,
         ResolvedReconnectPolicy policy,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? streamRoutePath)
     {
         HttpStatusCode? lastStatusCode = null;
         string? lastBody = null;
@@ -309,7 +314,7 @@ internal static class EveStreamFollower
             using HttpRequestMessage request = await client.CreateRequestAsync(
                 HttpMethod.Get,
                 EveRequestKind.StreamSession,
-                EveRoutes.StreamSession(sessionId),
+                streamRoutePath ?? EveRoutes.StreamSession(sessionId),
                 headers,
                 null,
                 cancellationToken,
