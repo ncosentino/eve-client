@@ -49,7 +49,7 @@ public sealed class EveClientException : HttpRequestException
         HttpStatusCode statusCode,
         string responseBody,
         IReadOnlyDictionary<string, IReadOnlyList<string>> responseHeaders)
-        : base(CreateMessage(statusCode, responseBody), null, statusCode)
+        : base(CreateMessage(statusCode, responseBody, responseHeaders), null, statusCode)
     {
         ResponseBody = responseBody;
         ResponseHeaders = responseHeaders;
@@ -100,12 +100,14 @@ public sealed class EveClientException : HttpRequestException
         }
     }
 
-    private static string CreateMessage(HttpStatusCode statusCode, string responseBody)
+    private static string CreateMessage(
+        HttpStatusCode statusCode,
+        string responseBody,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> responseHeaders)
     {
-        if (responseBody.Length == 0)
-        {
-            return $"The eve server returned HTTP {(int)statusCode}.";
-        }
+        string fallbackMessage = responseBody.Length == 0
+            ? $"The eve server returned HTTP {(int)statusCode}."
+            : responseBody;
 
         try
         {
@@ -119,9 +121,15 @@ public sealed class EveClientException : HttpRequestException
         }
         catch (JsonException)
         {
-            return responseBody;
+            if (responseHeaders.TryGetValue("content-type", out IReadOnlyList<string>? contentTypes)
+                && contentTypes.Any(static contentType =>
+                    contentType.Contains("text/html", StringComparison.OrdinalIgnoreCase)))
+            {
+                return $"Server returned {(int)statusCode} with an HTML response. "
+                    + "Check the eve route and development server configuration.";
+            }
         }
 
-        return responseBody;
+        return fallbackMessage;
     }
 }
