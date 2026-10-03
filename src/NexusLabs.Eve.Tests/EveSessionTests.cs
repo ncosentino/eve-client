@@ -3302,7 +3302,7 @@ public sealed class EveSessionTests
             """{"type":"message.appended","data":{"messageDelta":"Hello","turnId":"t1","preview":{"value":7}}}""",
             """{"type":"reasoning.appended","data":{"reasoningDelta":"Thinking","turnId":"t1"}}""",
             """{"type":"action.input.appended","data":{"inputTextDelta":"{}","callId":"call_1","turnId":"t1"}}""",
-            """{"type":"message.completed","data":{"message":"Hello","turnId":"t1"}}""",
+            """{"type":"message.completed","data":{"finishReason":"stop","message":"Hello","turnId":"t1"}}""",
             """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
         EveSession session = CreateClient(transport).CreateSession();
 
