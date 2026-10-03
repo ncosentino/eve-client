@@ -9,18 +9,24 @@ public sealed class EveStreamLeaseTests
         """{"$eve":"stream.lease-ended","version":1}""";
 
     [Test]
+    [Arguments("25")]
+    [Arguments("26")]
     public async Task BoundedStream_RenewsLeasesFromAdvancedCursor(
+        string version,
         CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(
             $"\n{Event(1)}\n\n{Event(2)}\n\n{LeaseEnded}\n",
-            tailIndex: 5)));
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
-            $"{Event(3)}\n{Event(4)}\n{LeaseEnded}\n")));
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponse(
-            $"{Event(5)}\n{LeaseEnded}\n")));
+            tailIndex: 5,
+            streamVersion: version)));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(
+            $"{Event(3)}\n{Event(4)}\n{LeaseEnded}\n",
+            streamVersion: version)));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponse(
+            $"{Event(5)}\n{LeaseEnded}\n",
+            streamVersion: version)));
         EveSession session = CreateSession(transport, streamIndex: 1);
 
         List<EveStreamEvent> events = [];
@@ -198,7 +204,10 @@ public sealed class EveStreamLeaseTests
         + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
         + "\",\"meta\":{\"at\":\"2026-09-20T12:00:00.000Z\"}}";
 
-    private static HttpResponseMessage StreamResponse(string body, int? tailIndex = null)
+    private static HttpResponseMessage StreamResponse(
+        string body,
+        int? tailIndex = null,
+        string streamVersion = EveProtocol.MessageStreamVersion)
     {
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {
@@ -209,7 +218,7 @@ public sealed class EveStreamLeaseTests
         };
         response.Headers.TryAddWithoutValidation(
             EveProtocol.StreamVersionHeaderName,
-            EveProtocol.MessageStreamVersion);
+            streamVersion);
         if (tailIndex is int value)
         {
             response.Headers.TryAddWithoutValidation(

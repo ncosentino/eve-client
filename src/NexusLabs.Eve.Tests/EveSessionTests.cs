@@ -3216,7 +3216,7 @@ public sealed class EveSessionTests
 
     [Test]
     [Arguments("20")]
-    [Arguments("26")]
+    [Arguments("27")]
     [Arguments("invalid")]
     public async Task FollowAsync_RejectsInvalidStreamVersionHeader(
         string version,
@@ -3258,21 +3258,73 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task EventParse_RejectsProtocolV25WithLegacyFields(
+    [Arguments("25", """{"type":"message.appended","data":{"messageDelta":"hello","messageSoFar":"hello","turnId":"t1"}}""")]
+    [Arguments("26", """{"type":"message.appended","data":{"messageDelta":"hello","messageSoFar":"hello","turnId":"t1"}}""")]
+    [Arguments("25", """{"type":"message.appended","data":{"messageDelta":"hello","messageOffset":0,"turnId":"t1"}}""")]
+    [Arguments("26", """{"type":"message.appended","data":{"messageDelta":"hello","messageOffset":0,"turnId":"t1"}}""")]
+    [Arguments("25", """{"type":"reasoning.appended","data":{"reasoningDelta":"hello","reasoningSoFar":"hello","turnId":"t1"}}""")]
+    [Arguments("26", """{"type":"reasoning.appended","data":{"reasoningDelta":"hello","reasoningSoFar":"hello","turnId":"t1"}}""")]
+    [Arguments("25", """{"type":"reasoning.appended","data":{"reasoningDelta":"hello","reasoningOffset":0,"turnId":"t1"}}""")]
+    [Arguments("26", """{"type":"reasoning.appended","data":{"reasoningDelta":"hello","reasoningOffset":0,"turnId":"t1"}}""")]
+    [Arguments("25", """{"type":"action.input.appended","data":{"inputTextDelta":"{}","inputTextOffset":0,"callId":"call_1"}}""")]
+    [Arguments("26", """{"type":"action.input.appended","data":{"inputTextDelta":"{}","inputTextOffset":0,"callId":"call_1"}}""")]
+    public async Task EventParse_RejectsDeltaProtocolWithLegacyFields(
+        string version,
+        string streamEvent,
         CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
-            "25",
-            """{"type":"message.appended","data":{"messageDelta":"hello","messageSoFar":"hello","turnId":"t1"}}""")));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponseWithVersion(
+            version,
+            streamEvent)));
         EveSession session = CreateClient(transport).CreateSession();
 
         EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
 
         await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
             .Throws<EveProtocolException>();
+    }
+
+    [Test]
+    [Arguments("25")]
+    [Arguments("26")]
+    public async Task SendAsync_DecodesDeltaProtocolsAndPreservesRawFields(
+        string version,
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponseWithVersion(
+            version,
+            """{"type":"message.appended","data":{"messageDelta":"Hello","turnId":"t1","preview":{"value":7}}}""",
+            """{"type":"reasoning.appended","data":{"reasoningDelta":"Thinking","turnId":"t1"}}""",
+            """{"type":"action.input.appended","data":{"inputTextDelta":"{}","callId":"call_1","turnId":"t1"}}""",
+            """{"type":"message.completed","data":{"message":"Hello","turnId":"t1"}}""",
+            """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));
+        EveSession session = CreateClient(transport).CreateSession();
+
+        EveMessageResponse response = await session.SendAsync("Test", cancellationToken);
+        EveTurnOutcome outcome = await response.GetOutcomeAsync(cancellationToken);
+
+        await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
+        await Assert.That(outcome.Message).IsEqualTo("Hello");
+        await Assert.That(outcome.Events.Count).IsEqualTo(5);
+        await Assert.That(outcome.Events[0].Data.GetProperty("preview")
+            .GetProperty("value").GetInt32()).IsEqualTo(7);
+        await Assert.That(outcome.Events[0].Data.TryGetProperty("messageSoFar", out _))
+            .IsFalse().Because("Delta protocols do not synthesize cumulative text.");
+        await Assert.That(outcome.Events[1].Data.GetProperty("reasoningDelta").GetString())
+            .IsEqualTo("Thinking");
+        await Assert.That(outcome.Events[1].Data.TryGetProperty("reasoningSoFar", out _))
+            .IsFalse().Because("Delta protocols do not synthesize cumulative reasoning.");
+        await Assert.That(outcome.Events[2].Data.GetProperty("inputTextDelta").GetString())
+            .IsEqualTo("{}");
+        await Assert.That(outcome.Events[2].Data.TryGetProperty("inputTextOffset", out _))
+            .IsFalse().Because("Delta protocols do not synthesize tool-input offsets.");
+        await Assert.That(session.State.StreamIndex).IsEqualTo(5);
     }
 
     [Test]
@@ -3294,7 +3346,10 @@ public sealed class EveSessionTests
     }
 
     [Test]
+    [Arguments("25")]
+    [Arguments("26")]
     public async Task TurnStream_AccumulatesAcrossReconnectsWithDifferentStreamVersions(
+        string version,
         CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
@@ -3303,8 +3358,8 @@ public sealed class EveSessionTests
         handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
             "24",
             """{"type":"message.appended","data":{"messageDelta":"Hello ","messageSoFar":"Hello ","turnId":"t1"}}""")));
-        handler.Enqueue(static (_, _) => Task.FromResult(StreamResponseWithVersion(
-            "25",
+        handler.Enqueue((_, _) => Task.FromResult(StreamResponseWithVersion(
+            version,
             """{"type":"message.appended","data":{"messageDelta":"World!","turnId":"t1"}}""",
             """{"type":"message.completed","data":{"finishReason":"stop","message":"Hello World!","turnId":"t1"}}""",
             """{"type":"session.waiting","data":{"wait":"next-user-message"}}""")));

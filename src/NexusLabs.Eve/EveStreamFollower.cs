@@ -397,12 +397,7 @@ internal static class EveStreamFollower
                 $"The '{EveProtocol.StreamVersionHeaderName}' response header was out of range: '{raw}'.");
         }
 
-        if (version is < 21 or > 25)
-        {
-            throw new EveProtocolException(
-                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 25.");
-        }
-
+        EveProtocol.ValidateMessageStreamVersion(version);
         return version;
     }
 

@@ -77,12 +77,7 @@ public sealed record EveStreamEvent
         int streamVersion = 25,
         EveStreamDecoder? decoder = null)
     {
-        if (streamVersion is < 21 or > 25)
-        {
-            throw new EveProtocolException(
-                $"Unsupported eve stream protocol version '{streamVersion}'. Supported versions are 21 through 25.");
-        }
-
+        EveProtocol.ValidateMessageStreamVersion(streamVersion);
         try
         {
             using JsonDocument document = JsonDocument.Parse(json);
@@ -116,6 +111,19 @@ public sealed record EveStreamEvent
         }
     }
 
+    private static void RejectLegacyAppendField(
+        JsonElement data,
+        string field,
+        string eventType,
+        int streamVersion)
+    {
+        if (data.TryGetProperty(field, out _))
+        {
+            throw new EveProtocolException(
+                $"Protocol v{streamVersion} {eventType} events must not contain legacy '{field}'.");
+        }
+    }
+
     private static JsonElement NormalizeAndValidateData(
         EveStreamEventKind kind,
         JsonElement data,
@@ -145,13 +153,10 @@ public sealed record EveStreamEvent
 
         string delta = deltaElement.GetString()!;
         bool hasSoFar = data.TryGetProperty("messageSoFar", out JsonElement soFarElement);
-        if (streamVersion == 25)
+        if (EveProtocol.IsDeltaMessageStreamVersion(streamVersion))
         {
-            if (hasSoFar)
-            {
-                throw new EveProtocolException("Protocol v25 message.appended events must not contain legacy 'messageSoFar'.");
-            }
-
+            RejectLegacyAppendField(data, "messageSoFar", "message.appended", streamVersion);
+            RejectLegacyAppendField(data, "messageOffset", "message.appended", streamVersion);
             return data;
         }
 
@@ -219,13 +224,10 @@ public sealed record EveStreamEvent
 
         string delta = deltaElement.GetString()!;
         bool hasSoFar = data.TryGetProperty("reasoningSoFar", out JsonElement soFarElement);
-        if (streamVersion == 25)
+        if (EveProtocol.IsDeltaMessageStreamVersion(streamVersion))
         {
-            if (hasSoFar)
-            {
-                throw new EveProtocolException("Protocol v25 reasoning.appended events must not contain legacy 'reasoningSoFar'.");
-            }
-
+            RejectLegacyAppendField(data, "reasoningSoFar", "reasoning.appended", streamVersion);
+            RejectLegacyAppendField(data, "reasoningOffset", "reasoning.appended", streamVersion);
             return data;
         }
 
@@ -293,13 +295,9 @@ public sealed record EveStreamEvent
 
         string delta = deltaElement.GetString()!;
         bool hasOffset = data.TryGetProperty("inputTextOffset", out JsonElement offsetElement);
-        if (streamVersion == 25)
+        if (EveProtocol.IsDeltaMessageStreamVersion(streamVersion))
         {
-            if (hasOffset)
-            {
-                throw new EveProtocolException("Protocol v25 action.input.appended events must not contain legacy 'inputTextOffset'.");
-            }
-
+            RejectLegacyAppendField(data, "inputTextOffset", "action.input.appended", streamVersion);
             return data;
         }
 
