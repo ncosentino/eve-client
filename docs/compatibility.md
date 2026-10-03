@@ -1,4 +1,4 @@
----
+﻿---
 description: Understand supported eve versions, stream protocol compatibility, and preview-version policy.
 ---
 
@@ -226,6 +226,27 @@ and preserve `task-update`. Eve `0.56.0` retained schema version `4` while remov
 legacy `workflow` metadata from current responses. The pinned Eve `0.63.0` fixture
 asserts that its real schema-v4 payload omits both `task-update` and `workflow` while
 still exposing `workflow-tool-call` through `EveAgentInfo.Raw`.
+
+## Agent-info schema v5
+
+Agent inspection accepts schema `5` as published in Eve `0.64.0` through `0.70.2`.
+Its sandbox source requires a string `revisionHash`; `provider` and
+`environmentExportName` are optional strings, replacing the v4 bootstrap/session
+fields. Agent `outputSchema` is optional and remains opaque.
+
+Extension owners may include a nonempty `mountId`. Filesystem and programmatic
+module backings may independently include an optional string `mountId`, including
+legacy backings without one. Source and binding owners must agree, including any
+mount identity. Dependency and parameter maps remain available without projection.
+
+Schema-v5 kernel-effect options deliberately tolerate retired and unknown actions,
+audiences, and kinds. Unlike the TypeScript client's `unrecognized` substitution,
+`EveAgentInfo.Raw` retains the original values losslessly, including options that
+are not strings. The enclosing effect must still be an exact object with a string
+`sourceId`, an `audience` array, and a `kind` property. Malformed identities,
+bindings, required collections, and sandbox metadata remain protocol errors.
+Schema-v3/v4 validation remains strict, including their historical kernel-effect
+sets; accepting v5 does not change the minimum supported Eve release.
 
 ## Strict health response validation
 

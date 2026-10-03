@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace NexusLabs.Eve.Tests;
 
@@ -551,6 +552,251 @@ public sealed class EveClientTests
     }
 
     [Test]
+    public async Task GetInfoAsync_AcceptsPublishedSchemaVersionFiveAndPreservesRaw(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFive(static _ => { });
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(5);
+        await Assert.That(info.AgentName).IsEqualTo("Test Agent");
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+        JsonElement sandbox = info.Raw.GetProperty("sandbox");
+        await Assert.That(sandbox.GetProperty("revisionHash").GetString())
+            .IsEqualTo("sha256:environment");
+        await Assert.That(sandbox.GetProperty("provider").GetString()).IsEqualTo("vercel");
+        await Assert.That(sandbox.GetProperty("environmentExportName").GetString())
+            .IsEqualTo("environment");
+        await Assert.That(info.Raw.GetProperty("memories").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("agent").GetProperty("outputSchema")
+            .GetProperty("type").GetString()).IsEqualTo("object");
+    }
+
+    [Test]
+    [Arguments("sandbox.provider")]
+    [Arguments("sandbox.environmentExportName")]
+    [Arguments("agent.outputSchema")]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFiveOptionalMetadataOmission(
+        string path,
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFiveWithValue(path, null);
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(5);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFiveSubagentsAndHistoricalKernelEffects(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFiveWithSubagent();
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(5);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+        await Assert.That(info.Raw.GetProperty("subagents").GetProperty("local").GetArrayLength())
+            .IsEqualTo(1);
+        await Assert.That(info.Raw.GetProperty("subagents").GetProperty("local")[0]
+            .GetProperty("summary").GetProperty("memories").GetInt32()).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFiveEmptyBackingMountIdentity(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFiveWithValue(
+            "agent.config.binding.backing.mountId",
+            "\"\"");
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+        await Assert.That(info.Raw.GetProperty("agent").GetProperty("config")
+            .GetProperty("binding").GetProperty("backing").GetProperty("mountId").GetString())
+            .IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
+    public async Task GetInfoAsync_AcceptsSchemaVersionFiveIndependentOptionalMountMetadata(
+        bool ownerMount,
+        bool backingMount,
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFive(root =>
+        {
+            JsonObject owner = new()
+            {
+                ["kind"] = "extension",
+                ["namespace"] = "search",
+                ["packageName"] = "@example/search",
+            };
+            if (ownerMount)
+            {
+                owner["mountId"] = "search-primary";
+            }
+
+            JsonNode[] sources =
+            [
+                root["agent"]!["config"]!,
+                root["sandbox"]!,
+                root["memories"]![0]!,
+            ];
+            foreach (JsonNode source in sources)
+            {
+                source["owner"] = owner.DeepClone();
+                source["binding"]!["owner"] = owner.DeepClone();
+                if (backingMount)
+                {
+                    source["binding"]!["backing"]!["mountId"] = "search-primary";
+                }
+            }
+
+            root["channels"]!["shadowed"]![0]!["source"]!["owner"] = owner.DeepClone();
+            root["channels"]!["shadowed"]![0]!["source"]!["backing"] =
+                root["sandbox"]!["binding"]!["backing"]!.DeepClone();
+        });
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Version).IsEqualTo(5);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+        await Assert.That(info.Raw.GetProperty("agent").GetProperty("config")
+            .GetProperty("binding").GetProperty("backing").GetProperty("parameters")
+            .GetProperty("limit").GetInt32()).IsEqualTo(25);
+    }
+
+    [Test]
+    [Arguments("subagent-call", "root-session", "dispatch")]
+    [Arguments("workflow-tool-call", "root-session", "provider-tool")]
+    [Arguments("task-update", "delegated-task-child", "request-input")]
+    [Arguments("task-cancel", "requires-request-input", "request-input")]
+    [Arguments("future-action", "future-audience", "future-kind")]
+    [Arguments("unrecognized", "unrecognized", "unrecognized")]
+    public async Task GetInfoAsync_PreservesSchemaVersionFiveUnknownKernelOptionsLosslessly(
+        string action,
+        string audience,
+        string kind,
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFive(root =>
+            root["kernelEffects"]!.AsArray().Add(new JsonObject
+            {
+                ["action"] = action,
+                ["audience"] = new JsonArray(audience),
+                ["kind"] = kind,
+                ["sourceId"] = "tools/legacy.ts",
+            }));
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+    }
+
+    [Test]
+    public async Task GetInfoAsync_PreservesSchemaVersionFiveNonStringKernelOptions(
+        CancellationToken cancellationToken)
+    {
+        string json = AgentInfoV4Fixture.VersionFive(root =>
+            root["kernelEffects"]!.AsArray().Add(JsonNode.Parse(
+                """{"action":{"future":true},"audience":[null,42],"kind":false,"sourceId":"legacy"}""")));
+
+        EveAgentInfo info = await GetInfoAsync(json, cancellationToken);
+
+        await Assert.That(info.Raw.GetProperty("kernelEffects").GetArrayLength()).IsEqualTo(1);
+        await Assert.That(info.Raw.GetRawText()).IsEqualTo(json);
+    }
+
+    [Test]
+    [Arguments("sandbox.revisionHash", null)]
+    [Arguments("sandbox.revisionHash", "42")]
+    [Arguments("sandbox.provider", "false")]
+    [Arguments("sandbox.environmentExportName", "null")]
+    [Arguments("sandbox.hasBootstrap", "false")]
+    [Arguments("sandbox.binding", null)]
+    [Arguments("agent.name", "null")]
+    [Arguments("agent.nodeId", "42")]
+    [Arguments("agent.config.binding", null)]
+    [Arguments("agent.config.binding.logicalPath", "\"mismatch\"")]
+    [Arguments("agent.config.binding.backing.mountId", "42")]
+    [Arguments("agent.config.binding.backing.dependencies", "{\"bad\":42}")]
+    [Arguments("agent.config.binding.backing.parameters", "[]")]
+    [Arguments("sandbox.binding.backing.mountId", "null")]
+    [Arguments("sandbox.binding.backing.externalDependencies", "[42]")]
+    [Arguments("sandbox.owner", "{\"kind\":\"extension\",\"namespace\":\"test\",\"packageName\":\"test\",\"mountId\":\"\"}")]
+    [Arguments("sandbox.owner", "{\"kind\":\"extension\",\"namespace\":\"test\",\"packageName\":\"test\",\"mountId\":42}")]
+    [Arguments("sandbox.owner", "{\"kind\":\"application\",\"mountId\":\"not-allowed\"}")]
+    [Arguments("sandbox.owner", "{\"kind\":\"extension\",\"namespace\":42,\"packageName\":\"test\"}")]
+    [Arguments("memories", null)]
+    [Arguments("memories.0.visibility", "\"global\"")]
+    [Arguments("channels.shadowed.0.source.form", "\"invalid\"")]
+    [Arguments("remoteAgents.total", "1")]
+    [Arguments("remoteAgents.total", "false")]
+    [Arguments("diagnostics.discoveryErrors", "\"invalid\"")]
+    [Arguments("tools", "[]")]
+    [Arguments("workflow", "{\"enabled\":false,\"toolName\":\"Workflow\"}")]
+    [Arguments("unknownRoot", "true")]
+    [Arguments("kernelEffects", "[{\"audience\":[],\"kind\":\"dispatch\",\"sourceId\":42}]")]
+    [Arguments("kernelEffects", "[{\"audience\":{},\"kind\":\"dispatch\",\"sourceId\":\"test\"}]")]
+    [Arguments("kernelEffects", "[{\"kind\":\"dispatch\",\"sourceId\":\"test\"}]")]
+    [Arguments("kernelEffects", "[{\"audience\":[],\"sourceId\":\"test\"}]")]
+    [Arguments("kernelEffects", "[{\"audience\":[],\"kind\":\"dispatch\",\"sourceId\":\"test\",\"extra\":true}]")]
+    public async Task GetInfoAsync_RejectsSchemaVersionFiveMalformedKnownStructure(
+        string path,
+        string? json,
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.VersionFiveWithValue(path, json),
+            $"Schema v5 must validate {path} rather than accepting arbitrary inspection metadata.",
+            cancellationToken);
+
+    [Test]
+    public async Task GetInfoAsync_RejectsSchemaVersionFiveMountIdentityMismatch(
+        CancellationToken cancellationToken) =>
+        await AssertInfoRejectedAsync(
+            AgentInfoV4Fixture.VersionFive(static root =>
+            {
+                JsonObject owner = new()
+                {
+                    ["kind"] = "extension",
+                    ["mountId"] = "first",
+                    ["namespace"] = "test",
+                    ["packageName"] = "test",
+                };
+                root["agent"]!["config"]!["owner"] = owner;
+                root["agent"]!["config"]!["binding"]!["owner"] = owner.DeepClone();
+                root["agent"]!["config"]!["binding"]!["owner"]!["mountId"] = "second";
+            }),
+            "Source and binding extension mount identities must agree.",
+            cancellationToken);
+
+    [Test]
+    [Arguments(3)]
+    [Arguments(4)]
+    public async Task GetInfoAsync_KeepsLegacyModuleBackingMountMetadataStrict(
+        int version,
+        CancellationToken cancellationToken)
+    {
+        JsonObject root = JsonNode.Parse(
+            version == 3 ? AgentInfoV3Fixture.ValidJson : AgentInfoV4Fixture.ValidJson)!.AsObject();
+        root["agent"]!["config"]!["binding"]!["backing"]!["mountId"] = "new-mount";
+
+        await AssertInfoRejectedAsync(
+            root.ToJsonString(),
+            "Mount metadata belongs to schema v5 and must not relax historical schema validation.",
+            cancellationToken);
+    }
+
+    [Test]
     public async Task GetInfoAsync_AcceptsSchemaVersionFourSubagentMemorySummary(
         CancellationToken cancellationToken)
     {
@@ -854,7 +1100,7 @@ public sealed class EveClientTests
 
     [Test]
     [Arguments(0)]
-    [Arguments(5)]
+    [Arguments(6)]
     public async Task GetInfoAsync_RejectsUnsupportedSchemaVersion(
         int version,
         CancellationToken cancellationToken)

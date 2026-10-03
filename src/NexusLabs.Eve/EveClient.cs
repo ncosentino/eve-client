@@ -589,7 +589,7 @@ public sealed class EveClient
                     "The eve info route returned an unsupported agent-info payload.");
             }
 
-            if (version is 3 or 4)
+            if (version is 3 or 4 or 5)
             {
                 EveAgentInfoValidator.Validate(root, version);
             }

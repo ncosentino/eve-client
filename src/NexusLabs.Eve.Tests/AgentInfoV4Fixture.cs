@@ -7,6 +7,55 @@ internal static class AgentInfoV4Fixture
     public static string ValidJson =>
         Create(static _ => { });
 
+    public static string VersionFiveWithSubagent() =>
+        VersionFive(WithSubagentSummary(), static _ => { });
+
+    public static string VersionFive(Action<JsonObject> mutation) =>
+        VersionFive(WithProgrammaticBackingMetadata(), mutation);
+
+    private static string VersionFive(string versionFourJson, Action<JsonObject> mutation) =>
+        Mutate(
+            versionFourJson,
+            root =>
+            {
+                root["version"] = 5;
+                root.Remove("workflow");
+                JsonObject sandbox = root["sandbox"]!.AsObject();
+                sandbox.Remove("backendKind");
+                sandbox.Remove("description");
+                sandbox.Remove("hasBootstrap");
+                sandbox.Remove("hasOnSession");
+                sandbox.Remove("revalidationKey");
+                sandbox.Remove("sourceHash");
+                sandbox["provider"] = "vercel";
+                sandbox["environmentExportName"] = "environment";
+                sandbox["revisionHash"] = "sha256:environment";
+                root["agent"]!["outputSchema"] = new JsonObject { ["type"] = "object" };
+                mutation(root);
+            });
+
+    public static string VersionFiveWithValue(string path, string? json) =>
+        VersionFive(root =>
+        {
+            string[] segments = path.Split('.');
+            JsonNode parent = root;
+            for (int index = 0; index < segments.Length - 1; index++)
+            {
+                parent = parent is JsonArray array
+                    ? array[int.Parse(segments[index], System.Globalization.CultureInfo.InvariantCulture)]!
+                    : parent[segments[index]]!;
+            }
+
+            if (json is null)
+            {
+                parent.AsObject().Remove(segments[^1]);
+            }
+            else
+            {
+                parent[segments[^1]] = JsonNode.Parse(json);
+            }
+        });
+
     public static string WithoutMemories() =>
         Create(static root => root.Remove("memories"));
 
