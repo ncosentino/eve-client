@@ -1282,8 +1282,12 @@ final tool result, and expect it to be superseded.</p>
 (<code>EveStreamEventKind.ActionInputAppended</code>) while the model generates one tool
 call's input. Starting in protocol v25 (Eve <code>0.50.0</code>), text append events are
 persisted as deltas only. Stream responses carry the required <code>x-eve-stream-version</code>
-header (versions 21 through 25), and legacy cumulative properties (<code>inputTextOffset</code>,
+header (versions 21 through 26), and legacy cumulative properties (<code>inputTextOffset</code>,
 <code>messageSoFar</code>, <code>reasoningSoFar</code>) are normalized out of the event payload at the decode boundary.</p>
+<p>Versions 25 and 26 share delta-only text, reasoning, and tool-input semantics.
+Their events reject legacy cumulative snapshots and offsets rather than silently
+accepting mixed wire formats. Version 26 is independent of the version-1 lease
+control records used to renew streaming connections.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">{</span>
