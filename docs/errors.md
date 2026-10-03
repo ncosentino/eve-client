@@ -16,6 +16,16 @@ Non-successful routes throw `EveClientException`. It exposes:
 When the body contains `{ "error": "..." }`, that value becomes the exception
 message.
 
+If JSON parsing fails and the response content type is `text/html` (including
+case variations and charset parameters), the message summarizes the HTTP status
+and asks you to check the eve route and development server configuration instead
+of displaying the HTML document. Verify the configured host points to the agent,
+not a web application's page route. `ResponseBody` and `ResponseHeaders` still
+retain the complete response for inspection. Valid JSON error messages take
+precedence even when the server labels the response as HTML; other non-JSON
+responses keep their raw body as the message. An empty non-HTML response keeps
+the HTTP status-only message.
+
 ## Branch on a stable error code
 
 eve `0.31.0` reports a stable `code` alongside the human-readable message. Branch
