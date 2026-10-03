@@ -58,6 +58,27 @@ export const model = new MockLanguageModelV3({
         start(controller) {
           controller.enqueue({ type: "stream-start", warnings: [] });
 
+          if (prompt.includes("STRUCTURED_RESPONSE")) {
+            if (!options.tools?.some(
+              (tool) => tool.type === "function" && tool.name === "final_output",
+            )) {
+              throw new Error("The structured request did not supply the final_output tool.");
+            }
+            controller.enqueue({
+              input: JSON.stringify({ status: "STRUCTURED_OK" }),
+              toolCallId: "call_structured",
+              toolName: "final_output",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
           if (shouldCallChild) {
             const input = "{}";
             controller.enqueue({
@@ -228,9 +249,7 @@ export const model = new MockLanguageModelV3({
             return;
           }
 
-          const responseText = prompt.includes("STRUCTURED_RESPONSE")
-            ? '{"status":"STRUCTURED_OK"}'
-            : prompt.includes("CHILD_STREAM_RESPONSE")
+          const responseText = prompt.includes("CHILD_STREAM_RESPONSE")
             ? "CHILD_STREAM_OK"
             : isFollowingTurnClientContextProbe
             ? hasTurnScopedClientContext
