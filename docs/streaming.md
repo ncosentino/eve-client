@@ -122,6 +122,18 @@ by wire type, they simply do not appear.
 
 ## Callback authorization parking
 
+Eve `0.70.0` parks an active turn with `turn.waiting`. Its required `on`
+discriminator distinguishes human input from task work. A response returns a
+`Waiting` outcome for unresolved input requests, or an `input` park without an
+outstanding callback. It continues through task waits and callback-backed sign-ins.
+Callback attempts are correlated by `attemptId` when supplied, otherwise by the
+connection name.
+
+Text completed before a `turn.waiting` park is interim and is not exposed as the
+final `EveTurnOutcome.Message`. `PendingInputRequests` reports unresolved requests
+observed by this response; `InputRequests` retains their full history. A parked
+turn remains active, so the consumed response can still cancel its guarded turn.
+
 eve `0.41.0` may emit `authorization.required` with a `webhookUrl`, followed by an
 interim `session.waiting`, while a framework-owned callback is pending. Keep enumerating
 the active `EveMessageResponse`: it remains attached until the matching

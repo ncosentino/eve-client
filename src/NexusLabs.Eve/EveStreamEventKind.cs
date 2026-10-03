@@ -206,4 +206,13 @@ public enum EveStreamEventKind
     /// remains available through <see cref="EveStreamEvent.Data"/>.
     /// </remarks>
     ActionInputAppended,
+
+    /// <summary>
+    /// An active turn is parked on human input or outstanding task work.
+    /// </summary>
+    /// <remarks>
+    /// The <c>on</c> discriminator is <c>input</c> or <c>tasks</c>.
+    /// Response boundaries also depend on unresolved requests and sign-in callbacks.
+    /// </remarks>
+    TurnWaiting,
 }
