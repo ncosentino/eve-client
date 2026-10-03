@@ -4,7 +4,7 @@ description: Upgrade an eve deployment and NexusLabs.Eve client safely across th
 
 # Migrating to eve 0.54.2
 
-The current client requires eve `0.54.2` or newer and uses eve `0.63.0` as its
+The current client requires eve `0.54.2` or newer and uses eve `0.70.3` as its
 compatibility reference. Eve `0.54.2` is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly `subagent-call`, `task-cancel`, and
 `workflow-tool-call`.
@@ -14,7 +14,30 @@ payload remains version `4`, so the client has no schema discriminator with whic
 accept both contracts strictly. It rejects `task-update` in v4 while historical schema
 v3 continues accepting and preserving that action through `EveAgentInfo.Raw`.
 
-## Required server-first order
+## Moving from Eve 0.63.0 to 0.70.3
+
+This is not a version-only server upgrade. Eve 0.64.0 changes inspection to schema
+v5, 0.69.0 changes the response stream version to 26 and reshapes child descriptors,
+and 0.70.0 parks human input with `turn.waiting` instead of ending the turn.
+Alpha.14 rejects schema-v5 inspection and version-26 streams.
+
+The newer client retains the older supported inspection and stream schemas, so
+upgrade the calling application first while its qualified older server remains in
+place. Then qualify and promote the server upgrade. If moving both under maintenance,
+pause traffic, deploy the already-qualified pair, and reopen only after verification.
+Rollback to a compatible pair rather than putting alpha.14 against a version-26 server.
+
+Server authors must separately review the upstream workflow/task, tool and runtime
+API changes. C# transport qualification does not prove application tool inventories,
+prompts, model-backed workflows, or evaluation telemetry. Prove those on a nonproduction
+candidate before cutover; a production smoke of every business workflow is not required.
+
+Applications that consumed `subagent.called` directly must also recognize the newer
+`agent.started` descriptor. `StreamSubagentAsync` supports both. A human-input park
+returns a `Waiting` outcome; `PendingInputRequests` exposes unresolved requests while
+`InputRequests` retains its existing complete observed history.
+
+## Historical required server-first order for Eve 0.54.2
 
 This boundary is a server-first rolling upgrade:
 

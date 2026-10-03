@@ -74,7 +74,7 @@ public sealed record EveStreamEvent
 
     internal static EveStreamEvent Parse(
         string json,
-        int streamVersion = 25,
+        int streamVersion = 26,
         EveStreamDecoder? decoder = null)
     {
         EveProtocol.ValidateMessageStreamVersion(streamVersion);

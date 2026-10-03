@@ -24,8 +24,8 @@ part of the .NET API.
 
 ## Compatibility
 
-This release requires eve `0.54.2` or newer and targets eve `0.63.0`, using
-message-stream protocol `25`, stream-control protocol `1`, and agent-info schema `v4`.
+This release requires eve `0.54.2` or newer and targets eve `0.70.3`, using
+message-stream protocol `26`, stream-control protocol `1`, and agent-info schema `v5`.
 It strictly accepts only the
 `subagent-call`, `task-cancel`, and `workflow-tool-call` kernel-effect actions while
 accepting schema-v4 responses both with and without legacy `workflow` metadata. Earlier

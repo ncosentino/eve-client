@@ -60,9 +60,11 @@ package implements:
 - Never cut a release whose declared reference is older than the protocol the
   package actually sends and interprets. A published compatibility claim cannot
   be corrected.
-- Before declaring a newer reference, confirm the range is non-breaking: session
-  routes unchanged, stream event vocabulary additive with nothing removed, and
-  the live probe green against that release.
+- Before declaring a newer reference, audit route, inspection-schema, stream-version
+  and event-lifetime changes rather than assuming the range is additive. Preserve
+  older supported contracts with version-aware handling, or explicitly raise the
+  minimum and document the migration. The live probe must be green against the new
+  reference before delivery.
 
 The compatibility probe fails when the declared reference and the installed
 fixture disagree, so the two always move together.

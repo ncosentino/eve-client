@@ -15,11 +15,13 @@ const usage = {
   },
 };
 
-const model = new MockLanguageModelV3({
+export const model = new MockLanguageModelV3({
   modelId: "nexuslabs-eve-compatibility",
   provider: "nexuslabs-test",
   doStream: async (options) => {
     const prompt = JSON.stringify(options.prompt);
+    const shouldCallChild =
+      prompt.includes("REQUEST_CHILD_STREAM") && !prompt.includes("CHILD_TOOL_OK");
     const shouldWaitForCancellation = prompt.includes("WAIT_FOR_CANCEL");
     const shouldRequestApproval =
       prompt.includes("REQUEST_APPROVAL") && !prompt.includes("APPROVAL_TOOL_OK");
@@ -30,7 +32,7 @@ const model = new MockLanguageModelV3({
     const isPriorDeliveryCorrelationProbe = prompt.includes(
       "STALE_CURSOR_PRIOR_DELIVERY",
     );
-    const callbackToolDiscovered = prompt.includes("callback-auth__probeHealth");
+    const callbackToolDiscovered = prompt.includes('"tool":"probeHealth"');
     const callbackToolCompleted = prompt.includes('"status":"ready"');
     const isFollowingTurnClientContextProbe = prompt.includes(
       "VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT",
@@ -55,6 +57,44 @@ const model = new MockLanguageModelV3({
       stream: new ReadableStream({
         start(controller) {
           controller.enqueue({ type: "stream-start", warnings: [] });
+
+          if (prompt.includes("STRUCTURED_RESPONSE")) {
+            if (!options.tools?.some(
+              (tool) => tool.type === "function" && tool.name === "final_output",
+            )) {
+              throw new Error("The structured request did not supply the final_output tool.");
+            }
+            controller.enqueue({
+              input: JSON.stringify({ status: "STRUCTURED_OK" }),
+              toolCallId: "call_structured",
+              toolName: "final_output",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
+          if (shouldCallChild) {
+            const input = "{}";
+            controller.enqueue({
+              input,
+              toolCallId: "call_child",
+              toolName: "child_stream",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
 
           if (shouldRequestApproval) {
             const input = JSON.stringify({ reason: "compatibility" });
@@ -87,7 +127,8 @@ const model = new MockLanguageModelV3({
           if (shouldSearchCallbackConnection) {
             const input = JSON.stringify({
               connection: "callback-auth",
-              keywords: "probe health",
+              query: "probe health",
+              signIn: true,
               limit: 1,
             });
             controller.enqueue({
@@ -120,10 +161,14 @@ const model = new MockLanguageModelV3({
           }
 
           if (shouldCallCallbackConnection) {
-            const input = "{}";
+            const input = JSON.stringify({
+              connection: "callback-auth",
+              tool: "probeHealth",
+              input: {},
+            });
             controller.enqueue({
               id: "call_callback_auth",
-              toolName: "callback-auth__probeHealth",
+              toolName: "connection_execute",
               type: "tool-input-start",
             });
             controller.enqueue({
@@ -138,7 +183,7 @@ const model = new MockLanguageModelV3({
             controller.enqueue({
               input,
               toolCallId: "call_callback_auth",
-              toolName: "callback-auth__probeHealth",
+              toolName: "connection_execute",
               type: "tool-call",
             });
             controller.enqueue({
@@ -181,6 +226,13 @@ const model = new MockLanguageModelV3({
             return;
           }
 
+          controller.enqueue({ id: "thought", type: "reasoning-start" });
+          controller.enqueue({
+            delta: "DETERMINISTIC_REASONING",
+            id: "thought",
+            type: "reasoning-delta",
+          });
+          controller.enqueue({ id: "thought", type: "reasoning-end" });
           controller.enqueue({ id: "answer", type: "text-start" });
 
           if (shouldWaitForCancellation) {
@@ -202,7 +254,9 @@ const model = new MockLanguageModelV3({
             return;
           }
 
-          const responseText = isFollowingTurnClientContextProbe
+          const responseText = prompt.includes("CHILD_STREAM_RESPONSE")
+            ? "CHILD_STREAM_OK"
+            : isFollowingTurnClientContextProbe
             ? hasTurnScopedClientContext
               ? "CLIENT_CONTEXT_PRESENT_ON_FOLLOWING_TURN"
               : "CLIENT_CONTEXT_ABSENT_ON_FOLLOWING_TURN"

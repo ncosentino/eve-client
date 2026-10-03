@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.63.0";
+    public const string ReferenceEveVersion = "0.70.3";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -20,7 +20,8 @@ public static class EveProtocol
     /// permits strict validation across the cutover. Separately, eve <c>0.52.3</c> added the
     /// accepted-message delivery identity required to correlate an existing-session send with its
     /// durable events. Upgrade the eve server before adopting a client version that declares this
-    /// minimum. The message-stream protocol remains version <c>25</c>.
+    /// minimum. Servers at this minimum use message-stream protocol <c>25</c>; this client
+    /// also accepts newer supported response versions.
     /// </remarks>
     public const string MinimumEveVersion = "0.54.2";
 
@@ -34,9 +35,10 @@ public static class EveProtocol
     /// <c>0.35.0</c> raised it to <c>22</c> while adding no event type and removing none. The
     /// <c>0.39.1</c> raised it to <c>23</c> for durable <c>input.resolved</c> events,
     /// <c>0.46.1</c> raised it to <c>24</c> for durable <c>action.input.appended</c> events, and
-    /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming.
+    /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming, and
+    /// <c>0.69.0</c> raised it to <c>26</c> for the blocking-workflow protocol.
     /// </remarks>
-    public const string MessageStreamVersion = "25";
+    public const string MessageStreamVersion = "26";
 
     /// <summary>
     /// Gets the agent-info payload schema versions this package understands.
