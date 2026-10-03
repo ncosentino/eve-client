@@ -25,6 +25,9 @@ if (!string.Equals(runningEveVersion, EveProtocol.ReferenceEveVersion, StringCom
 }
 
 using CancellationTokenSource timeout = new(TimeSpan.FromMinutes(4));
+string probeScenario = "health and inspection";
+using CancellationTokenRegistration timeoutDiagnostic = timeout.Token.Register(
+    () => Console.Error.WriteLine($"Compatibility probe cancelled during: {probeScenario}."));
 using SocketsHttpHandler handler = new()
 {
     AllowAutoRedirect = false,
@@ -151,6 +154,7 @@ if (compactRequestPaths.Count < 5
 }
 
 EveSession textSession = client.CreateSession();
+probeScenario = "text and reasoning";
 EveMessageResponse textResponse = await textSession.SendAsync(
     "Return the deterministic compatibility response.",
     timeout.Token);
@@ -171,6 +175,7 @@ if (streamRecorder.StreamRequests.Count == 0
 }
 
 EveSession childParentSession = client.CreateSession();
+probeScenario = "parent and child stream";
 EveMessageResponse childParentResponse = await childParentSession.SendAsync(
     "REQUEST_CHILD_STREAM",
     timeout.Token);
@@ -233,6 +238,7 @@ foreach (EveStreamEvent childEvent in childEvents)
 using JsonDocument outputSchema = JsonDocument.Parse(
     """{"type":"object","properties":{"status":{"type":"string"}},"required":["status"],"additionalProperties":false}""");
 EveSession structuredSession = client.CreateSession();
+probeScenario = "structured output";
 EveMessageResponse structuredResponse = await structuredSession.SendAsync(
     EveMessageContent.FromText("STRUCTURED_RESPONSE"),
     new EveTurnOptions { OutputSchema = outputSchema.RootElement },
@@ -246,6 +252,7 @@ if (structuredOutcome.Status != EveTurnStatus.Waiting
 }
 
 EveSession deliveryCorrelationSession = client.CreateSession();
+probeScenario = "delivery correlation";
 EveMessageResponse priorDeliveryResponse = await deliveryCorrelationSession.SendAsync(
     "STALE_CURSOR_PRIOR_DELIVERY",
     timeout.Token);
@@ -309,6 +316,7 @@ if (staleDeliveryCorrelationSession.State.StreamIndex
 }
 
 EveSession clientContextSession = client.CreateSession();
+probeScenario = "turn-scoped client context";
 EveTurnOptions clientContextOptions = new()
 {
     ClientContext = EveClientContext.FromText("TURN_SCOPED_CLIENT_CONTEXT_140"),
@@ -350,6 +358,7 @@ EveClient authorizationClient = new(
         Authentication = new EveBearerAuthentication("compatibility-user"),
     });
 EveSession authorizationSession = authorizationClient.CreateSession();
+probeScenario = "callback authorization";
 EveMessageResponse authorizationResponse = await authorizationSession.SendAsync(
     "REQUEST_CALLBACK_AUTH",
     timeout.Token);
@@ -468,6 +477,7 @@ if (authorizationSession.State.StreamIndex != authorizationEvents.Count)
 }
 
 EveSession attachmentSession = client.CreateSession();
+probeScenario = "attachments";
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
     EveMessageContent.FromParts(
         EveContentPart.CreateText("Read the attached fixture."),
@@ -480,6 +490,7 @@ EveTurnOutcome attachmentOutcome = await attachmentResponse.GetOutcomeAsync(time
 RequireSuccessfulResponse(attachmentOutcome, "attachment turn");
 
 EveSession cancellationSession = client.CreateSession();
+probeScenario = "active turn cancellation";
 EveMessageResponse cancellationResponse = await cancellationSession.SendAsync(
     "WAIT_FOR_CANCEL",
     timeout.Token);
@@ -510,6 +521,7 @@ if (!cancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
 }
 
 EveSession catchUpSession = client.CreateSession();
+probeScenario = "bounded catch-up";
 EveMessageResponse catchUpResponse = await catchUpSession.SendAsync(
     "Return the deterministic compatibility response.",
     timeout.Token);
@@ -627,6 +639,7 @@ if (catchUpReader.State.StreamIndex != catchUpEvents.Count)
 }
 
 EveSession approvalSession = client.CreateSession();
+probeScenario = "approval park and resume";
 EveMessageResponse approvalResponse = await approvalSession.SendAsync(
     "REQUEST_APPROVAL",
     timeout.Token);
@@ -752,6 +765,7 @@ if (resolutionIndex < 0 || resumedStepIndex <= resolutionIndex)
 }
 
 EveSession cancelledApprovalSession = client.CreateSession();
+probeScenario = "held approval cancellation";
 EveMessageResponse cancelledApprovalResponse = await cancelledApprovalSession.SendAsync(
     "REQUEST_APPROVAL",
     timeout.Token);
@@ -786,6 +800,7 @@ if (cancelledApproval.Status != EveCancellationStatus.Accepted
 }
 
 EveSession resetSession = client.CreateSession();
+probeScenario = "reset";
 EveMessageResponse resetResponse = await resetSession.SendAsync(
     "Return the deterministic compatibility response.",
     timeout.Token);
@@ -864,6 +879,7 @@ if (string.Equals(afterResetResponse.SessionId, resetSessionId, StringComparison
 EveTurnOutcome afterResetOutcome = await afterResetResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(afterResetOutcome, "post-reset turn");
 
+probeScenario = "clear and compaction";
 EveCompactOutcome compact = await afterResetSession.CompactAsync(timeout.Token);
 if (compact.Status != EveCompactStatus.Accepted
     || compact.SessionId != afterResetResponse.SessionId)
