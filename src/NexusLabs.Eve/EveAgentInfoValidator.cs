@@ -1148,8 +1148,10 @@ internal sealed class EveAgentInfoValidator
     private static bool OwnersMatch(JsonElement first, JsonElement second)
     {
         int firstCount = 0;
-        foreach (JsonProperty property in first.EnumerateObject())
+        using JsonElement.ObjectEnumerator firstProperties = first.EnumerateObject();
+        while (firstProperties.MoveNext())
         {
+            JsonProperty property = firstProperties.Current;
             firstCount++;
             if (!second.TryGetProperty(property.Name, out JsonElement value)
                 || !string.Equals(
@@ -1162,7 +1164,8 @@ internal sealed class EveAgentInfoValidator
         }
 
         int secondCount = 0;
-        foreach (JsonProperty property in second.EnumerateObject())
+        using JsonElement.ObjectEnumerator secondProperties = second.EnumerateObject();
+        while (secondProperties.MoveNext())
         {
             secondCount++;
         }
