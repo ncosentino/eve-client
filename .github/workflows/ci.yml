@@ -107,6 +107,14 @@ jobs:
       - name: Restore .NET tools
         run: dotnet tool restore
 
+      - name: Verify version environment isolation
+        shell: pwsh
+        run: |
+          $version = Get-Content -LiteralPath version.json -Raw | ConvertFrom-Json
+          if ($version.cloudBuild.setVersionVariables -ne $false) {
+            throw 'NBGV cloud version exports must be disabled for parallel builds.'
+          }
+
       - name: Restore
         run: dotnet restore
 

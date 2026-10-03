@@ -30,6 +30,11 @@ credential through `NuGet/login@v1`.
 No NuGet secret is required. `GITHUB_TOKEN` publishes to GitHub Packages and
 creates the GitHub Release.
 
+Parallel GitHub builds disable NBGV's implicit cloud version-variable exports to
+avoid competing writes to the shared environment file. Package and assembly
+version calculation remains enabled; workflows obtain values explicitly through
+`dotnet nbgv get-version`.
+
 ## One-time Cloudflare setup
 
 1. Create a Cloudflare Pages project named `eve-client`.
