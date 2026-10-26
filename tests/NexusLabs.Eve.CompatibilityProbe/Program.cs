@@ -806,6 +806,43 @@ if (cancelledApproval.Status != EveCancellationStatus.Accepted
 }
 
 EveSession resetSession = client.CreateSession();
+probeScenario = "resumed input cancellation";
+EveSession resumedCancellationSession = client.CreateSession();
+EveMessageResponse resumedCancellationRequest = await resumedCancellationSession.SendAsync(
+    "REQUEST_APPROVAL WAIT_FOR_CANCEL",
+    timeout.Token);
+EveTurnOutcome resumedCancellationHeld =
+    await resumedCancellationRequest.GetOutcomeAsync(timeout.Token);
+if (resumedCancellationHeld.PendingInputRequests.Count != 1)
+{
+    throw new InvalidOperationException("The resumed cancellation probe did not hold one input request.");
+}
+
+EveMessageResponse resumedCancellationResponse = await resumedCancellationSession.RespondAsync(
+    [new EveInputResponse(resumedCancellationHeld.PendingInputRequests[0].RequestId, "approve")],
+    timeout.Token);
+EveCancellationOutcome? resumedCancellation = null;
+List<EveStreamEventKind> resumedCancellationEvents = [];
+await foreach (EveStreamEvent streamEvent in
+    resumedCancellationResponse.WithCancellation(timeout.Token))
+{
+    resumedCancellationEvents.Add(streamEvent.Kind);
+    if (resumedCancellation is null && streamEvent.Kind == EveStreamEventKind.InputResolved)
+    {
+        resumedCancellation = await resumedCancellationResponse.CancelAsync(timeout.Token);
+    }
+}
+
+if (resumedCancellation?.Status != EveCancellationStatus.Accepted
+    || resumedCancellationEvents.Contains(EveStreamEventKind.TurnStarted)
+    || !resumedCancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
+    || !resumedCancellationEvents.Contains(EveStreamEventKind.SessionWaiting))
+{
+    throw new InvalidOperationException(
+        "The answered input did not support guarded cancellation of its resumed turn. " +
+        $"Observed: {string.Join(", ", resumedCancellationEvents)}.");
+}
+
 probeScenario = "reset";
 EveMessageResponse resetResponse = await resetSession.SendAsync(
     "Return the deterministic compatibility response.",
