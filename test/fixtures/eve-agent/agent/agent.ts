@@ -59,14 +59,14 @@ export const model = new MockLanguageModelV3({
 
           if (prompt.includes("STRUCTURED_RESPONSE")) {
             if (!options.tools?.some(
-              (tool) => tool.type === "function" && tool.name === "final_output",
+              (tool) => tool.type === "function" && tool.name === "eve__reply",
             )) {
-              throw new Error("The structured request did not supply the final_output tool.");
+              throw new Error("The structured request did not supply the eve__reply tool.");
             }
             controller.enqueue({
               input: JSON.stringify({ status: "STRUCTURED_OK" }),
               toolCallId: "call_structured",
-              toolName: "final_output",
+              toolName: "eve__reply",
               type: "tool-call",
             });
             controller.enqueue({
