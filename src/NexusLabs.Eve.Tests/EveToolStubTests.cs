@@ -219,6 +219,32 @@ public sealed class EveToolStubTests
     }
 
     [Test]
+    public async Task Creation_PreservesCaseDistinctRuleIds(CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(AcceptedResponse()));
+        EveClient client = new(transport, new EveClientOptions("https://agent.example.com"));
+        EveSessionCreationOptions options = new()
+        {
+            Stubs =
+            [
+                new EveToolStub("Rule", "tool", EveToolStubOutcome.Throw("first")),
+                new EveToolStub("rule", "tool", EveToolStubOutcome.Throw("second")),
+            ],
+        };
+
+        await client.PrewarmSessionAsync(options, cancellationToken);
+
+        await Assert.That(handler.Calls.Count).IsEqualTo(1);
+        using JsonDocument body = JsonDocument.Parse(handler.Calls[0].Body!);
+        JsonElement rules = body.RootElement.GetProperty("stubs");
+        await Assert.That(rules.GetArrayLength()).IsEqualTo(2);
+        await Assert.That(rules[0].GetProperty("id").GetString()).IsEqualTo("Rule");
+        await Assert.That(rules[1].GetProperty("id").GetString()).IsEqualTo("rule");
+    }
+
+    [Test]
     public async Task Creation_RejectsDuplicateIdsAndExcessRulesBeforeIo()
     {
         using RecordingHttpMessageHandler handler = new();

@@ -34,7 +34,10 @@ public sealed record EveSessionCreationOptions
         }
 
         EveToolStub[] rules = Stubs.ToArray();
+        // Rule IDs use the server's case-sensitive JavaScript identity semantics.
+#pragma warning disable NLF0016
         HashSet<string> ids = new(StringComparer.Ordinal);
+#pragma warning restore NLF0016
         foreach (EveToolStub rule in rules)
         {
             ArgumentNullException.ThrowIfNull(rule);

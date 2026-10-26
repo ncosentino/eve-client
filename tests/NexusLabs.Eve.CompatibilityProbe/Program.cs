@@ -606,10 +606,11 @@ if (catchUpRequests.Length == 0)
     throw new InvalidOperationException("The bounded catch-up read did not open a stream.");
 }
 
-if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordinal))
+if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordinal)
+    || !catchUpRequests[0].Uri.Contains("follow=false", StringComparison.Ordinal))
 {
     throw new InvalidOperationException(
-        "The first bounded catch-up request did not ask for the durable tail index: " +
+        "The first bounded catch-up request did not request non-following durable history and its tail: " +
         $"{catchUpRequests[0].Uri}.");
 }
 
@@ -624,10 +625,11 @@ if (!catchUpRequests[0].Uri.Contains(
 
 foreach (RecordedStreamRequest reconnect in catchUpRequests.Skip(1))
 {
-    if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal))
+    if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal)
+        || !reconnect.Uri.Contains("follow=false", StringComparison.Ordinal))
     {
         throw new InvalidOperationException(
-            $"A bounded catch-up reconnect requested the durable tail again: {reconnect.Uri}.");
+            $"A bounded reconnect changed its non-following history contract: {reconnect.Uri}.");
     }
 
     if (!reconnect.Uri.Contains(
