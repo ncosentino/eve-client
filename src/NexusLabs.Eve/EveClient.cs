@@ -193,6 +193,19 @@ public sealed class EveClient
     public EveSession CreateSession() => new(this, new EveSessionState());
 
     /// <summary>
+    /// Creates a fresh handle with fixed declarative creation-time tool stubs.
+    /// </summary>
+    /// <param name="options">Creation settings; turn headers are supplied on the first send.</param>
+    /// <returns>A session whose initial message sends the stub declarations.</returns>
+    /// <exception cref="ArgumentNullException">The options are null.</exception>
+    /// <exception cref="ArgumentException">Stub identifiers are duplicated or the rule limit is exceeded.</exception>
+    public EveSession CreateSession(EveSessionCreationOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return new EveSession(this, new EveSessionState(), options);
+    }
+
+    /// <summary>
     /// Creates a remote conversation before its first user message.
     /// </summary>
     /// <remarks>
@@ -214,6 +227,21 @@ public sealed class EveClient
     /// </exception>
     public Task<EveSession> PrewarmSessionAsync(CancellationToken cancellationToken) =>
         EveSession.CreatePrewarmedAsync(this, cancellationToken);
+
+    /// <summary>
+    /// Creates an idle remote session with fixed declarative tool stubs.
+    /// </summary>
+    /// <param name="options">Optional stubs and creation request headers.</param>
+    /// <param name="cancellationToken">Cancels remote creation.</param>
+    /// <returns>The accepted fixed session handle.</returns>
+    /// <exception cref="EveClientException">The server rejects creation, including missing stub permission.</exception>
+    /// <exception cref="EveProtocolException">The accepted response is malformed.</exception>
+    /// <exception cref="ArgumentException">Stub identifiers are duplicated or the rule limit is exceeded.</exception>
+    /// <exception cref="OperationCanceledException">Creation was cancelled.</exception>
+    public Task<EveSession> PrewarmSessionAsync(
+        EveSessionCreationOptions? options,
+        CancellationToken cancellationToken) =>
+        EveSession.CreatePrewarmedAsync(this, cancellationToken, options);
 
     /// <summary>
     /// Creates a handle from a previously persisted session cursor.

@@ -129,9 +129,13 @@ outstanding callback. It continues through task waits and callback-backed sign-i
 Callback attempts are correlated by `attemptId` when supplied, otherwise by the
 connection name.
 
-Text completed before a `turn.waiting` park is interim and is not exposed as the
-final `EveTurnOutcome.Message`. `PendingInputRequests` reports unresolved requests
-observed by this response; `InputRequests` retains their full history. A parked
+The latest completed message whose finish reason is not `tool-calls` remains
+available as `EveTurnOutcome.Message` across both input and task `turn.waiting`
+parks. A later completed non-tool-calls message replaces it.
+`PendingInputRequests` reports unresolved requests observed by this response,
+retaining the first descriptor for each case-sensitive request ID. Once an ID is
+settled, another request occurrence cannot reopen it within that observed history.
+`InputRequests` retains every request occurrence, including repeated IDs. A parked
 turn remains active, so the consumed response can still cancel its guarded turn.
 
 eve `0.41.0` may emit `authorization.required` with a `webhookUrl`, followed by an
