@@ -145,6 +145,7 @@ public sealed class EveSession
             false,
             true,
             true,
+            false,
             cancellationToken);
     }
 
@@ -194,6 +195,7 @@ public sealed class EveSession
             true,
             false,
             false,
+            true,
             cancellationToken);
     }
 
@@ -203,6 +205,7 @@ public sealed class EveSession
         bool mustDeliver,
         bool retrySessionReadiness,
         bool correlateExistingMessage,
+        bool resumesTurn,
         CancellationToken cancellationToken)
     {
         EveSessionState initialState = State;
@@ -223,6 +226,7 @@ public sealed class EveSession
             acceptedTurn.SessionId,
             acceptedTurn.DeliveryId,
             requireDeliveryId,
+            resumesTurn,
             streamCancellationToken => CreateTurnStreamAsync(
                 acceptedTurn,
                 initialState,

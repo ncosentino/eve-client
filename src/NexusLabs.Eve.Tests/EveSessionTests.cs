@@ -3403,7 +3403,7 @@ public sealed class EveSessionTests
             .WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
 
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
-        await Assert.That(outcome.Message).IsNull();
+        await Assert.That(outcome.Message).IsEqualTo("Interim");
         await Assert.That(outcome.Events.Count).IsEqualTo(3);
         await Assert.That(outcome.Events[2].Kind).IsEqualTo(EveStreamEventKind.TurnWaiting);
         await Assert.That(outcome.Events[2].Data.GetProperty("usage")
@@ -3521,7 +3521,7 @@ public sealed class EveSessionTests
     }
 
     [Test]
-    public async Task TurnWaiting_PendingRequestsKeepLatestDescriptorAndIdentityOrder(
+    public async Task TurnWaiting_PendingRequestsKeepFirstDescriptorAndIdentityOrder(
         CancellationToken cancellationToken)
     {
         using RecordingHttpMessageHandler handler = new();
@@ -3540,7 +3540,7 @@ public sealed class EveSessionTests
         await Assert.That(outcome.InputRequests.Count).IsEqualTo(3);
         await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(2);
         await Assert.That(outcome.PendingInputRequests[0].RequestId).IsEqualTo("Question");
-        await Assert.That(outcome.PendingInputRequests[0].Prompt).IsEqualTo("Updated");
+        await Assert.That(outcome.PendingInputRequests[0].Prompt).IsEqualTo("Original");
         await Assert.That(outcome.PendingInputRequests[1].RequestId).IsEqualTo("question");
         await Assert.That(outcome.PendingInputRequests[1].Prompt).IsEqualTo("Other");
     }

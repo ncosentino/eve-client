@@ -341,6 +341,7 @@ public sealed class EveDeliveryCorrelationTests
             "session_1",
             "delivery_new",
             true,
+            false,
             streamCancellationToken => CorrelatedTurnStreamAsync(
                 settle.Task,
                 streamCancellationToken),
