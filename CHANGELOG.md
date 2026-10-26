@@ -7,6 +7,34 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.16] - 2026-10-26
+
+### Added
+
+- Declarative creation-time tool stubs through `EveSessionCreationOptions`,
+  `EveToolStub`, and `EveToolStubOutcome`. Both initial-message and prewarmed
+  sessions support fixed responses, thrown errors, match constraints, and ordered
+  outcome sequences. The server must explicitly grant stub permission.
+
+### Changed
+
+- **Reference eve version:** `0.79.1`; **minimum eve version:** `0.54.2`;
+  message-stream protocol `26`; stream-control protocol `1`; agent-info schema
+  version `5`. The reference covers all six tracked upstream parity changes.
+
+### Fixed
+
+- Pending input requests preserve the first descriptor for each case-sensitive
+  identity, and repeated requests do not reopen settled identities. `InputRequests`
+  retains its complete occurrence history.
+- Responses to human-input answers can cancel their resumed turn using the
+  `input.resolved` turn guard without waiting for a new turn-start event.
+- Completed assistant answers survive both input and task waiting boundaries;
+  tool-call narration does not replace a completed answer.
+- Bounded history requests send `follow=false`, including reconnects. Stranded
+  session conflicts are not retried, and followers finish after yielding a
+  terminal session event.
+
 ## [0.1.0-alpha.15] - 2026-10-03
 
 ### Added
@@ -531,7 +559,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.15...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.16...HEAD
+[0.1.0-alpha.16]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.15...v0.1.0-alpha.16
 [0.1.0-alpha.15]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.14...v0.1.0-alpha.15
 [0.1.0-alpha.14]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.13...v0.1.0-alpha.14
 [0.1.0-alpha.13]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.12...v0.1.0-alpha.13
