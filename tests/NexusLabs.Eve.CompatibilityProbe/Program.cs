@@ -483,6 +483,41 @@ if (authorizationSession.State.StreamIndex != authorizationEvents.Count)
 }
 
 EveSession attachmentSession = client.CreateSession();
+using JsonDocument stubOutput = JsonDocument.Parse("""{"status":"STUB_RESULT_OK"}""");
+EveSessionCreationOptions stubOptions = new()
+{
+    Stubs =
+    [
+        new EveToolStub("probe", "client_context_probe",
+        [
+            EveToolStubOutcome.Throw("STUB_TRANSIENT", "ProbeFailure"),
+            EveToolStubOutcome.Respond(stubOutput.RootElement),
+        ]),
+    ],
+};
+foreach (bool prewarm in new[] { false, true })
+{
+    probeScenario = prewarm ? "prewarmed tool stubs" : "initial-message tool stubs";
+    EveSession stubSession = prewarm
+        ? await authorizationClient.PrewarmSessionAsync(stubOptions, timeout.Token)
+        : authorizationClient.CreateSession(stubOptions);
+    EveMessageResponse stubResponse = await stubSession.SendAsync("REQUEST_TOOL_STUB", timeout.Token);
+    EveTurnOutcome stubOutcome = await stubResponse.GetOutcomeAsync(timeout.Token);
+    RequireSuccessfulResponse(stubOutcome, probeScenario);
+    EveStreamEvent[] stubResults = stubOutcome.Events
+        .Where(static streamEvent => streamEvent.Kind == EveStreamEventKind.ActionResult)
+        .ToArray();
+    if (stubResults.Length != 2
+        || stubResults[0].Data.GetProperty("status").GetString() != "failed"
+        || stubResults[0].Data.GetProperty("error").GetProperty("message").GetString()
+            ?.Contains("STUB_TRANSIENT", StringComparison.Ordinal) != true
+        || stubResults[1].Data.GetProperty("status").GetString() != "completed")
+    {
+        throw new InvalidOperationException(
+            "The real server did not consume a thrown stub outcome followed by its successful response.");
+    }
+}
+
 probeScenario = "attachments";
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
     EveMessageContent.FromParts(
@@ -571,10 +606,11 @@ if (catchUpRequests.Length == 0)
     throw new InvalidOperationException("The bounded catch-up read did not open a stream.");
 }
 
-if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordinal))
+if (!catchUpRequests[0].Uri.Contains("includeTailIndex=1", StringComparison.Ordinal)
+    || !catchUpRequests[0].Uri.Contains("follow=false", StringComparison.Ordinal))
 {
     throw new InvalidOperationException(
-        "The first bounded catch-up request did not ask for the durable tail index: " +
+        "The first bounded catch-up request did not request non-following durable history and its tail: " +
         $"{catchUpRequests[0].Uri}.");
 }
 
@@ -589,10 +625,11 @@ if (!catchUpRequests[0].Uri.Contains(
 
 foreach (RecordedStreamRequest reconnect in catchUpRequests.Skip(1))
 {
-    if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal))
+    if (reconnect.Uri.Contains("includeTailIndex", StringComparison.Ordinal)
+        || !reconnect.Uri.Contains("follow=false", StringComparison.Ordinal))
     {
         throw new InvalidOperationException(
-            $"A bounded catch-up reconnect requested the durable tail again: {reconnect.Uri}.");
+            $"A bounded reconnect changed its non-following history contract: {reconnect.Uri}.");
     }
 
     if (!reconnect.Uri.Contains(
@@ -803,6 +840,43 @@ if (cancelledApproval.Status != EveCancellationStatus.Accepted
         streamEvent.Kind == EveStreamEventKind.MessageCompleted))
 {
     throw new InvalidOperationException("Cancelling the held input turn did not settle without executing it.");
+}
+
+probeScenario = "resumed input cancellation";
+EveSession resumedCancellationSession = client.CreateSession();
+EveMessageResponse resumedCancellationRequest = await resumedCancellationSession.SendAsync(
+    "REQUEST_APPROVAL WAIT_FOR_CANCEL",
+    timeout.Token);
+EveTurnOutcome resumedCancellationHeld =
+    await resumedCancellationRequest.GetOutcomeAsync(timeout.Token);
+if (resumedCancellationHeld.PendingInputRequests.Count != 1)
+{
+    throw new InvalidOperationException("The resumed cancellation probe did not hold one input request.");
+}
+
+EveMessageResponse resumedCancellationResponse = await resumedCancellationSession.RespondAsync(
+    [new EveInputResponse(resumedCancellationHeld.PendingInputRequests[0].RequestId, "approve")],
+    timeout.Token);
+EveCancellationOutcome? resumedCancellation = null;
+List<EveStreamEventKind> resumedCancellationEvents = [];
+await foreach (EveStreamEvent streamEvent in
+    resumedCancellationResponse.WithCancellation(timeout.Token))
+{
+    resumedCancellationEvents.Add(streamEvent.Kind);
+    if (resumedCancellation is null && streamEvent.Kind == EveStreamEventKind.InputResolved)
+    {
+        resumedCancellation = await resumedCancellationResponse.CancelAsync(timeout.Token);
+    }
+}
+
+if (resumedCancellation?.Status != EveCancellationStatus.Accepted
+    || resumedCancellationEvents.Contains(EveStreamEventKind.TurnStarted)
+    || !resumedCancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
+    || !resumedCancellationEvents.Contains(EveStreamEventKind.SessionWaiting))
+{
+    throw new InvalidOperationException(
+        "The answered input did not support guarded cancellation of its resumed turn. " +
+        $"Observed: {string.Join(", ", resumedCancellationEvents)}.");
 }
 
 EveSession resetSession = client.CreateSession();

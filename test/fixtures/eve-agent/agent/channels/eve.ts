@@ -13,7 +13,7 @@ const compatibilityPrincipal: SessionAuthContext = {
 };
 const authenticateCompatibilityUser: AuthFn<Request> = (request) =>
   request.headers.get("authorization") === "Bearer compatibility-user"
-    ? compatibilityPrincipal
+    ? { ...compatibilityPrincipal, allowToolStubs: true }
     : null;
 
 export default eveChannel({

@@ -70,6 +70,57 @@ re-resolves dynamic headers and retries for up to 20 seconds. Backoff starts at
 250 milliseconds, doubles to a two-second cap, and stops immediately on
 cancellation. `RespondAsync` does not use this readiness retry.
 
+## Declarative tool stubs
+
+Eve `0.75.0` and newer accept fixed tool stubs at session creation when the
+server grants `allowToolStubs`. This optional capability does not change the
+client's compatibility baseline. Stubs are declarations sent to the server:
+the client never runs tools, advances the sequence, or simulates retries.
+
+```csharp
+using JsonDocument result = JsonDocument.Parse("""{"items":[]}""");
+EveSessionCreationOptions creation = new()
+{
+    Stubs =
+    [
+        new EveToolStub("tasks", "researcher/list_tasks",
+        [
+            EveToolStubOutcome.Throw("Service unavailable"),
+            EveToolStubOutcome.Respond(result.RootElement),
+        ]),
+    ],
+};
+
+EveSession session = client.CreateSession(creation);
+EveMessageResponse response = await session.SendAsync("List tasks.", cancellationToken);
+
+// Alternatively create the remote idle session before sending a message.
+EveSession idle = await client.PrewarmSessionAsync(creation, cancellationToken);
+```
+
+Use the single-outcome constructor for a fixed response or thrown error. The
+sequence constructor requires at least one outcome and preserves order. The
+server decides consumption and recovery behavior. `Throw` accepts any non-null
+message, including an empty string; its optional nonempty name is omitted by
+default, so the server uses `"Error"`. `Respond` preserves any defined JSON
+value, including null, arrays, scalars, and objects. Outcomes and match JSON are
+snapshotted, so their originating `JsonDocument` can be disposed.
+
+The optional `match` dictionary maps required input properties to JSON Schema
+objects or booleans. The server validates supported schema keywords, nesting
+and size limits. Rule identifiers must be nonempty and unique (at most 100
+rules). Tool names may include a local-subagent path. Target the actual tool,
+not the `eve__search`, `eve__tool`, or `eve__skill` catalog routers.
+
+Null `Stubs` omits the field, preserving the body-free idle request and ordinary
+tool execution. An empty list explicitly sends `"stubs":[]`. Only the initial
+`POST /eve/v1/session` carries rules; subsequent messages, human-input responses,
+and attached/resumed handles cannot replace them. Creation-option headers apply
+to idle creation only; initial-message headers come from `EveTurnOptions`.
+Missing permission and server-side rule errors surface as `EveClientException`.
+`SendRawAsync` remains a caller-owned JSON escape hatch: its header options do
+not merge or rewrite the caller's body, and server route restrictions still apply.
+
 ## Overlapping sends
 
 A message that reaches a session which already has an active turn is governed by

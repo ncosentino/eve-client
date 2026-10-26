@@ -17,6 +17,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         Task<EveCancellationOutcome>> _cancelTurn;
     private readonly bool _correlateDelivery;
     private readonly Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> _createStream;
+    private readonly bool _resumesTurn;
     private readonly CancellationToken _sendCancellationToken;
     private readonly Lock _stateGate = new();
     private readonly TaskCompletionSource<TurnIdentity> _turnIdentity =
@@ -33,6 +34,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             sessionId,
             null,
             false,
+            false,
             createStream,
             cancelTurn,
             CancellationToken.None)
@@ -43,6 +45,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         string sessionId,
         string? deliveryId,
         bool correlateDelivery,
+        bool resumesTurn,
         Func<CancellationToken, IAsyncEnumerable<EveStreamEvent>> createStream,
         Func<string, CancellationToken, Task<EveCancellationOutcome>> cancelTurn,
         CancellationToken sendCancellationToken)
@@ -50,6 +53,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         SessionId = sessionId;
         DeliveryId = deliveryId;
         _correlateDelivery = correlateDelivery;
+        _resumesTurn = resumesTurn;
         _createStream = createStream;
         _cancelTurn = cancelTurn;
         _sendCancellationToken = sendCancellationToken;
@@ -196,6 +200,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     {
         HashSet<string> pendingAuthorizations = CreatePendingIdentitySet();
         HashSet<string> pendingInputRequestIds = CreatePendingIdentitySet();
+        HashSet<string> observedInputRequestIds = CreatePendingIdentitySet();
         bool correlationStarted = !_correlateDelivery;
         bool reachedBoundary = false;
 
@@ -212,9 +217,11 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 bool isCurrentTurnBoundary = IsResponseTurnBoundary(
                     streamEvent,
                     pendingAuthorizations,
-                    pendingInputRequestIds);
+                    pendingInputRequestIds,
+                    observedInputRequestIds);
                 if (streamEvent.Kind is EveStreamEventKind.TurnStarted
-                    or EveStreamEventKind.TurnWaiting)
+                    or EveStreamEventKind.TurnWaiting
+                    || (_resumesTurn && streamEvent.Kind == EveStreamEventKind.InputResolved))
                 {
                     try
                     {
@@ -316,10 +323,14 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     private static bool IsResponseTurnBoundary(
         EveStreamEvent streamEvent,
         HashSet<string> pendingAuthorizations,
-        HashSet<string> pendingInputRequestIds)
+        HashSet<string> pendingInputRequestIds,
+        HashSet<string> observedInputRequestIds)
     {
         UpdatePendingAuthorizations(streamEvent, pendingAuthorizations);
-        UpdatePendingInputRequests(streamEvent, pendingInputRequestIds);
+        UpdatePendingInputRequests(
+            streamEvent,
+            pendingInputRequestIds,
+            observedInputRequestIds);
 
         return streamEvent.Kind switch
         {
@@ -343,7 +354,8 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
 
     private static void UpdatePendingInputRequests(
         EveStreamEvent streamEvent,
-        HashSet<string> pendingInputRequestIds)
+        HashSet<string> pendingInputRequestIds,
+        HashSet<string> observedInputRequestIds)
     {
         string? arrayProperty = streamEvent.Kind switch
         {
@@ -373,7 +385,10 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 string requestId = RequireEventString(entry, "requestId", streamEvent.Type);
                 if (streamEvent.Kind == EveStreamEventKind.InputRequested)
                 {
-                    pendingInputRequestIds.Add(requestId);
+                    if (observedInputRequestIds.Add(requestId))
+                    {
+                        pendingInputRequestIds.Add(requestId);
+                    }
                 }
                 else
                 {
@@ -494,6 +509,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         List<EveInputResolution> inputResolutions = [];
         HashSet<string> pendingAuthorizations = CreatePendingIdentitySet();
         HashSet<string> pendingInputRequestIds = CreatePendingIdentitySet();
+        HashSet<string> observedInputRequestIds = CreatePendingIdentitySet();
         EveStreamEventKind boundaryKind = EveStreamEventKind.Unknown;
 
         foreach (EveStreamEvent streamEvent in events)
@@ -501,16 +517,14 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             if (IsResponseTurnBoundary(
                 streamEvent,
                 pendingAuthorizations,
-                pendingInputRequestIds))
+                pendingInputRequestIds,
+                observedInputRequestIds))
             {
                 boundaryKind = streamEvent.Kind;
             }
 
             switch (streamEvent.Kind)
             {
-                case EveStreamEventKind.TurnWaiting:
-                    message = null;
-                    break;
                 case EveStreamEventKind.ResultCompleted:
                     if (streamEvent.Data.TryGetProperty("result", out JsonElement result))
                     {
@@ -568,18 +582,18 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         HashSet<string> pendingRequestIds)
     {
 #pragma warning disable NLF0016
-        Dictionary<string, EveInputRequest> latestRequests =
+        Dictionary<string, EveInputRequest> firstRequests =
             new(StringComparer.Ordinal);
 #pragma warning restore NLF0016
         foreach (EveInputRequest request in requests)
         {
             if (pendingRequestIds.Contains(request.RequestId))
             {
-                latestRequests[request.RequestId] = request;
+                firstRequests.TryAdd(request.RequestId, request);
             }
         }
 
-        return latestRequests.Values.ToArray();
+        return firstRequests.Values.ToArray();
     }
 
     private static void AddInputRequests(

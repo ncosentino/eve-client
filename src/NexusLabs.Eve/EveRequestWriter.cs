@@ -8,7 +8,8 @@ internal static class EveRequestWriter
     internal static byte[] WriteMessageTurn(
         EveMessageContent message,
         EveTurnOptions? options,
-        bool existingSession)
+        bool existingSession,
+        EveSessionCreationOptions? creationOptions = null)
     {
         ArgumentNullException.ThrowIfNull(message);
         ValidateOptions(options);
@@ -18,11 +19,69 @@ internal static class EveRequestWriter
             {
                 writer.WritePropertyName("message");
                 message.Json.WriteTo(writer);
+                if (!existingSession)
+                {
+                    WriteStubs(writer, creationOptions);
+                }
             },
             options,
             // eve accepts a delivery policy only for a message sent to an existing session. A
             // creating turn has no active turn to steer, and an input response carries no message.
             existingSession ? options?.TurnPolicy : null);
+    }
+
+    internal static byte[]? WriteCreation(EveSessionCreationOptions? options) =>
+        options?.Stubs is null
+            ? null
+            : Write(writer => WriteStubs(writer, options), null, null);
+
+    private static void WriteStubs(Utf8JsonWriter writer, EveSessionCreationOptions? options)
+    {
+        if (options?.Stubs is not { } stubs)
+        {
+            return;
+        }
+
+        writer.WritePropertyName("stubs");
+        writer.WriteStartArray();
+        foreach (EveToolStub stub in stubs)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("id", stub.Id);
+            writer.WriteString("tool", stub.Tool);
+            if (stub.Match is not null)
+            {
+                writer.WritePropertyName("match");
+                writer.WriteStartObject();
+                foreach ((string property, JsonElement schema) in stub.Match)
+                {
+                    writer.WritePropertyName(property);
+                    schema.WriteTo(writer);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WritePropertyName(stub.IsSequence ? "outcomes" : "outcome");
+            if (stub.IsSequence)
+            {
+                writer.WriteStartArray();
+            }
+
+            foreach (EveToolStubOutcome outcome in stub.Outcomes)
+            {
+                outcome.Json.WriteTo(writer);
+            }
+
+            if (stub.IsSequence)
+            {
+                writer.WriteEndArray();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
     }
 
     internal static byte[] WriteResponseTurn(

@@ -32,8 +32,9 @@ export const model = new MockLanguageModelV3({
     const isPriorDeliveryCorrelationProbe = prompt.includes(
       "STALE_CURSOR_PRIOR_DELIVERY",
     );
-    const callbackToolDiscovered = prompt.includes('"tool":"probeHealth"');
     const callbackToolCompleted = prompt.includes('"status":"ready"');
+    const shouldCallStubTool =
+      prompt.includes("REQUEST_TOOL_STUB") && !prompt.includes("STUB_RESULT_OK");
     const isFollowingTurnClientContextProbe = prompt.includes(
       "VERIFY_FOLLOWING_TURN_CLIENT_CONTEXT",
     );
@@ -48,10 +49,8 @@ export const model = new MockLanguageModelV3({
     );
     const shouldCallClientContextTool =
       isTurnScopedClientContextProbe && !clientContextToolCompleted;
-    const shouldSearchCallbackConnection =
-      isCallbackAuthorizationProbe && !callbackToolDiscovered;
     const shouldCallCallbackConnection =
-      isCallbackAuthorizationProbe && callbackToolDiscovered && !callbackToolCompleted;
+      isCallbackAuthorizationProbe && !callbackToolCompleted;
 
     return {
       stream: new ReadableStream({
@@ -60,14 +59,14 @@ export const model = new MockLanguageModelV3({
 
           if (prompt.includes("STRUCTURED_RESPONSE")) {
             if (!options.tools?.some(
-              (tool) => tool.type === "function" && tool.name === "final_output",
+              (tool) => tool.type === "function" && tool.name === "eve__reply",
             )) {
-              throw new Error("The structured request did not supply the final_output tool.");
+              throw new Error("The structured request did not supply the eve__reply tool.");
             }
             controller.enqueue({
               input: JSON.stringify({ status: "STRUCTURED_OK" }),
               toolCallId: "call_structured",
-              toolName: "final_output",
+              toolName: "eve__reply",
               type: "tool-call",
             });
             controller.enqueue({
@@ -124,51 +123,14 @@ export const model = new MockLanguageModelV3({
             return;
           }
 
-          if (shouldSearchCallbackConnection) {
-            const input = JSON.stringify({
-              connection: "callback-auth",
-              query: "probe health",
-              signIn: true,
-              limit: 1,
-            });
-            controller.enqueue({
-              id: "call_connection_search",
-              toolName: "connection_search",
-              type: "tool-input-start",
-            });
-            controller.enqueue({
-              delta: input,
-              id: "call_connection_search",
-              type: "tool-input-delta",
-            });
-            controller.enqueue({
-              id: "call_connection_search",
-              type: "tool-input-end",
-            });
-            controller.enqueue({
-              input,
-              toolCallId: "call_connection_search",
-              toolName: "connection_search",
-              type: "tool-call",
-            });
-            controller.enqueue({
-              finishReason: { raw: undefined, unified: "tool-calls" },
-              type: "finish",
-              usage,
-            });
-            controller.close();
-            return;
-          }
-
           if (shouldCallCallbackConnection) {
             const input = JSON.stringify({
-              connection: "callback-auth",
-              tool: "probeHealth",
+              name: "callback-auth__probeHealth",
               input: {},
             });
             controller.enqueue({
               id: "call_callback_auth",
-              toolName: "connection_execute",
+              toolName: "eve__tool",
               type: "tool-input-start",
             });
             controller.enqueue({
@@ -183,7 +145,23 @@ export const model = new MockLanguageModelV3({
             controller.enqueue({
               input,
               toolCallId: "call_callback_auth",
-              toolName: "connection_execute",
+              toolName: "eve__tool",
+              type: "tool-call",
+            });
+            controller.enqueue({
+              finishReason: { raw: undefined, unified: "tool-calls" },
+              type: "finish",
+              usage,
+            });
+            controller.close();
+            return;
+          }
+
+          if (shouldCallStubTool) {
+            controller.enqueue({
+              input: "{}",
+              toolCallId: prompt.includes("STUB_TRANSIENT") ? "call_stub_retry" : "call_stub_first",
+              toolName: "client_context_probe",
               type: "tool-call",
             });
             controller.enqueue({

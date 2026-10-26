@@ -129,9 +129,13 @@ outstanding callback. It continues through task waits and callback-backed sign-i
 Callback attempts are correlated by `attemptId` when supplied, otherwise by the
 connection name.
 
-Text completed before a `turn.waiting` park is interim and is not exposed as the
-final `EveTurnOutcome.Message`. `PendingInputRequests` reports unresolved requests
-observed by this response; `InputRequests` retains their full history. A parked
+The latest completed message whose finish reason is not `tool-calls` remains
+available as `EveTurnOutcome.Message` across both input and task `turn.waiting`
+parks. A later completed non-tool-calls message replaces it.
+`PendingInputRequests` reports unresolved requests observed by this response,
+retaining the first descriptor for each case-sensitive request ID. Once an ID is
+settled, another request occurrence cannot reopen it within that observed history.
+`InputRequests` retains every request occurrence, including repeated IDs. A parked
 turn remains active, so the consumed response can still cancel its guarded turn.
 
 eve `0.41.0` may emit `authorization.required` with a `webhookUrl`, followed by an
@@ -209,6 +213,10 @@ The default policy follows a durable stream from the next absolute event index.
 `SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
 reaches a session boundary or the caller cancels consumption. Manually attached
 `StreamAsync` reads retain a finite idle reconnect budget.
+
+Every follower yields `session.failed` or `session.completed` once and then
+completes without another read or reconnect. This also applies to ordinary live
+sessions and child streams; a session cannot record events after either terminal.
 
 Each underlying stream read also has a fixed 15-second idle deadline. If an open
 connection stops producing bytes without closing, the client disposes that response and
@@ -292,8 +300,9 @@ await foreach (EveStreamEvent childEvent in session.StreamSubagentAsync(
 
 The child cursor defaults to zero, advances independently during reconnects,
 and never changes `session.State`. Persist your own child index to resume a later
-enumeration. These reads are boundary-blind; stop explicitly at the desired child
-boundary or use `Follow = false` for bounded catch-up.
+enumeration. These reads continue across turn boundaries but complete on session
+terminal events; stop explicitly at the desired child turn boundary or use
+`Follow = false` for bounded catch-up.
 
 Local children use their direct stream route; remote children use the parent's
 proxy route with the parent's host and credentials. Event remote URLs are never
@@ -320,7 +329,13 @@ await foreach (EveStreamEvent streamEvent in session.StreamAsync(
 }
 ```
 
-The first bounded request sends `includeTailIndex=1` and the server answers with
+Every bounded request sends `follow=false`. On servers supporting stranded-session
+history, this bypasses the owner lifecycle check so recorded history stays readable
+even when the session's owner cannot run on the deployment. Older supported servers
+retain the client's local tail bound; this option does not add stranded-history
+support to a server that lacks it.
+
+The first bounded request also sends `includeTailIndex=1` and the server answers with
 the `x-eve-stream-tail-index` response header. That first tail is an immutable
 upper bound: reconnects resume from the advancing cursor without requesting or
 rebasing the tail, and the stream completes as soon as the cursor passes the

@@ -30,26 +30,40 @@ public sealed class EveSession
         TimeSpan.FromSeconds(20);
 
     private readonly EveClient _client;
+    private readonly EveSessionCreationOptions? _creationOptions;
     private readonly object _stateGate = new();
     private EveSessionState _state;
 
-    internal EveSession(EveClient client, EveSessionState state)
+    internal EveSession(
+        EveClient client,
+        EveSessionState state,
+        EveSessionCreationOptions? creationOptions = null)
     {
         _client = client;
         _state = state;
+        _creationOptions = creationOptions?.Snapshot();
     }
 
     internal static async Task<EveSession> CreatePrewarmedAsync(
         EveClient client,
+        EveSessionCreationOptions? options,
         CancellationToken cancellationToken)
     {
+        byte[]? body = EveRequestWriter.WriteCreation(options?.Snapshot());
+        using HttpContent? content = body is null ? null : new ByteArrayContent(body);
+        if (content is not null)
+        {
+            content.Headers.ContentType = new("application/json");
+        }
+
         using HttpRequestMessage request = await client.CreateRequestAsync(
             HttpMethod.Post,
             EveRequestKind.CreateSession,
             EveRoutes.CreateSession,
-            null,
-            null,
-            cancellationToken);
+            options?.Headers,
+            content,
+            cancellationToken,
+            protectedHeaderOverrides: options?.ProtectedHeaderOverrides);
         using HttpResponseMessage response = await client.SendTransportAsync(
             request,
             false,
@@ -140,11 +154,13 @@ public sealed class EveSession
             state => EveRequestWriter.WriteMessageTurn(
                 message,
                 options,
-                state.SessionId is not null),
+                state.SessionId is not null,
+                _creationOptions),
             options,
             false,
             true,
             true,
+            false,
             cancellationToken);
     }
 
@@ -194,6 +210,7 @@ public sealed class EveSession
             true,
             false,
             false,
+            true,
             cancellationToken);
     }
 
@@ -203,6 +220,7 @@ public sealed class EveSession
         bool mustDeliver,
         bool retrySessionReadiness,
         bool correlateExistingMessage,
+        bool resumesTurn,
         CancellationToken cancellationToken)
     {
         EveSessionState initialState = State;
@@ -223,6 +241,7 @@ public sealed class EveSession
             acceptedTurn.SessionId,
             acceptedTurn.DeliveryId,
             requireDeliveryId,
+            resumesTurn,
             streamCancellationToken => CreateTurnStreamAsync(
                 acceptedTurn,
                 initialState,

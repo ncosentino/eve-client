@@ -36,6 +36,10 @@ public sealed record EveTurnOutcome
     /// <summary>
     /// Gets the final completed assistant message text.
     /// </summary>
+    /// <remarks>
+    /// The latest completed answer is retained across task and input waits. Messages completed
+    /// with the <c>tool-calls</c> finish reason do not replace it.
+    /// </remarks>
     public string? Message { get; }
 
     /// <summary>
@@ -53,7 +57,9 @@ public sealed record EveTurnOutcome
     /// </summary>
     /// <remarks>
     /// Authoritative <c>input.resolved</c> and <c>approval.settled</c> events remove matching
-    /// requests. <see cref="InputRequests"/> retains the complete observed request history.
+    /// requests. The first descriptor for each case-sensitive request identity remains
+    /// authoritative, and repeated requests do not reopen settled identities within this
+    /// response. <see cref="InputRequests"/> retains the complete observed request history.
     /// </remarks>
     public IReadOnlyList<EveInputRequest> PendingInputRequests { get; }
 
