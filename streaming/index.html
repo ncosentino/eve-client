@@ -1355,9 +1355,13 @@ discriminator distinguishes human input from task work. A response returns a
 outstanding callback. It continues through task waits and callback-backed sign-ins.
 Callback attempts are correlated by <code>attemptId</code> when supplied, otherwise by the
 connection name.</p>
-<p>Text completed before a <code>turn.waiting</code> park is interim and is not exposed as the
-final <code>EveTurnOutcome.Message</code>. <code>PendingInputRequests</code> reports unresolved requests
-observed by this response; <code>InputRequests</code> retains their full history. A parked
+<p>The latest completed message whose finish reason is not <code>tool-calls</code> remains
+available as <code>EveTurnOutcome.Message</code> across both input and task <code>turn.waiting</code>
+parks. A later completed non-tool-calls message replaces it.
+<code>PendingInputRequests</code> reports unresolved requests observed by this response,
+retaining the first descriptor for each case-sensitive request ID. Once an ID is
+settled, another request occurrence cannot reopen it within that observed history.
+<code>InputRequests</code> retains every request occurrence, including repeated IDs. A parked
 turn remains active, so the consumed response can still cancel its guarded turn.</p>
 <p>eve <code>0.41.0</code> may emit <code>authorization.required</code> with a <code>webhookUrl</code>, followed by an
 interim <code>session.waiting</code>, while a framework-owned callback is pending. Keep enumerating
@@ -1419,6 +1423,9 @@ with the session cursor instead.</p>
 <code>SendAsync</code> and <code>RespondAsync</code> responses keep reconnecting until the current turn
 reaches a session boundary or the caller cancels consumption. Manually attached
 <code>StreamAsync</code> reads retain a finite idle reconnect budget.</p>
+<p>Every follower yields <code>session.failed</code> or <code>session.completed</code> once and then
+completes without another read or reconnect. This also applies to ordinary live
+sessions and child streams; a session cannot record events after either terminal.</p>
 <p>Each underlying stream read also has a fixed 15-second idle deadline. If an open
 connection stops producing bytes without closing, the client disposes that response and
 reconnects from the cursor after every fully consumed event. This deadline is separate
@@ -1480,8 +1487,9 @@ stream to the same API:</p>
 </code></pre></div>
 <p>The child cursor defaults to zero, advances independently during reconnects,
 and never changes <code>session.State</code>. Persist your own child index to resume a later
-enumeration. These reads are boundary-blind; stop explicitly at the desired child
-boundary or use <code>Follow = false</code> for bounded catch-up.</p>
+enumeration. These reads continue across turn boundaries but complete on session
+terminal events; stop explicitly at the desired child turn boundary or use
+<code>Follow = false</code> for bounded catch-up.</p>
 <p>Local children use their direct stream route; remote children use the parent's
 proxy route with the parent's host and credentials. Event remote URLs are never
 contacted directly. Legacy descriptor parent ownership is checked, and routes must
@@ -1502,7 +1510,12 @@ observed when the stream opens, then stop instead of waiting for future events:<
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="c1">// Process only the backlog, then regain control.</span>
 <a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
 </code></pre></div>
-<p>The first bounded request sends <code>includeTailIndex=1</code> and the server answers with
+<p>Every bounded request sends <code>follow=false</code>. On servers supporting stranded-session
+history, this bypasses the owner lifecycle check so recorded history stays readable
+even when the session's owner cannot run on the deployment. Older supported servers
+retain the client's local tail bound; this option does not add stranded-history
+support to a server that lacks it.</p>
+<p>The first bounded request also sends <code>includeTailIndex=1</code> and the server answers with
 the <code>x-eve-stream-tail-index</code> response header. That first tail is an immutable
 upper bound: reconnects resume from the advancing cursor without requesting or
 rebasing the tail, and the stream completes as soon as the cursor passes the

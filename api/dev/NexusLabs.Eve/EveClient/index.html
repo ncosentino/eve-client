@@ -1103,31 +1103,48 @@ A fixed handle addressing the supplied session.</p>
 <h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
 <p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
 A session whose first send creates the remote run.</p>
+<p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionCreationOptions)'></a></p>
+<h2 id="eveclientcreatesessionevesessioncreationoptions-method">EveClient.CreateSession(EveSessionCreationOptions) Method<a class="headerlink" href="#eveclientcreatesessionevesessioncreationoptions-method" title="Permanent link">&para;</a></h2>
+<p>Creates a fresh handle with fixed declarative creation-time tool stubs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionCreationOptions</span><span class="w"> </span><span class="n">options</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionCreationOptions).options'></a></p>
+<p><code>options</code> <a href="../EveSessionCreationOptions/" title="NexusLabs.Eve.EveSessionCreationOptions">EveSessionCreationOptions</a></p>
+<p>Creation settings; turn headers are supplied on the first send.</p>
+<h4 id="returns_2">Returns<a class="headerlink" href="#returns_2" title="Permanent link">&para;</a></h4>
+<p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
+A session whose initial message sends the stub declarations.</p>
+<h4 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentnullexception" title="System.ArgumentNullException">System.ArgumentNullException</a><br />
+The options are null.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentexception" title="System.ArgumentException">System.ArgumentException</a><br />
+Stub identifiers are duplicated or the rule limit is exceeded.</p>
 <p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionState)'></a></p>
 <h2 id="eveclientcreatesessionevesessionstate-method">EveClient.CreateSession(EveSessionState) Method<a class="headerlink" href="#eveclientcreatesessionevesessionstate-method" title="Permanent link">&para;</a></h2>
 <p>Creates a handle from a previously persisted session cursor.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionState</span><span class="w"> </span><span class="n">state</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="w"> </span><span class="n">CreateSession</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionState</span><span class="w"> </span><span class="n">state</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_2">Parameters<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_3">Parameters<a class="headerlink" href="#parameters_3" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.CreateSession(NexusLabs.Eve.EveSessionState).state'></a></p>
 <p><code>state</code> <a href="../EveSessionState/" title="NexusLabs.Eve.EveSessionState">EveSessionState</a></p>
 <p>The session state to resume.</p>
-<h4 id="returns_2">Returns<a class="headerlink" href="#returns_2" title="Permanent link">&para;</a></h4>
+<h4 id="returns_3">Returns<a class="headerlink" href="#returns_3" title="Permanent link">&para;</a></h4>
 <p><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><br />
 A session initialized from the supplied cursor.</p>
 <p><a name='NexusLabs.Eve.EveClient.GetHealthAsync(System.Threading.CancellationToken)'></a></p>
 <h2 id="eveclientgethealthasynccancellationtoken-method">EveClient.GetHealthAsync(CancellationToken) Method<a class="headerlink" href="#eveclientgethealthasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Checks whether the eve deployment is ready.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveHealthStatus</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetHealthAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveHealthStatus</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetHealthAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_3">Parameters<a class="headerlink" href="#parameters_3" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_4">Parameters<a class="headerlink" href="#parameters_4" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.GetHealthAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Cancels the request.</p>
-<h4 id="returns_3">Returns<a class="headerlink" href="#returns_3" title="Permanent link">&para;</a></h4>
+<h4 id="returns_4">Returns<a class="headerlink" href="#returns_4" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveHealthStatus/" title="NexusLabs.Eve.EveHealthStatus">EveHealthStatus</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
 The validated health payload.</p>
-<h4 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h4>
+<h4 id="exceptions_1">Exceptions<a class="headerlink" href="#exceptions_1" title="Permanent link">&para;</a></h4>
 <p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
 The server returned a non-successful status.</p>
 <p><a href="../EveHealthResponseException/" title="NexusLabs.Eve.EveHealthResponseException">EveHealthResponseException</a><br />
@@ -1135,33 +1152,57 @@ The successful response did not match the health contract.</p>
 <p><a name='NexusLabs.Eve.EveClient.GetInfoAsync(System.Threading.CancellationToken)'></a></p>
 <h2 id="eveclientgetinfoasynccancellationtoken-method">EveClient.GetInfoAsync(CancellationToken) Method<a class="headerlink" href="#eveclientgetinfoasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Fetches and validates the agent inspection payload.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveAgentInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetInfoAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveAgentInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetInfoAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_4">Parameters<a class="headerlink" href="#parameters_4" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.GetInfoAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Cancels the request.</p>
-<h4 id="returns_4">Returns<a class="headerlink" href="#returns_4" title="Permanent link">&para;</a></h4>
+<h4 id="returns_5">Returns<a class="headerlink" href="#returns_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveAgentInfo/" title="NexusLabs.Eve.EveAgentInfo">EveAgentInfo</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
 Validated identity fields and the complete raw agent-info document.</p>
-<h4 id="exceptions_1">Exceptions<a class="headerlink" href="#exceptions_1" title="Permanent link">&para;</a></h4>
+<h4 id="exceptions_2">Exceptions<a class="headerlink" href="#exceptions_2" title="Permanent link">&para;</a></h4>
 <p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
 The server returned a non-successful status.</p>
 <p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
 The body was not a recognized agent-info payload.</p>
+<p><a name='NexusLabs.Eve.EveClient.PrewarmSessionAsync(NexusLabs.Eve.EveSessionCreationOptions,System.Threading.CancellationToken)'></a></p>
+<h2 id="eveclientprewarmsessionasyncevesessioncreationoptions-cancellationtoken-method">EveClient.PrewarmSessionAsync(EveSessionCreationOptions, CancellationToken) Method<a class="headerlink" href="#eveclientprewarmsessionasyncevesessioncreationoptions-cancellationtoken-method" title="Permanent link">&para;</a></h2>
+<p>Creates an idle remote session with fixed declarative tool stubs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PrewarmSessionAsync</span><span class="p">(</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSessionCreationOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+</code></pre></div>
+<h4 id="parameters_6">Parameters<a class="headerlink" href="#parameters_6" title="Permanent link">&para;</a></h4>
+<p><a name='NexusLabs.Eve.EveClient.PrewarmSessionAsync(NexusLabs.Eve.EveSessionCreationOptions,System.Threading.CancellationToken).options'></a></p>
+<p><code>options</code> <a href="../EveSessionCreationOptions/" title="NexusLabs.Eve.EveSessionCreationOptions">EveSessionCreationOptions</a></p>
+<p>Optional stubs and creation request headers.</p>
+<p><a name='NexusLabs.Eve.EveClient.PrewarmSessionAsync(NexusLabs.Eve.EveSessionCreationOptions,System.Threading.CancellationToken).cancellationToken'></a></p>
+<p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
+<p>Cancels remote creation.</p>
+<h4 id="returns_6">Returns<a class="headerlink" href="#returns_6" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
+The accepted fixed session handle.</p>
+<h4 id="exceptions_3">Exceptions<a class="headerlink" href="#exceptions_3" title="Permanent link">&para;</a></h4>
+<p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
+The server rejects creation, including missing stub permission.</p>
+<p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
+The accepted response is malformed.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.argumentexception" title="System.ArgumentException">System.ArgumentException</a><br />
+Stub identifiers are duplicated or the rule limit is exceeded.</p>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.operationcanceledexception" title="System.OperationCanceledException">System.OperationCanceledException</a><br />
+Creation was cancelled.</p>
 <p><a name='NexusLabs.Eve.EveClient.PrewarmSessionAsync(System.Threading.CancellationToken)'></a></p>
 <h2 id="eveclientprewarmsessionasynccancellationtoken-method">EveClient.PrewarmSessionAsync(CancellationToken) Method<a class="headerlink" href="#eveclientprewarmsessionasynccancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Creates a remote conversation before its first user message.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PrewarmSessionAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveSession</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PrewarmSessionAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_7">Parameters<a class="headerlink" href="#parameters_7" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.PrewarmSessionAsync(System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Cancels remote session creation.</p>
-<h4 id="returns_5">Returns<a class="headerlink" href="#returns_5" title="Permanent link">&para;</a></h4>
+<h4 id="returns_7">Returns<a class="headerlink" href="#returns_7" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="../EveSession/" title="NexusLabs.Eve.EveSession">EveSession</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
 A session accepted by the remote eve deployment.</p>
-<h4 id="exceptions_2">Exceptions<a class="headerlink" href="#exceptions_2" title="Permanent link">&para;</a></h4>
+<h4 id="exceptions_4">Exceptions<a class="headerlink" href="#exceptions_4" title="Permanent link">&para;</a></h4>
 <p><a href="../EveClientException/" title="NexusLabs.Eve.EveClientException">EveClientException</a><br />
 The eve session route returned a non-successful response.</p>
 <p><a href="../EveProtocolException/" title="NexusLabs.Eve.EveProtocolException">EveProtocolException</a><br />
@@ -1177,9 +1218,9 @@ existing-session route.</p>
 <h2 id="eveclientsendrawasynchttprequestmessage-everawrequestoptions-cancellationtoken-method">EveClient.SendRawAsync(HttpRequestMessage, EveRawRequestOptions, CancellationToken) Method<a class="headerlink" href="#eveclientsendrawasynchttprequestmessage-everawrequestoptions-cancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Sends a caller-owned request against a relative path on this eve target.
 Client headers and authentication are applied before sending.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpResponseMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendRawAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpRequestMessage</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveRawRequestOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpResponseMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendRawAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpRequestMessage</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveRawRequestOptions</span><span class="o">?</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_6">Parameters<a class="headerlink" href="#parameters_6" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_8">Parameters<a class="headerlink" href="#parameters_8" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,NexusLabs.Eve.EveRawRequestOptions,System.Threading.CancellationToken).request'></a></p>
 <p><code>request</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httprequestmessage" title="System.Net.Http.HttpRequestMessage">System.Net.Http.HttpRequestMessage</a></p>
 <p>The request to send. Its URI must be relative. The request remains owned by the caller.</p>
@@ -1189,23 +1230,23 @@ Client headers and authentication are applied before sending.</p>
 <p><a name='NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,NexusLabs.Eve.EveRawRequestOptions,System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Cancels the request.</p>
-<h4 id="returns_6">Returns<a class="headerlink" href="#returns_6" title="Permanent link">&para;</a></h4>
+<h4 id="returns_8">Returns<a class="headerlink" href="#returns_8" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpresponsemessage" title="System.Net.Http.HttpResponseMessage">System.Net.Http.HttpResponseMessage</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
 The raw response. The caller must dispose it. Non-successful statuses are returned unchanged.</p>
 <p><a name='NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)'></a></p>
 <h2 id="eveclientsendrawasynchttprequestmessage-cancellationtoken-method">EveClient.SendRawAsync(HttpRequestMessage, CancellationToken) Method<a class="headerlink" href="#eveclientsendrawasynchttprequestmessage-cancellationtoken-method" title="Permanent link">&para;</a></h2>
 <p>Sends a caller-owned request against a relative path on this eve target.
 Client headers and authentication are applied before sending.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpResponseMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendRawAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpRequestMessage</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Tasks</span><span class="p">.</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpResponseMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendRawAsync</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Net</span><span class="p">.</span><span class="n">Http</span><span class="p">.</span><span class="n">HttpRequestMessage</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="parameters_7">Parameters<a class="headerlink" href="#parameters_7" title="Permanent link">&para;</a></h4>
+<h4 id="parameters_9">Parameters<a class="headerlink" href="#parameters_9" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken).request'></a></p>
 <p><code>request</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httprequestmessage" title="System.Net.Http.HttpRequestMessage">System.Net.Http.HttpRequestMessage</a></p>
 <p>The request to send. Its URI must be relative. The request remains owned by the caller.</p>
 <p><a name='NexusLabs.Eve.EveClient.SendRawAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken).cancellationToken'></a></p>
 <p><code>cancellationToken</code> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken" title="System.Threading.CancellationToken">System.Threading.CancellationToken</a></p>
 <p>Cancels the request.</p>
-<h4 id="returns_7">Returns<a class="headerlink" href="#returns_7" title="Permanent link">&para;</a></h4>
+<h4 id="returns_9">Returns<a class="headerlink" href="#returns_9" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">System.Threading.Tasks.Task&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpresponsemessage" title="System.Net.Http.HttpResponseMessage">System.Net.Http.HttpResponseMessage</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1" title="System.Threading.Tasks.Task`1">&gt;</a><br />
 The raw response. The caller must dispose it. Non-successful statuses are returned unchanged.</p>
 

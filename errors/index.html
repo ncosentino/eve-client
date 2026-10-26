@@ -1213,6 +1213,14 @@ on <code>ErrorCode</code> instead of matching message text, which is not a contr
 reset or is otherwise no longer active. <code>ErrorCode</code> is the raw server string, so
 a code this client does not model stays observable rather than being discarded,
 and it is <code>null</code> when the response carried none.</p>
+<p>HTTP 409 with <code>ErrorCode == "session_stranded"</code> means the session's owner cannot
+run on this deployment. Stream opening surfaces this conflict after one request,
+even if HTTP 409 is configured as retryable; other retryable conflicts retain
+their existing policy. Send, respond, and clear expose the same
+<code>EveClientException</code>, preserving the server message, headers, and raw body
+(including optional <code>eveVersion</code>). No separate exception subtype is required.
+See <a href="../streaming/#bounded-catch-up-reads">bounded catch-up reads</a> for reading the
+recorded history on a server supporting stranded-session recovery.</p>
 <h2 id="protocol-failures">Protocol failures<a class="headerlink" href="#protocol-failures" title="Permanent link">&para;</a></h2>
 <p>Successful responses that do not satisfy the expected eve contract throw
 <code>EveProtocolException</code>.</p>

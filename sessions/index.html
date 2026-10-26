@@ -692,6 +692,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#declarative-tool-stubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declarative tool stubs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overlapping-sends" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1248,6 +1259,50 @@ ready. If the first later message receives <code>409 session_not_ready</code>, <
 re-resolves dynamic headers and retries for up to 20 seconds. Backoff starts at
 250 milliseconds, doubles to a two-second cap, and stops immediately on
 cancellation. <code>RespondAsync</code> does not use this readiness retry.</p>
+<h2 id="declarative-tool-stubs">Declarative tool stubs<a class="headerlink" href="#declarative-tool-stubs" title="Permanent link">&para;</a></h2>
+<p>Eve <code>0.75.0</code> and newer accept fixed tool stubs at session creation when the
+server grants <code>allowToolStubs</code>. This optional capability does not change the
+client's compatibility baseline. Stubs are declarations sent to the server:
+the client never runs tools, advances the sequence, or simulates retries.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">using</span><span class="w"> </span><span class="nn">JsonDocument</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JsonDocument</span><span class="p">.</span><span class="n">Parse</span><span class="p">(</span><span class="s">"""{"items":[]}"""</span><span class="p">);</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">EveSessionCreationOptions</span><span class="w"> </span><span class="n">creation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">()</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">Stubs</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="na">[</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="na">        new EveToolStub("tasks", "researcher/list_tasks",</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="na">        [</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="na">            EveToolStubOutcome.Throw("Service unavailable"),</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="na">            EveToolStubOutcome.Respond(result.RootElement),</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="na">        ]</span><span class="p">),</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="p">],</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">};</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">session</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">(</span><span class="n">creation</span><span class="p">);</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span><span class="s">"List tasks."</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1">// Alternatively create the remote idle session before sending a message.</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">EveSession</span><span class="w"> </span><span class="n">idle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">PrewarmSessionAsync</span><span class="p">(</span><span class="n">creation</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+</code></pre></div>
+<p>Use the single-outcome constructor for a fixed response or thrown error. The
+sequence constructor requires at least one outcome and preserves order. The
+server decides consumption and recovery behavior. <code>Throw</code> accepts any non-null
+message, including an empty string; its optional nonempty name is omitted by
+default, so the server uses <code>"Error"</code>. <code>Respond</code> preserves any defined JSON
+value, including null, arrays, scalars, and objects. Outcomes and match JSON are
+snapshotted, so their originating <code>JsonDocument</code> can be disposed.</p>
+<p>The optional <code>match</code> dictionary maps required input properties to JSON Schema
+objects or booleans. The server validates supported schema keywords, nesting
+and size limits. Rule identifiers must be nonempty and unique (at most 100
+rules). Tool names may include a local-subagent path. Target the actual tool,
+not the <code>eve__search</code>, <code>eve__tool</code>, or <code>eve__skill</code> catalog routers.</p>
+<p>Null <code>Stubs</code> omits the field, preserving the body-free idle request and ordinary
+tool execution. An empty list explicitly sends <code>"stubs":[]</code>. Only the initial
+<code>POST /eve/v1/session</code> carries rules; subsequent messages, human-input responses,
+and attached/resumed handles cannot replace them. Creation-option headers apply
+to idle creation only; initial-message headers come from <code>EveTurnOptions</code>.
+Missing permission and server-side rule errors surface as <code>EveClientException</code>.
+<code>SendRawAsync</code> remains a caller-owned JSON escape hatch: its header options do
+not merge or rewrite the caller's body, and server route restrictions still apply.</p>
 <h2 id="overlapping-sends">Overlapping sends<a class="headerlink" href="#overlapping-sends" title="Permanent link">&para;</a></h2>
 <p>A message that reaches a session which already has an active turn is governed by
 a delivery policy. eve <code>0.33.0</code> changed the server-side default from waiting to
@@ -1264,10 +1319,10 @@ that turn's identifier and accumulated usage; the response can therefore begin
 with <code>message.received</code> or another same-turn event rather than a new
 <code>turn.started</code>. Steering accepted after the answer settles starts a normal
 follow-up turn with a new identifier.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">"Actually, summarize it instead."</span><span class="p">),</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveTurnOptions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">TurnPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveTurnPolicy</span><span class="p">.</span><span class="n">Queue</span><span class="w"> </span><span class="p">},</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveMessageResponse</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">SendAsync</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="n">EveMessageContent</span><span class="p">.</span><span class="n">FromText</span><span class="p">(</span><span class="s">"Actually, summarize it instead."</span><span class="p">),</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EveTurnOptions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">TurnPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EveTurnPolicy</span><span class="p">.</span><span class="n">Queue</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="n">cancellationToken</span><span class="p">);</span>
 </code></pre></div>
 <p>The policy is sent only for a message continuing an existing session. It is
 omitted when the turn creates the session, because a new session has no active
@@ -1283,23 +1338,23 @@ cancellation are unaffected. See <a href="../migration/">Migration</a>.</p>
 </div>
 <p><code>ClearAsync</code> queues removal of durable model-message history while keeping the
 session identity, configuration, non-message state, limits, and sandbox:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">EveClearOutcome</span><span class="w"> </span><span class="n">clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ClearAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">clear</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveClearStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">{</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ContextCleared</span><span class="p">)</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">        </span><span class="p">{</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">            </span><span class="c1">// History was cleared on the durable stream.</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">        </span><span class="p">}</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionWaiting</span><span class="p">)</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">        </span><span class="p">{</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">        </span><span class="p">}</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">EveClearOutcome</span><span class="w"> </span><span class="n">clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ClearAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">clear</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveClearStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">{</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ContextCleared</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">            </span><span class="c1">// History was cleared on the durable stream.</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionWaiting</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
 <li>The session identifier is recorded as soon as <code>SendAsync</code> returns, so clear
@@ -1317,12 +1372,12 @@ conversation; <code>ClearAsync</code> keeps the same durable session and only di
 model-message history.</p>
 <h2 id="reset-a-session">Reset a session<a class="headerlink" href="#reset-a-session" title="Permanent link">&para;</a></h2>
 <p><code>ResetAsync</code> terminally retires the durable session addressed by this handle:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">EveResetOutcome</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ResetAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reset</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveResetStatus</span><span class="p">.</span><span class="n">Reset</span><span class="p">)</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">{</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="n">EveSession</span><span class="w"> </span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">();</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">EveResetOutcome</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">ResetAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reset</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveResetStatus</span><span class="p">.</span><span class="n">Reset</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="n">EveSession</span><span class="w"> </span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="n">CreateSession</span><span class="p">();</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
 <li>A session that never started returns <code>EveResetStatus.NoActiveSession</code> and
@@ -1338,20 +1393,20 @@ resumable; <code>ResetAsync</code> retires the conversation itself.</p>
 <h2 id="compact-a-session">Compact a session<a class="headerlink" href="#compact-a-session" title="Permanent link">&para;</a></h2>
 <p><code>CompactAsync</code> queues context compaction for the durable session without
 sending model input:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">EveCompactOutcome</span><span class="w"> </span><span class="n">compact</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">CompactAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">compact</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveCompactStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">{</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionWaiting</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">            </span><span class="k">or</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionCompleted</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">            </span><span class="k">or</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionFailed</span><span class="p">)</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">        </span><span class="p">{</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">        </span><span class="p">}</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">EveCompactOutcome</span><span class="w"> </span><span class="n">compact</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">CompactAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">compact</span><span class="p">.</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveCompactStatus</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="p">{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="n">StreamAsync</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionWaiting</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">            </span><span class="k">or</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionCompleted</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">            </span><span class="k">or</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">SessionFailed</span><span class="p">)</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
 <li>Compaction is asynchronous. Consume the durable stream through the next
