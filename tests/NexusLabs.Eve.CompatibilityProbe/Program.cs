@@ -483,6 +483,41 @@ if (authorizationSession.State.StreamIndex != authorizationEvents.Count)
 }
 
 EveSession attachmentSession = client.CreateSession();
+using JsonDocument stubOutput = JsonDocument.Parse("""{"status":"STUB_RESULT_OK"}""");
+EveSessionCreationOptions stubOptions = new()
+{
+    Stubs =
+    [
+        new EveToolStub("probe", "client_context_probe",
+        [
+            EveToolStubOutcome.Throw("STUB_TRANSIENT", "ProbeFailure"),
+            EveToolStubOutcome.Respond(stubOutput.RootElement),
+        ]),
+    ],
+};
+foreach (bool prewarm in new[] { false, true })
+{
+    probeScenario = prewarm ? "prewarmed tool stubs" : "initial-message tool stubs";
+    EveSession stubSession = prewarm
+        ? await authorizationClient.PrewarmSessionAsync(stubOptions, timeout.Token)
+        : authorizationClient.CreateSession(stubOptions);
+    EveMessageResponse stubResponse = await stubSession.SendAsync("REQUEST_TOOL_STUB", timeout.Token);
+    EveTurnOutcome stubOutcome = await stubResponse.GetOutcomeAsync(timeout.Token);
+    RequireSuccessfulResponse(stubOutcome, probeScenario);
+    EveStreamEvent[] stubResults = stubOutcome.Events
+        .Where(static streamEvent => streamEvent.Kind == EveStreamEventKind.ActionResult)
+        .ToArray();
+    if (stubResults.Length != 2
+        || stubResults[0].Data.GetProperty("status").GetString() != "failed"
+        || stubResults[0].Data.GetProperty("error").GetProperty("message").GetString()
+            ?.Contains("STUB_TRANSIENT", StringComparison.Ordinal) != true
+        || stubResults[1].Data.GetProperty("status").GetString() != "completed")
+    {
+        throw new InvalidOperationException(
+            "The real server did not consume a thrown stub outcome followed by its successful response.");
+    }
+}
+
 probeScenario = "attachments";
 EveMessageResponse attachmentResponse = await attachmentSession.SendAsync(
     EveMessageContent.FromParts(
@@ -805,7 +840,6 @@ if (cancelledApproval.Status != EveCancellationStatus.Accepted
     throw new InvalidOperationException("Cancelling the held input turn did not settle without executing it.");
 }
 
-EveSession resetSession = client.CreateSession();
 probeScenario = "resumed input cancellation";
 EveSession resumedCancellationSession = client.CreateSession();
 EveMessageResponse resumedCancellationRequest = await resumedCancellationSession.SendAsync(
@@ -843,6 +877,7 @@ if (resumedCancellation?.Status != EveCancellationStatus.Accepted
         $"Observed: {string.Join(", ", resumedCancellationEvents)}.");
 }
 
+EveSession resetSession = client.CreateSession();
 probeScenario = "reset";
 EveMessageResponse resetResponse = await resetSession.SendAsync(
     "Return the deterministic compatibility response.",

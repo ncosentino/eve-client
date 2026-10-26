@@ -4,7 +4,7 @@ description: Upgrade an eve deployment and NexusLabs.Eve client safely across th
 
 # Migrating to eve 0.54.2
 
-The current client requires eve `0.54.2` or newer and uses eve `0.71.0` as its
+The current client requires eve `0.54.2` or newer and uses eve `0.79.1` as its
 compatibility reference. Eve `0.54.2` is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly `subagent-call`, `task-cancel`, and
 `workflow-tool-call`.
@@ -14,7 +14,26 @@ payload remains version `4`, so the client has no schema discriminator with whic
 accept both contracts strictly. It rejects `task-update` in v4 while historical schema
 v3 continues accepting and preserving that action through `EveAgentInfo.Raw`.
 
-## Moving from Eve 0.63.0 to 0.71.0
+## Moving from Eve 0.71.0 to 0.79.1
+
+Alpha.16 preserves the first input descriptor for each case-sensitive request ID.
+Repeated requests no longer replace its prompt/options/action or reopen a settled
+identity within an observed response. `InputRequests` still records every occurrence;
+`PendingInputRequests` is the canonical unresolved projection. Completed assistant
+answers now survive both input and task waits instead of becoming null.
+
+Responses to input answers learn their guarded cancellation target from
+`input.resolved`; ordinary message responses continue ignoring older-turn resolutions.
+Bounded streams send `follow=false`, allowing stranded-session history recovery.
+An HTTP 409 with `session_stranded` is permanent, and live followers complete after
+yielding `session.failed` or `session.completed`.
+
+Creation-time tool stubs are optional and require a server-side `allowToolStubs`
+grant. Omitting them retains ordinary tool execution. Upgrade the client before
+using this API, and deploy a server supporting stubs before enabling the option.
+Stub declarations never replace server permission checks or execute tools locally.
+
+## Historical move from Eve 0.63.0 to 0.71.0
 
 This is not a version-only server upgrade. Eve 0.64.0 changes inspection to schema
 v5, 0.69.0 changes the response stream version to 26 and reshapes child descriptors,
