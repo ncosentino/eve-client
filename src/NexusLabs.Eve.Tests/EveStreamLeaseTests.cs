@@ -50,13 +50,13 @@ public sealed class EveStreamLeaseTests
             handler.Calls.Select(static call => call.Uri)))
             .IsEqualTo(
                 "https://agent.example.com/eve/v1/session/session_1/stream"
-                + "?streamControlVersion=1&startIndex=1&includeTailIndex=1"
+                + "?streamControlVersion=1&startIndex=1&includeTailIndex=1&follow=false"
                 + Environment.NewLine
                 + "https://agent.example.com/eve/v1/session/session_1/stream"
-                + "?streamControlVersion=1&startIndex=3"
+                + "?streamControlVersion=1&startIndex=3&follow=false"
                 + Environment.NewLine
                 + "https://agent.example.com/eve/v1/session/session_1/stream"
-                + "?streamControlVersion=1&startIndex=5");
+                + "?streamControlVersion=1&startIndex=5&follow=false");
         await Assert.That(session.State).IsEqualTo(new EveSessionState
         {
             SessionId = "session_1",

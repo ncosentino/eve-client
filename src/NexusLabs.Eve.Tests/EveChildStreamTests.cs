@@ -62,9 +62,9 @@ public sealed class EveChildStreamTests
         await Assert.That(events[0].Type).IsEqualTo("test.child");
         await Assert.That(handler.Calls.Count).IsEqualTo(2);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            $"https://parent.example{route}?tenant=one&streamControlVersion=1&startIndex=2&includeTailIndex=1");
+            $"https://parent.example{route}?tenant=one&streamControlVersion=1&startIndex=2&includeTailIndex=1&follow=false");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(
-            $"https://parent.example{route}?tenant=one&streamControlVersion=1&startIndex=3");
+            $"https://parent.example{route}?tenant=one&streamControlVersion=1&startIndex=3&follow=false");
         await Assert.That(handler.Calls[0].Headers["authorization"]).IsEqualTo("Bearer token-1");
         await Assert.That(handler.Calls[1].Headers["authorization"]).IsEqualTo("Bearer token-2");
         await Assert.That(handler.Calls[1].Headers["x-permission"]).IsEqualTo("request");
@@ -251,10 +251,10 @@ public sealed class EveChildStreamTests
         await Assert.That(string.Join(",", eventTypes)).IsEqualTo("session.waiting,test.child");
         await Assert.That(handler.Calls.Count).IsEqualTo(3);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://parent.example" + ProxyPath + "?streamControlVersion=1&includeTailIndex=1");
+            "https://parent.example" + ProxyPath + "?streamControlVersion=1&includeTailIndex=1&follow=false");
         await Assert.That(handler.Calls[1].Uri).IsEqualTo(handler.Calls[0].Uri);
         await Assert.That(handler.Calls[2].Uri).IsEqualTo(
-            "https://parent.example" + ProxyPath + "?streamControlVersion=1&startIndex=1");
+            "https://parent.example" + ProxyPath + "?streamControlVersion=1&startIndex=1&follow=false");
         await Assert.That(parent.State.StreamIndex).IsEqualTo(91);
     }
 

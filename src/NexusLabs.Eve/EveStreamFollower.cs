@@ -60,6 +60,7 @@ internal static class EveStreamFollower
                     client,
                     sessionId,
                     startIndex,
+                    follow,
                     !follow && tailIndex is null,
                     streamControlEnabled,
                     headers,
@@ -114,6 +115,12 @@ internal static class EveStreamFollower
                     reconnectDelay = policy.Idle.BaseDelay;
                     idleReconnects = 0;
                     yield return streamEvent;
+
+                    if (streamEvent.Kind is EveStreamEventKind.SessionFailed
+                        or EveStreamEventKind.SessionCompleted)
+                    {
+                        yield break;
+                    }
 
                     if (tailIndex is int bound && startIndex > bound)
                     {
@@ -238,6 +245,7 @@ internal static class EveStreamFollower
         EveClient client,
         string sessionId,
         int startIndex,
+        bool follow,
         bool requestTailIndex,
         bool streamControlEnabled,
         IReadOnlyDictionary<string, string>? headers,
@@ -258,6 +266,7 @@ internal static class EveStreamFollower
                 client,
                 sessionId,
                 startIndex,
+                follow,
                 requestTailIndex,
                 streamControlEnabled,
                 headers,
@@ -277,6 +286,7 @@ internal static class EveStreamFollower
         EveClient client,
         string sessionId,
         int startIndex,
+        bool follow,
         bool requestTailIndex,
         bool streamControlEnabled,
         IReadOnlyDictionary<string, string>? headers,
@@ -303,6 +313,11 @@ internal static class EveStreamFollower
         if (requestTailIndex)
         {
             queryParameters["includeTailIndex"] = "1";
+        }
+
+        if (!follow)
+        {
+            queryParameters["follow"] = "false";
         }
 
         IReadOnlyDictionary<string, string>? query = queryParameters.Count == 0
@@ -354,7 +369,9 @@ internal static class EveStreamFollower
             lastStatusCode = response.StatusCode;
             lastBody = body;
             lastHeaders = clientException.ResponseHeaders;
-            bool retryable = policy.RetryableStatusCodes.Contains(response.StatusCode);
+            bool retryable = policy.RetryableStatusCodes.Contains(response.StatusCode)
+                && !(response.StatusCode == HttpStatusCode.Conflict
+                    && clientException.ErrorCode == "session_stranded");
             response.Dispose();
 
             if (!retryable)

@@ -48,6 +48,15 @@ reset or is otherwise no longer active. `ErrorCode` is the raw server string, so
 a code this client does not model stays observable rather than being discarded,
 and it is `null` when the response carried none.
 
+HTTP 409 with `ErrorCode == "session_stranded"` means the session's owner cannot
+run on this deployment. Stream opening surfaces this conflict after one request,
+even if HTTP 409 is configured as retryable; other retryable conflicts retain
+their existing policy. Send, respond, and clear expose the same
+`EveClientException`, preserving the server message, headers, and raw body
+(including optional `eveVersion`). No separate exception subtype is required.
+See [bounded catch-up reads](streaming.md#bounded-catch-up-reads) for reading the
+recorded history on a server supporting stranded-session recovery.
+
 ## Protocol failures
 
 Successful responses that do not satisfy the expected eve contract throw

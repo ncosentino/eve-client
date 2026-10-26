@@ -18,7 +18,9 @@ public sealed record EveStreamOptions
     /// every event recorded through the durable tail observed when the stream opens, reconnects
     /// through interruptions without moving that bound, and then completes instead of waiting for
     /// future events. Bounded reads require a nonnegative effective start cursor and a server that
-    /// reports the durable tail index.
+    /// reports the durable tail index. Each request sends <c>follow=false</c>; servers that
+    /// support stranded-session history can serve recorded events without a runnable owner.
+    /// Both live and bounded streams complete after yielding a session terminal event.
     /// </remarks>
     public bool Follow { get; init; } = true;
 
