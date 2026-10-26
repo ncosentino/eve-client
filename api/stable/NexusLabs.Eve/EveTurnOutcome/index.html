@@ -1102,6 +1102,9 @@
 </code></pre></div>
 <h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>The latest completed answer is retained across task and input waits. Messages completed
+with the <code>tool-calls</code> finish reason do not replace it.</p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.PendingInputRequests'></a></p>
 <h2 id="eveturnoutcomependinginputrequests-property">EveTurnOutcome.PendingInputRequests Property<a class="headerlink" href="#eveturnoutcomependinginputrequests-property" title="Permanent link">&para;</a></h2>
 <p>Gets requests observed in this response that remain unresolved at its boundary.</p>
@@ -1109,9 +1112,11 @@
 </code></pre></div>
 <h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputRequest/" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
 <p>Authoritative <code>input.resolved</code> and <code>approval.settled</code> events remove matching
-requests. <a href="./#NexusLabs.Eve.EveTurnOutcome.InputRequests" title="NexusLabs.Eve.EveTurnOutcome.InputRequests">InputRequests</a> retains the complete observed request history.</p>
+requests. The first descriptor for each case-sensitive request identity remains
+authoritative, and repeated requests do not reopen settled identities within this
+response. <a href="./#NexusLabs.Eve.EveTurnOutcome.InputRequests" title="NexusLabs.Eve.EveTurnOutcome.InputRequests">InputRequests</a> retains the complete observed request history.</p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.SessionId'></a></p>
 <h2 id="eveturnoutcomesessionid-property">EveTurnOutcome.SessionId Property<a class="headerlink" href="#eveturnoutcomesessionid-property" title="Permanent link">&para;</a></h2>
 <p>Gets the runtime-owned session identifier.</p>

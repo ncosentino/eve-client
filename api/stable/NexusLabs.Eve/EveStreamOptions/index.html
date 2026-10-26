@@ -1079,7 +1079,9 @@
 every event recorded through the durable tail observed when the stream opens, reconnects
 through interruptions without moving that bound, and then completes instead of waiting for
 future events. Bounded reads require a nonnegative effective start cursor and a server that
-reports the durable tail index.</p>
+reports the durable tail index. Each request sends <code>follow=false</code>; servers that
+support stranded-session history can serve recorded events without a runnable owner.
+Both live and bounded streams complete after yielding a session terminal event.</p>
 <p><a name='NexusLabs.Eve.EveStreamOptions.ReconnectPolicy'></a></p>
 <h2 id="evestreamoptionsreconnectpolicy-property">EveStreamOptions.ReconnectPolicy Property<a class="headerlink" href="#evestreamoptionsreconnectpolicy-property" title="Permanent link">&para;</a></h2>
 <p>Gets the stream reconnect policy.</p>
