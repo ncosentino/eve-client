@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -78,15 +78,16 @@ public sealed class EveResponseParityTests
         string settlement = approval
             ? """{"type":"approval.settled","data":{"requestId":"request_1","outcome":"approved"}}"""
             : """{"type":"input.resolved","data":{"resolutions":[{"requestId":"request_1","kind":"question","outcome":"answered"}],"turnId":"turn_1","stepIndex":0,"sequence":1}}""";
-        string events =
-            """{"type":"input.requested","data":{"requests":[{"requestId":"request_1","kind":"question","prompt":"Original"}]}}"""
-            + "\n" + settlement + "\n"
-            + """
+        const string afterSettlement =
+            """
             {"type":"input.requested","data":{"requests":[{"requestId":"request_1","kind":"question","prompt":"Replay"}]}}
             {"type":"turn.waiting","data":{"on":"tasks","turnId":"turn_1"}}
             {"type":"message.completed","data":{"finishReason":"stop","message":"Finished","turnId":"turn_1"}}
             {"type":"session.completed"}
             """;
+        string events =
+            """{"type":"input.requested","data":{"requests":[{"requestId":"request_1","kind":"question","prompt":"Original"}]}}"""
+            + "\n" + settlement + "\n" + afterSettlement;
         using RecordingHttpMessageHandler handler = new();
         using HttpMessageInvoker transport = new(handler, false);
         QueueTurn(handler, events);
