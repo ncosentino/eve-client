@@ -226,7 +226,7 @@ public sealed class EveClient
     /// Remote session creation was cancelled.
     /// </exception>
     public Task<EveSession> PrewarmSessionAsync(CancellationToken cancellationToken) =>
-        EveSession.CreatePrewarmedAsync(this, cancellationToken);
+        EveSession.CreatePrewarmedAsync(this, null, cancellationToken);
 
     /// <summary>
     /// Creates an idle remote session with fixed declarative tool stubs.
@@ -241,7 +241,7 @@ public sealed class EveClient
     public Task<EveSession> PrewarmSessionAsync(
         EveSessionCreationOptions? options,
         CancellationToken cancellationToken) =>
-        EveSession.CreatePrewarmedAsync(this, cancellationToken, options);
+        EveSession.CreatePrewarmedAsync(this, options, cancellationToken);
 
     /// <summary>
     /// Creates a handle from a previously persisted session cursor.

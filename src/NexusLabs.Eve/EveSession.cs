@@ -46,8 +46,8 @@ public sealed class EveSession
 
     internal static async Task<EveSession> CreatePrewarmedAsync(
         EveClient client,
-        CancellationToken cancellationToken,
-        EveSessionCreationOptions? options = null)
+        EveSessionCreationOptions? options,
+        CancellationToken cancellationToken)
     {
         byte[]? body = EveRequestWriter.WriteCreation(options?.Snapshot());
         using HttpContent? content = body is null ? null : new ByteArrayContent(body);
