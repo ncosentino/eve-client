@@ -43,8 +43,8 @@ and structured-output support without using the TypeScript SDK.
   kernel effect without a schema-version discriminator; upgrade the server before this
   client so strict inspection remains valid.
 - Eve 0.52.3 historically introduced the `deliveryId` required for existing-session send
-  correlation. Initial session creation and `RespondAsync` do not require delivery
-  correlation.
+  correlation. On legacy stream protocols, initial session creation and `RespondAsync`
+  do not require it; protocol 27 requires delivery receipts for every managed response.
 - `test/fixtures/eve-agent` is a pinned, deterministic real Eve server used by the
   compatibility probe under `tests/NexusLabs.Eve.CompatibilityProbe`.
 - `version.json` is the only release-version source; package versions come from NBGV.

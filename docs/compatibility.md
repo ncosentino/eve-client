@@ -54,15 +54,18 @@ accepted turn from older durable events. This client rejects that response inste
 returning a potentially wrong turn. That historical cutover also required upgrading the
 eve server before the client.
 
-Two operations do not require delivery correlation:
+On legacy stream protocols, two operations do not require delivery correlation:
 
 - The initial `SendAsync` creates the session, so no prior session events can be replayed.
 - `RespondAsync` submits responses to pending human input rather than accepting a new
   message delivery.
 
-Their accepted responses may omit `deliveryId`; every `SendAsync` on an existing session
+Their legacy accepted responses may omit `deliveryId`; every `SendAsync` on an existing session
 requires a nonempty value. The current `0.54.2` cutover does not change message-stream
 protocol `25` or agent-info schema version `4`.
+
+Protocol 27 instead requires an accepted delivery identifier for every managed response,
+including initial creation and human-input answers. See [Migration](migration.md).
 
 ## Historical eve 0.31.0 route boundary
 
@@ -312,6 +315,9 @@ second model call still receives the context, verifies that the next turn does n
 then resupplies it to prove the lifetime boundary is per turn.
 
 ## Accepted message delivery correlation
+
+This section describes legacy stream protocols. Protocol 27 correlates every managed
+response using delivery facts rather than legacy `meta.deliveryIds`.
 
 Eve `0.52.3` adds a nonempty `deliveryId` to the accepted response for a message posted
 to an existing session. Durable events produced for that accepted message carry ordered
