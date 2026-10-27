@@ -13,7 +13,11 @@ Author: Nick Cosentino (https://www.devleader.ca).
 - [Structured Output](https://www.devleader.ca/projects/eve-client/structured-output/) -- Request JSON Schema output and deserialize result.completed with source-generated metadata.
 - [Errors](https://www.devleader.ca/projects/eve-client/errors/) -- Distinguish HTTP failures, malformed protocol responses, and terminal eve session failures.
 - [Compatibility](https://www.devleader.ca/projects/eve-client/compatibility/) -- Understand supported eve versions, stream protocol compatibility, and preview-version policy.
-- [Migration](https://www.devleader.ca/projects/eve-client/migration/) -- Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary.
+- [Migration](https://www.devleader.ca/projects/eve-client/migration/) -- Upgrade safely across Eve stream, interaction, control and inspection boundaries.
+
+## Architecture
+
+- [Source-aware cursors](https://www.devleader.ca/projects/eve-client/adr/adr-0001-source-aware-stream-cursors/)
 
 ## API Reference
 

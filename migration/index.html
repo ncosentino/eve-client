@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary.">
+        <meta name="description" content="Upgrade safely across Eve stream, interaction, control and inspection boundaries.">
       
       
         <meta name="author" content="Nick Cosentino">
@@ -18,7 +18,7 @@
         <link rel="prev" href="../compatibility/">
       
       
-        <link rel="next" href="../api/">
+        <link rel="next" href="../adr/adr-0001-source-aware-stream-cursors/">
       
       
         
@@ -65,12 +65,12 @@
   
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Migration – NexusLabs.Eve" />
-  <meta property="og:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary." />
+  <meta property="og:description" content="Upgrade safely across Eve stream, interaction, control and inspection boundaries." />
   <meta property="og:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   <meta property="og:url" content="https://www.devleader.ca/projects/eve-client/migration/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Migration – NexusLabs.Eve" />
-  <meta name="twitter:description" content="Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary." />
+  <meta name="twitter:description" content="Upgrade safely across Eve stream, interaction, control and inspection boundaries." />
   <meta name="twitter:image" content="https://www.devleader.ca/projects/eve-client/assets/eve-social-preview.png" />
   
 
@@ -93,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migrating-to-eve-0542" class="md-skip">
+        <a href="#migration-boundaries" class="md-skip">
           Skip to content
         </a>
       
@@ -422,6 +422,26 @@
 
       </a>
     </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
   
 
       
@@ -821,10 +841,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#moving-from-eve-0710-to-0791" class="md-nav__link">
+  <a href="#moving-to-eve-0840-and-protocol-27" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Moving from Eve 0.71.0 to 0.79.1
+        Moving to Eve 0.84.0 and protocol 27
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#historical-move-from-eve-0710-to-0791" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historical move from Eve 0.71.0 to 0.79.1
       
     </span>
   </a>
@@ -1020,7 +1051,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -1033,6 +1064,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1155,10 +1282,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -1176,8 +1303,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1270,8 +1397,8 @@
   
 
 
-<h1 id="migrating-to-eve-0542">Migrating to eve 0.54.2<a class="headerlink" href="#migrating-to-eve-0542" title="Permanent link">&para;</a></h1>
-<p>The current client requires eve <code>0.54.2</code> or newer and uses eve <code>0.79.1</code> as its
+<h1 id="migration-boundaries">Migration boundaries<a class="headerlink" href="#migration-boundaries" title="Permanent link">&para;</a></h1>
+<p>The current client requires eve <code>0.54.2</code> or newer and uses eve <code>0.84.0</code> as its
 compatibility reference. Eve <code>0.54.2</code> is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly <code>subagent-call</code>, <code>task-cancel</code>, and
 <code>workflow-tool-call</code>.</p>
@@ -1279,7 +1406,51 @@ schema-v4 kernel-effect action set is exactly <code>subagent-call</code>, <code>
 payload remains version <code>4</code>, so the client has no schema discriminator with which to
 accept both contracts strictly. It rejects <code>task-update</code> in v4 while historical schema
 v3 continues accepting and preserving that action through <code>EveAgentInfo.Raw</code>.</p>
-<h2 id="moving-from-eve-0710-to-0791">Moving from Eve 0.71.0 to 0.79.1<a class="headerlink" href="#moving-from-eve-0710-to-0791" title="Permanent link">&para;</a></h2>
+<h2 id="moving-to-eve-0840-and-protocol-27">Moving to Eve 0.84.0 and protocol 27<a class="headerlink" href="#moving-to-eve-0840-and-protocol-27" title="Permanent link">&para;</a></h2>
+<p>Alpha.16 and earlier reject version-27 streams. Deploy the v27-capable client
+before exposing callers to Eve 0.84.0, while retaining a qualified older server
+for legacy traffic. Drain old deliveries or retain their owning deployment:
+protocol-generation compatibility does not migrate existing durable sessions.
+A permanent <code>session_version_unsupported</code> error requires a new compatible
+session or its original server, not repeated stream retries.</p>
+<p>Version 27 stores atomic commits containing several facts, not one event per
+line. Persist the entire <code>EveSessionState</code>, including <code>StreamEventIndex</code> and
+<code>StreamVersion</code>; do not manufacture a cursor from <code>Events.Count</code>. Response
+readers drain the full commit containing their matching delivery settlement.</p>
+<p>Raw consumers must migrate to the actual new vocabulary: <code>content.delta</code>,
+<code>content.completed</code>, <code>call.requested</code>, <code>call.settled</code>, <code>interaction.opened</code>,
+<code>interaction.settled</code>, <code>child.opened</code>, <code>turn.paused</code>, <code>turn.settled</code> and
+<code>session.ended</code>. Owners live in <code>Scope</code>. The library preserves these facts rather
+than rewriting them into old <code>message.completed</code> or <code>subagent.called</code> events.</p>
+<p>An accepted message or answer carries a delivery ID. <code>GetOutcomeAsync</code> selects
+that delivery's turn, reply and result, and can report <code>Cancelled</code>. An
+<code>awaiting-input</code> outcome ends even for callback-backed sign-ins; complete the
+callback and follow the session independently when more work is expected.</p>
+<p>After consuming a v27 stream, <code>RespondAsync</code> translates existing
+<code>EveInputResponse</code> values to <code>answers[].interactionId</code>. For a freshly attached
+handle whose protocol is unknown, use <code>AnswerAsync</code> with <code>EveInteractionAnswer</code>,
+or restore complete persisted state. Do not send both old and new field names.
+The obsolete <code>CancelOwnedTasks</code> option is rejected when the handle is known v27.</p>
+<p>Cancel, clear, compact and reset return asynchronous admission receipts.
+Use their <code>DeliveryId</code> with <code>GetDeliveryOutcomeAsync</code> and inspect the durable
+outcome before assuming the operation applied. <code>EveResetStatus.Accepted</code> does
+not claim the session has already retired; the handle remains pinned to it.</p>
+<p>For children, pass the received <code>child.opened</code> event to <code>StreamSubagentAsync</code>.
+Its committed source position establishes the root-authorized descendant read.
+<code>StreamDescendantAsync</code> follows a chain of at most eight recorded hops without
+contacting event-supplied URLs or advancing the parent's cursor.</p>
+<p>Agent-info stays at schema 5 but no longer requires resolver <code>eventNames</code> or
+memory <code>visibility</code>. This client accepts both historical and current v5 shapes;
+older schema versions and malformed supplied values remain validated.</p>
+<p>Review server-side history retention independently of transport compatibility.
+Eve 0.84 derives Workflow retention from resolved trace policy unless explicitly
+configured: a policy that does not retain both inputs and outputs can select
+zero retention. Completed child or retired-session history can therefore return
+permanent HTTP 410 <code>session_expired</code>. Choose a retention policy consistent with
+the application's data policy when post-completion history is required; the SDK
+does not retry or resurrect deleted history. The synthetic compatibility fixture
+explicitly uses the World's default retention to exercise completed child reads.</p>
+<h2 id="historical-move-from-eve-0710-to-0791">Historical move from Eve 0.71.0 to 0.79.1<a class="headerlink" href="#historical-move-from-eve-0710-to-0791" title="Permanent link">&para;</a></h2>
 <p>Alpha.16 preserves the first input descriptor for each case-sensitive request ID.
 Repeated requests no longer replace its prompt/options/action or reopen a settled
 identity within an observed response. <code>InputRequests</code> still records every occurrence;

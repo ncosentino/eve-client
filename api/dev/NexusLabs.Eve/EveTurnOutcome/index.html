@@ -427,6 +427,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../../" class="md-tabs__link">
           
   
@@ -807,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -820,6 +840,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -942,10 +1058,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -963,8 +1079,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1074,68 +1190,116 @@
 </code></pre></div>
 <h4 id="property-value">Property Value<a class="headerlink" href="#property-value" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.DeliveryOutcome'></a></p>
+<h2 id="eveturnoutcomedeliveryoutcome-property">EveTurnOutcome.DeliveryOutcome Property<a class="headerlink" href="#eveturnoutcomedeliveryoutcome-property" title="Permanent link">&para;</a></h2>
+<p>Gets the version-27 delivery outcome exactly as received, or null for a legacy response.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">DeliveryOutcome</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.DeliverySettlement'></a></p>
+<h2 id="eveturnoutcomedeliverysettlement-property">EveTurnOutcome.DeliverySettlement Property<a class="headerlink" href="#eveturnoutcomedeliverysettlement-property" title="Permanent link">&para;</a></h2>
+<p>Gets the matching version-27 delivery settlement, including unknown raw fields.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="o">&gt;</span><span class="w"> </span><span class="n">DeliverySettlement</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.Events'></a></p>
 <h2 id="eveturnoutcomeevents-property">EveTurnOutcome.Events Property<a class="headerlink" href="#eveturnoutcomeevents-property" title="Permanent link">&para;</a></h2>
 <p>Gets all events consumed for the turn.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Events</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Events</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_1">Property Value<a class="headerlink" href="#property-value_1" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.Failure'></a></p>
+<h2 id="eveturnoutcomefailure-property">EveTurnOutcome.Failure Property<a class="headerlink" href="#eveturnoutcomefailure-property" title="Permanent link">&para;</a></h2>
+<p>Gets the correlated failure payload, including a synthesized delivery failure when required.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Failure</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.InputRequests'></a></p>
 <h2 id="eveturnoutcomeinputrequests-property">EveTurnOutcome.InputRequests Property<a class="headerlink" href="#eveturnoutcomeinputrequests-property" title="Permanent link">&para;</a></h2>
 <p>Gets all human-input requests emitted during the turn.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">InputRequests</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputRequest/" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<p><a name='NexusLabs.Eve.EveTurnOutcome.InputResolutions'></a></p>
-<h2 id="eveturnoutcomeinputresolutions-property">EveTurnOutcome.InputResolutions Property<a class="headerlink" href="#eveturnoutcomeinputresolutions-property" title="Permanent link">&para;</a></h2>
-<p>Gets all authoritative human-input resolutions emitted while this response was consumed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputResolution</span><span class="o">&gt;</span><span class="w"> </span><span class="n">InputResolutions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputResolution/" title="NexusLabs.Eve.EveInputResolution">EveInputResolution</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
-<p><a name='NexusLabs.Eve.EveTurnOutcome.Message'></a></p>
-<h2 id="eveturnoutcomemessage-property">EveTurnOutcome.Message Property<a class="headerlink" href="#eveturnoutcomemessage-property" title="Permanent link">&para;</a></h2>
-<p>Gets the final completed assistant message text.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Message</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
-<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
-<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
-<p>The latest completed answer is retained across task and input waits. Messages completed
-with the <code>tool-calls</code> finish reason do not replace it.</p>
-<p><a name='NexusLabs.Eve.EveTurnOutcome.PendingInputRequests'></a></p>
-<h2 id="eveturnoutcomependinginputrequests-property">EveTurnOutcome.PendingInputRequests Property<a class="headerlink" href="#eveturnoutcomependinginputrequests-property" title="Permanent link">&para;</a></h2>
-<p>Gets requests observed in this response that remain unresolved at its boundary.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PendingInputRequests</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">InputRequests</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputRequest/" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
+<p>Version 27 projects the first question, approval, or budget descriptor per interaction ID.
+Use <a href="./#NexusLabs.Eve.EveTurnOutcome.Interactions" title="NexusLabs.Eve.EveTurnOutcome.Interactions">Interactions</a> for sign-ins, unknown kinds, and complete raw descriptors.</p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.InputResolutions'></a></p>
+<h2 id="eveturnoutcomeinputresolutions-property">EveTurnOutcome.InputResolutions Property<a class="headerlink" href="#eveturnoutcomeinputresolutions-property" title="Permanent link">&para;</a></h2>
+<p>Gets all authoritative human-input resolutions emitted while this response was consumed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputResolution</span><span class="o">&gt;</span><span class="w"> </span><span class="n">InputResolutions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputResolution/" title="NexusLabs.Eve.EveInputResolution">EveInputResolution</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.InteractionResolutions'></a></p>
+<h2 id="eveturnoutcomeinteractionresolutions-property">EveTurnOutcome.InteractionResolutions Property<a class="headerlink" href="#eveturnoutcomeinteractionresolutions-property" title="Permanent link">&para;</a></h2>
+<p>Gets version-27 interaction settlements without inventing legacy batch coordinates.
+Version-27 resolutions do not populate <a href="./#NexusLabs.Eve.EveTurnOutcome.InputResolutions" title="NexusLabs.Eve.EveTurnOutcome.InputResolutions">InputResolutions</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInteractionResolution</span><span class="o">&gt;</span><span class="w"> </span><span class="n">InteractionResolutions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_7">Property Value<a class="headerlink" href="#property-value_7" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInteractionResolution/" title="NexusLabs.Eve.EveInteractionResolution">EveInteractionResolution</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.Interactions'></a></p>
+<h2 id="eveturnoutcomeinteractions-property">EveTurnOutcome.Interactions Property<a class="headerlink" href="#eveturnoutcomeinteractions-property" title="Permanent link">&para;</a></h2>
+<p>Gets first-observed version-27 interaction descriptors, including sign-ins and unknown kinds.
+Legacy streams leave this collection empty.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInteraction</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Interactions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_8">Property Value<a class="headerlink" href="#property-value_8" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInteraction/" title="NexusLabs.Eve.EveInteraction">EveInteraction</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.Message'></a></p>
+<h2 id="eveturnoutcomemessage-property">EveTurnOutcome.Message Property<a class="headerlink" href="#eveturnoutcomemessage-property" title="Permanent link">&para;</a></h2>
+<p>Gets the final completed assistant message text.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Message</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_9">Property Value<a class="headerlink" href="#property-value_9" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
+<p>The latest completed answer is retained across task and input waits. Messages completed
+with the <code>tool-calls</code> finish reason do not replace it.
+Version 27 instead joins text parts named by the matched turn's reply, excluding narration.</p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.PendingInputRequests'></a></p>
+<h2 id="eveturnoutcomependinginputrequests-property">EveTurnOutcome.PendingInputRequests Property<a class="headerlink" href="#eveturnoutcomependinginputrequests-property" title="Permanent link">&para;</a></h2>
+<p>Gets requests observed in this response that remain unresolved at its boundary.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInputRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PendingInputRequests</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_10">Property Value<a class="headerlink" href="#property-value_10" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInputRequest/" title="NexusLabs.Eve.EveInputRequest">EveInputRequest</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
+<h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
 <p>Authoritative <code>input.resolved</code> and <code>approval.settled</code> events remove matching
 requests. The first descriptor for each case-sensitive request identity remains
 authoritative, and repeated requests do not reopen settled identities within this
 response. <a href="./#NexusLabs.Eve.EveTurnOutcome.InputRequests" title="NexusLabs.Eve.EveTurnOutcome.InputRequests">InputRequests</a> retains the complete observed request history.</p>
+<p><a name='NexusLabs.Eve.EveTurnOutcome.PendingInteractions'></a></p>
+<h2 id="eveturnoutcomependinginteractions-property">EveTurnOutcome.PendingInteractions Property<a class="headerlink" href="#eveturnoutcomependinginteractions-property" title="Permanent link">&para;</a></h2>
+<p>Gets version-27 interactions without an observed settlement.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Collections</span><span class="p">.</span><span class="n">Generic</span><span class="p">.</span><span class="n">IReadOnlyList</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveInteraction</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PendingInteractions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_11">Property Value<a class="headerlink" href="#property-value_11" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">System.Collections.Generic.IReadOnlyList&lt;</a><a href="../EveInteraction/" title="NexusLabs.Eve.EveInteraction">EveInteraction</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1" title="System.Collections.Generic.IReadOnlyList`1">&gt;</a></p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.SessionId'></a></p>
 <h2 id="eveturnoutcomesessionid-property">EveTurnOutcome.SessionId Property<a class="headerlink" href="#eveturnoutcomesessionid-property" title="Permanent link">&para;</a></h2>
 <p>Gets the runtime-owned session identifier.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">SessionId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">SessionId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_12">Property Value<a class="headerlink" href="#property-value_12" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.Status'></a></p>
 <h2 id="eveturnoutcomestatus-property">EveTurnOutcome.Status Property<a class="headerlink" href="#eveturnoutcomestatus-property" title="Permanent link">&para;</a></h2>
 <p>Gets how the turn ended.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveTurnStatus</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">public</span><span class="w"> </span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveTurnStatus</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_7">Property Value<a class="headerlink" href="#property-value_7" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_13">Property Value<a class="headerlink" href="#property-value_13" title="Permanent link">&para;</a></h4>
 <p><a href="../EveTurnStatus/" title="NexusLabs.Eve.EveTurnStatus">EveTurnStatus</a></p>
 <h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.DeserializeData_TData_(System.Text.Json.Serialization.Metadata.JsonTypeInfo_TData_)'></a></p>
 <h2 id="eveturnoutcomedeserializedatatdatajsontypeinfotdata-method">EveTurnOutcome.DeserializeData\&lt;TData&gt;(JsonTypeInfo\&lt;TData&gt;) Method<a class="headerlink" href="#eveturnoutcomedeserializedatatdatajsontypeinfotdata-method" title="Permanent link">&para;</a></h2>
 <p>Deserializes <a href="./#NexusLabs.Eve.EveTurnOutcome.Data" title="NexusLabs.Eve.EveTurnOutcome.Data">Data</a> with caller-provided source-generated metadata.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">public</span><span class="w"> </span><span class="n">TData</span><span class="o">?</span><span class="w"> </span><span class="n">DeserializeData</span><span class="o">&lt;</span><span class="n">TData</span><span class="o">&gt;</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">Serialization</span><span class="p">.</span><span class="n">Metadata</span><span class="p">.</span><span class="n">JsonTypeInfo</span><span class="o">&lt;</span><span class="n">TData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">jsonTypeInfo</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">public</span><span class="w"> </span><span class="n">TData</span><span class="o">?</span><span class="w"> </span><span class="n">DeserializeData</span><span class="o">&lt;</span><span class="n">TData</span><span class="o">&gt;</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">Serialization</span><span class="p">.</span><span class="n">Metadata</span><span class="p">.</span><span class="n">JsonTypeInfo</span><span class="o">&lt;</span><span class="n">TData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">jsonTypeInfo</span><span class="p">);</span>
 </code></pre></div>
 <h4 id="type-parameters">Type parameters<a class="headerlink" href="#type-parameters" title="Permanent link">&para;</a></h4>
 <p><a name='NexusLabs.Eve.EveTurnOutcome.DeserializeData_TData_(System.Text.Json.Serialization.Metadata.JsonTypeInfo_TData_).TData'></a></p>

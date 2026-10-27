@@ -433,6 +433,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../api/" class="md-tabs__link">
           
   
@@ -686,10 +706,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#preliminary-tool-output" class="md-nav__link">
+  <a href="#version-27-delivery-outcomes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Preliminary tool output
+        Version-27 delivery outcomes
       
     </span>
   </a>
@@ -697,10 +717,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#streamed-tool-input" class="md-nav__link">
+  <a href="#legacy-preliminary-tool-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streamed tool input
+        Legacy preliminary tool output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-streamed-tool-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy streamed tool input
       
     </span>
   </a>
@@ -1003,7 +1034,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -1016,6 +1047,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1138,10 +1265,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -1159,8 +1286,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1255,19 +1382,69 @@
 
 <h1 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h1>
 <p>Iterate an <code>EveMessageResponse</code> to process events as they arrive:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">MessageAppended</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="n">delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"messageDelta"</span><span class="p">).</span><span class="n">GetString</span><span class="p">()</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">delta</span><span class="p">);</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">partKinds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="n">StringComparer</span><span class="p">.</span><span class="n">Ordinal</span><span class="p">);</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">await</span><span class="w"> </span><span class="nf">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">EveStreamEvent</span><span class="w"> </span><span class="n">streamEvent</span><span class="w"> </span><span class="k">in</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">response</span><span class="p">.</span><span class="n">WithCancellation</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">))</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">ContentDelta</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="n">partId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"partId"</span><span class="p">).</span><span class="n">GetString</span><span class="p">()</span><span class="o">!</span><span class="p">;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">TryGetProperty</span><span class="p">(</span><span class="s">"kind"</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">JsonElement</span><span class="w"> </span><span class="n">kind</span><span class="p">))</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">            </span><span class="n">partKinds</span><span class="p">[</span><span class="n">partId</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kind</span><span class="p">.</span><span class="n">GetString</span><span class="p">()</span><span class="o">!</span><span class="p">;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">partKinds</span><span class="p">.</span><span class="n">TryGetValue</span><span class="p">(</span><span class="n">partId</span><span class="p">,</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">partKind</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">partKind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"text"</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">            </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"delta"</span><span class="p">).</span><span class="n">GetString</span><span class="p">());</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="p">(</span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EveStreamEventKind</span><span class="p">.</span><span class="n">MessageAppended</span><span class="p">)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="n">delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">streamEvent</span><span class="p">.</span><span class="n">Data</span><span class="p">.</span><span class="n">GetProperty</span><span class="p">(</span><span class="s">"messageDelta"</span><span class="p">).</span><span class="n">GetString</span><span class="p">()</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">        </span><span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">delta</span><span class="p">);</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="p">}</span>
 </code></pre></div>
 <p>Known event names map to <code>EveStreamEventKind</code>. The original wire-level <code>Type</code>
-and <code>Data</code> remain available for forward compatibility.</p>
-<h2 id="preliminary-tool-output">Preliminary tool output<a class="headerlink" href="#preliminary-tool-output" title="Permanent link">&para;</a></h2>
+and <code>Data</code> remain available for forward compatibility. Version 27 also exposes
+owner <code>Scope</code>, source-line/fact <code>Metadata.Position</code>, and <code>Metadata.EndOfLine</code>.
+Its cursor counts source lines, not materialized events. Preserve the complete
+<code>session.State</code>, including partial-line <code>StreamEventIndex</code> and <code>StreamVersion</code>.
+Transport heartbeat, position, lease and end records never become public events.
+An independent child read can resume within a commit using
+<code>EveStreamOptions.StartIndex</code> and <code>StartEventIndex</code>.</p>
+<h2 id="version-27-delivery-outcomes">Version-27 delivery outcomes<a class="headerlink" href="#version-27-delivery-outcomes" title="Permanent link">&para;</a></h2>
+<p>Version-27 managed responses require the accepted delivery ID. They read the
+commit admitting that delivery through its matching <code>delivery.settled</code>, or
+<code>session.ended</code>, and drain the complete boundary commit when
+<code>Metadata.EndOfLine</code> is false. Unrelated delivery settlements do not end a response.
+The response remains single-use; legacy versions retain their existing behavior.
+If the session ends without settling the accepted delivery, event enumeration
+ends but <code>GetOutcomeAsync</code> throws <code>EveProtocolException</code> rather than inventing a
+successful delivery outcome.</p>
+<p><code>GetOutcomeAsync</code> maps <code>awaiting-input</code> to <code>Waiting</code>, <code>applied</code> and <code>ignored</code> to
+<code>Completed</code>, and <code>refused</code> and <code>failed</code> to <code>Failed</code>. A <code>handled</code> delivery uses its
+matched turn's completed, failed, or <code>Cancelled</code> outcome. <code>DeliveryOutcome</code> and
+<code>DeliverySettlement</code> retain the delivery's own result independently.</p>
+<p>Only text part IDs listed by the matched <code>turn.settled.reply</code> contribute to
+<code>Message</code>, joined by newlines. Narration is not an answer. <code>Data</code> is the matched
+turn's latest completed result, overridden by a result part named in its reply.
+Non-conversational delivery outcomes expose neither reply nor structured result.
+Unknown facts, content kinds, and raw fields remain available in <code>Events</code>.</p>
+<p><code>Interactions</code> retains the first descriptor per case-sensitive interaction ID.
+<code>PendingInteractions</code> removes settled identities without reopening duplicates.
+<code>InteractionResolutions</code> preserves raw settlements; v27 never fabricates the
+legacy sequence or step-index fields of <code>EveInputResolution</code>. Common question,
+approval, and budget descriptors also populate <code>InputRequests</code> and
+<code>PendingInputRequests</code>; their <code>Action</code> retains the raw interaction descriptor,
+not a fabricated legacy tool action. Sign-ins, including
+<code>request.signIn.callbackUrl</code>, remain
+available through <code>EveInteraction.Request</code> and <code>CallbackUrl</code>.</p>
+<p>A callback-backed v27 sign-in does <strong>not</strong> keep the delivery response open:
+<code>awaiting-input</code> returns immediately after draining its commit. Its identified
+held turn remains cancellable. The callback-follow behavior below applies only
+to legacy protocols.</p>
+<h2 id="legacy-preliminary-tool-output">Legacy preliminary tool output<a class="headerlink" href="#legacy-preliminary-tool-output" title="Permanent link">&para;</a></h2>
 <p>A tool implemented as an async generator streams provisional snapshots. Each
 non-terminal snapshot arrives as <code>action.partial</code>
 (<code>EveStreamEventKind.ActionPartial</code>); the final one arrives as <code>action.result</code>
@@ -1288,7 +1465,7 @@ and is the only value exposed to the model.</p>
 </code></pre></div>
 <p>Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.</p>
-<h2 id="streamed-tool-input">Streamed tool input<a class="headerlink" href="#streamed-tool-input" title="Permanent link">&para;</a></h2>
+<h2 id="legacy-streamed-tool-input">Legacy streamed tool input<a class="headerlink" href="#legacy-streamed-tool-input" title="Permanent link">&para;</a></h2>
 <p>Eve <code>0.46.1</code> introduced <code>action.input.appended</code>
 (<code>EveStreamEventKind.ActionInputAppended</code>) while the model generates one tool
 call's input. Starting in protocol v25 (Eve <code>0.50.0</code>), text append events are
@@ -1419,7 +1596,9 @@ stream can drop events it already processed:</p>
 past its capacity. Callers that retain nothing per event should bound their reads
 with the session cursor instead.</p>
 <h2 id="reconnection">Reconnection<a class="headerlink" href="#reconnection" title="Permanent link">&para;</a></h2>
-<p>The default policy follows a durable stream from the next absolute event index.
+<p>The default policy follows a durable stream from the next absolute source position.
+Legacy positions count events; version-27 positions count source lines and retain
+the consumed record offset within a partial commit.
 <code>SendAsync</code> and <code>RespondAsync</code> responses keep reconnecting until the current turn
 reaches a session boundary or the caller cancels consumption. Manually attached
 <code>StreamAsync</code> reads retain a finite idle reconnect budget.</p>

@@ -427,6 +427,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../../" class="md-tabs__link">
           
   
@@ -807,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -820,6 +840,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -942,10 +1058,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -963,8 +1079,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1085,24 +1201,47 @@
 <h3 id="remarks">Remarks<a class="headerlink" href="#remarks" title="Permanent link">&para;</a></h3>
 <p>The order and duplicates are preserved exactly as received. A turn may contain more than
 one identifier when the server coalesces multiple accepted messages into one delivery.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventMetadata.EndOfLine'></a></p>
+<h2 id="evestreameventmetadataendofline-property">EveStreamEventMetadata.EndOfLine Property<a class="headerlink" href="#evestreameventmetadataendofline-property" title="Permanent link">&para;</a></h2>
+<p>Gets whether this record completes its source line, or null for legacy events.
+A response boundary does not stop consumption in the middle of a commit.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">EndOfLine</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.boolean" title="System.Boolean">System.Boolean</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
 <p><a name='NexusLabs.Eve.EveStreamEventMetadata.Id'></a></p>
 <h2 id="evestreameventmetadataid-property">EveStreamEventMetadata.Id Property<a class="headerlink" href="#evestreameventmetadataid-property" title="Permanent link">&para;</a></h2>
 <p>Gets the durable event identifier, or <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a> when the server did not stamp one.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Id</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Id</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_2">Property Value<a class="headerlink" href="#property-value_2" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <h3 id="remarks_1">Remarks<a class="headerlink" href="#remarks_1" title="Permanent link">&para;</a></h3>
 <p>eve stamps this identifier once, before the event is persisted, so rewinding, reconnecting,
 or replaying a finished session yields the same value. A retried step is not a replay: it is
 emitted again under a new identifier. Events persisted before stream protocol version 20
 carry no identifier and therefore report <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null" title="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null">null</a>; they cannot be deduplicated.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventMetadata.Next'></a></p>
+<h2 id="evestreameventmetadatanext-property">EveStreamEventMetadata.Next Property<a class="headerlink" href="#evestreameventmetadatanext-property" title="Permanent link">&para;</a></h2>
+<p>Gets optional exclusive source coverage reported by the reader.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Next</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_4">Property Value<a class="headerlink" href="#property-value_4" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.int32" title="System.Int32">System.Int32</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
+<p><a name='NexusLabs.Eve.EveStreamEventMetadata.Position'></a></p>
+<h2 id="evestreameventmetadataposition-property">EveStreamEventMetadata.Position Property<a class="headerlink" href="#evestreameventmetadataposition-property" title="Permanent link">&para;</a></h2>
+<p>Gets the version-27 source-line and fact position, or null for legacy events.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Nullable</span><span class="o">&lt;</span><span class="n">NexusLabs</span><span class="p">.</span><span class="n">Eve</span><span class="p">.</span><span class="n">EveStreamPosition</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Position</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="property-value_5">Property Value<a class="headerlink" href="#property-value_5" title="Permanent link">&para;</a></h4>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">System.Nullable&lt;</a><a href="../EveStreamPosition/" title="NexusLabs.Eve.EveStreamPosition">EveStreamPosition</a><a href="https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1" title="System.Nullable`1">&gt;</a></p>
 <p><a name='NexusLabs.Eve.EveStreamEventMetadata.Raw'></a></p>
 <h2 id="evestreameventmetadataraw-property">EveStreamEventMetadata.Raw Property<a class="headerlink" href="#evestreameventmetadataraw-property" title="Permanent link">&para;</a></h2>
-<p>Gets the complete server-provided metadata object.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="w"> </span><span class="n">Raw</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<p>Gets the complete metadata object. Version 27 includes materialized reader coordinates
+rather than legacy server-stamped event IDs and delivery-ID lists.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">public</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Json</span><span class="p">.</span><span class="n">JsonElement</span><span class="w"> </span><span class="n">Raw</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="property-value_3">Property Value<a class="headerlink" href="#property-value_3" title="Permanent link">&para;</a></h4>
+<h4 id="property-value_6">Property Value<a class="headerlink" href="#property-value_6" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonelement" title="System.Text.Json.JsonElement">System.Text.Json.JsonElement</a></p>
 
 

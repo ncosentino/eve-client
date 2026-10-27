@@ -433,6 +433,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../api/" class="md-tabs__link">
           
   
@@ -797,6 +817,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Protocol failures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent-inspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent inspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -926,7 +963,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -939,6 +976,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1061,10 +1194,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -1082,8 +1215,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1224,6 +1357,18 @@ recorded history on a server supporting stranded-session recovery.</p>
 <h2 id="protocol-failures">Protocol failures<a class="headerlink" href="#protocol-failures" title="Permanent link">&para;</a></h2>
 <p>Successful responses that do not satisfy the expected eve contract throw
 <code>EveProtocolException</code>.</p>
+<h3 id="agent-inspection">Agent inspection<a class="headerlink" href="#agent-inspection" title="Permanent link">&para;</a></h3>
+<p>Eve <code>0.84.0</code> retains agent-info schema version <code>5</code> but omits dynamic resolver
+<code>eventNames</code> and memory <code>visibility</code>. <code>GetInfoAsync</code> accepts both these current
+shapes and historical v5 payloads. Supplied historical <code>eventNames</code> must still be
+an array of strings, and supplied <code>visibility</code> must be <code>scope</code> or <code>session</code>.
+Hooks still require <code>eventNames</code>; schema versions <code>3</code> and <code>4</code> retain their
+original required fields. Source bindings, unique identities, and enclosing
+object shapes remain strictly validated.</p>
+<p><code>EveAgentInfo.Raw</code> preserves the complete accepted payload, including historical
+fields and uninterpreted values in extensible metadata such as output schemas
+and kernel-effect options. Unknown object properties outside those extensible
+values remain protocol errors.</p>
 <h2 id="version-mismatch">Version mismatch<a class="headerlink" href="#version-mismatch" title="Permanent link">&para;</a></h2>
 <p>A client and agent on opposite sides of the eve <code>0.31.0</code> cutover accept the first
 turn and fail the second, because the first turn carries no continuation token in
