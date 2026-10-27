@@ -28,7 +28,7 @@ public sealed class EveV27OutcomeTests
             Fact("delivery.settled", EveStreamEventKind.DeliverySettled,
                 $$"""{"deliveryId":"d","turnId":"t","outcome":"{{deliveryOutcome}}"}"""),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Status).IsEqualTo(expectedStatus);
@@ -68,7 +68,7 @@ public sealed class EveV27OutcomeTests
                 """{"future":{"retained":true}}"""),
             Fact("future.after", EveStreamEventKind.Unknown, "{}"),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Events.Count).IsEqualTo(11);
@@ -103,7 +103,7 @@ public sealed class EveV27OutcomeTests
             Fact("delivery.settled", EveStreamEventKind.DeliverySettled,
                 """{"deliveryId":"d","turnId":"t","outcome":"handled"}"""),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Status).IsEqualTo(expectedStatus);
@@ -135,7 +135,7 @@ public sealed class EveV27OutcomeTests
             Fact("interaction.settled", EveStreamEventKind.InteractionSettled,
                 """{"interactionId":"auth","outcome":"accepted"}"""),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Waiting);
@@ -176,7 +176,7 @@ public sealed class EveV27OutcomeTests
                 """{"deliveryId":"d","turnId":"right","outcome":"awaiting-input"}"""),
         ];
         EveMessageResponse response = new(
-            "session", "d", true, false, token => Stream(facts, token),
+            "session", "d", true, false, token => StreamAsync(facts, token),
             (turnId, token) =>
             {
                 token.ThrowIfCancellationRequested();
@@ -218,7 +218,7 @@ public sealed class EveV27OutcomeTests
             Fact("delivery.settled", EveStreamEventKind.DeliverySettled,
                 """{"deliveryId":"d","turnId":"t","outcome":"handled"}""", line: 3),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Events.Count).IsEqualTo(4);
@@ -246,7 +246,7 @@ public sealed class EveV27OutcomeTests
                 """{"deliveryId":"d","turnId":"held","outcome":"awaiting-input"}"""),
         ];
         EveMessageResponse response = new(
-            "session", "d", true, false, token => Stream(facts, token),
+            "session", "d", true, false, token => StreamAsync(facts, token),
             (turnId, token) =>
             {
                 token.ThrowIfCancellationRequested();
@@ -279,7 +279,7 @@ public sealed class EveV27OutcomeTests
             Fact("future.final", EveStreamEventKind.Unknown, "{}"),
             Fact("future.after", EveStreamEventKind.Unknown, "{}"),
         ];
-        EveTurnOutcome outcome = await Response(facts, cancellationToken)
+        EveTurnOutcome outcome = await ResponseAsync(facts, cancellationToken)
             .GetOutcomeAsync(cancellationToken);
 
         await Assert.That(outcome.Status).IsEqualTo(EveTurnStatus.Failed);
@@ -297,7 +297,7 @@ public sealed class EveV27OutcomeTests
             Fact("delivery.admitted", EveStreamEventKind.DeliveryAdmitted,
                 """{"deliveryId":"other"}"""),
         ];
-        EveMessageResponse response = Response(facts, cancellationToken);
+        EveMessageResponse response = ResponseAsync(facts, cancellationToken);
 
         await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
             .Throws<EveProtocolException>();
@@ -314,16 +314,16 @@ public sealed class EveV27OutcomeTests
             Fact("session.ended", EveStreamEventKind.SessionEnded,
                 """{"outcome":"completed"}"""),
         ];
-        EveMessageResponse response = Response(facts, cancellationToken);
+        EveMessageResponse response = ResponseAsync(facts, cancellationToken);
 
         await Assert.That(async () => await response.GetOutcomeAsync(cancellationToken))
             .Throws<EveProtocolException>();
     }
 
-    private static EveMessageResponse Response(
+    private static EveMessageResponse ResponseAsync(
         IReadOnlyList<EveStreamEvent> facts,
         CancellationToken cancellationToken) => new(
-            "session", "d", true, false, token => Stream(facts, token),
+            "session", "d", true, false, token => StreamAsync(facts, token),
             static (_, token) =>
             {
                 token.ThrowIfCancellationRequested();
@@ -349,7 +349,7 @@ public sealed class EveV27OutcomeTests
                 new EveStreamPosition(line, 0), endOfLine), scope, 27);
     }
 
-    private static async IAsyncEnumerable<EveStreamEvent> Stream(
+    private static async IAsyncEnumerable<EveStreamEvent> StreamAsync(
         IReadOnlyList<EveStreamEvent> facts,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {

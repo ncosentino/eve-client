@@ -2,9 +2,9 @@
 
 namespace NexusLabs.Eve;
 
-internal sealed class EveV27LineDecoder(int startIndex)
+internal sealed class EveV27LineDecoder(int startIndex, string initialAt = "1970-01-01T00:00:00.000Z")
 {
-    private string _at = "1970-01-01T00:00:00.000Z";
+    internal string LastCommitAt { get; private set; } = initialAt;
 
     internal int NextLine { get; private set; } = startIndex;
 
@@ -42,7 +42,7 @@ internal sealed class EveV27LineDecoder(int startIndex)
                         "A version-27 commit requires a timestamp and nonempty facts array.");
                 }
 
-                _at = at.GetString()!;
+                LastCommitAt = at.GetString()!;
                 EveStreamEvent[] events = new EveStreamEvent[facts.GetArrayLength()];
                 for (int index = 0; index < events.Length; index++)
                 {
@@ -82,6 +82,7 @@ internal sealed class EveV27LineDecoder(int startIndex)
         {
             case "position":
                 if (!root.TryGetProperty("next", out JsonElement next)
+                    || next.ValueKind != JsonValueKind.Number
                     || !next.TryGetInt32(out int position) || position < 0)
                 {
                     throw new EveProtocolException("A position marker requires a nonnegative next position.");
@@ -102,7 +103,7 @@ internal sealed class EveV27LineDecoder(int startIndex)
     {
         JsonElement raw = EveJsonElementFactory.CreateObject(writer =>
         {
-            writer.WriteString("at", _at);
+            writer.WriteString("at", LastCommitAt);
             writer.WriteBoolean("endOfLine", endOfLine);
             writer.WritePropertyName("position");
             writer.WriteStartObject();
@@ -111,7 +112,7 @@ internal sealed class EveV27LineDecoder(int startIndex)
             writer.WriteEndObject();
         });
         EveStreamEventMetadata metadata = new(
-            _at, null, null, raw, new EveStreamPosition(line, index), endOfLine);
+            LastCommitAt, null, null, raw, new EveStreamPosition(line, index), endOfLine);
         return EveStreamEvent.ParseVersion27(record, metadata);
     }
 }

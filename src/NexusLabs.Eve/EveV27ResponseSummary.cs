@@ -156,8 +156,9 @@ internal static class EveV27ResponseSummary
         List<string> text = [];
         if (turn.TryGetProperty("reply", out JsonElement reply))
         {
-            foreach (JsonElement partId in reply.EnumerateArray())
+            for (int index = 0; index < reply.GetArrayLength(); index++)
             {
+                JsonElement partId = reply[index];
                 if (!parts.TryGetValue(partId.GetString()!, out JsonElement part)
                     || !part.TryGetProperty("value", out JsonElement value))
                 {
@@ -211,8 +212,9 @@ internal static class EveV27ResponseSummary
         List<EveInputOption> options = [];
         if (request.TryGetProperty("options", out JsonElement choices))
         {
-            foreach (JsonElement choice in choices.EnumerateArray())
+            for (int index = 0; index < choices.GetArrayLength(); index++)
             {
+                JsonElement choice = choices[index];
                 options.Add(new EveInputOption(
                     choice.GetProperty("id").GetString()!,
                     choice.GetProperty("label").GetString()!,

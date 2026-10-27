@@ -399,7 +399,7 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(responseBody);
             JsonElement root = document.RootElement;
-            if (TryReadControlDelivery(root, sessionId, "cancel", out string? deliveryId))
+            if (ReadControlDelivery(root, sessionId, "cancel", out string? deliveryId))
             {
                 MarkProtocolVersion(sessionId, 27);
                 return new EveCancellationOutcome(sessionId, EveCancellationStatus.Accepted)
@@ -602,7 +602,7 @@ public sealed class EveSession
             throw new ArgumentOutOfRangeException(nameof(options), "A record offset cannot be negative.");
         }
         bool follow = options?.Follow ?? true;
-        if (!follow && startIndex < 0)
+        if (!follow && startIndex < 0 && initialState.StreamVersion != 27)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(options),
@@ -666,6 +666,22 @@ public sealed class EveSession
         ArgumentNullException.ThrowIfNull(childEvent);
         string parentId = State.SessionId
             ?? throw new InvalidOperationException("The eve parent session has no session identifier.");
+        if (childEvent.Type == "child.opened" && childEvent.StreamVersion == 27)
+        {
+            if (childEvent.Metadata?.Position is not EveStreamPosition position
+                || position.Line < 0)
+            {
+                throw new ArgumentException(
+                    "A version-27 child descriptor requires its received source-line position.",
+                    nameof(childEvent));
+            }
+
+            return StreamDescendantAsync(
+                [new EveDescendant(ReadChildDescriptorString(childEvent.Data, "sessionId"), position.Line)],
+                options,
+                cancellationToken);
+        }
+
         bool legacy = childEvent.Type == "subagent.called";
         if ((!legacy && childEvent.Type != "agent.started")
             || childEvent.Data.ValueKind != JsonValueKind.Object)
@@ -721,7 +737,69 @@ public sealed class EveSession
             options?.ReconnectPolicy,
             _client.MaxStreamEventBytes,
             cancellationToken,
-            path);
+            path,
+            options?.StartEventIndex ?? 0);
+    }
+
+    /// <summary>
+    /// Reads a recorded chain of version-27 children through this root's authenticated endpoint.
+    /// No URL supplied by an event is contacted. The server verifies every recorded relationship.
+    /// </summary>
+    /// <param name="children">Between one and eight child hops, ordered from the root.</param>
+    /// <param name="options">Optional independent child cursor and following policy.</param>
+    /// <param name="cancellationToken">Stops local reading without cancelling remote work.</param>
+    /// <returns>The final child's independent stream without advancing this root.</returns>
+    /// <exception cref="ArgumentException">The chain length or a child entry is invalid.</exception>
+    /// <exception cref="InvalidOperationException">The root session has not started.</exception>
+    /// <exception cref="EveClientException">The server rejects the recorded relationship or authentication.</exception>
+    public IAsyncEnumerable<EveStreamEvent> StreamDescendantAsync(
+        IReadOnlyList<EveDescendant> children,
+        EveStreamOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(children);
+        if (children.Count is < 1 or > 8)
+        {
+            throw new ArgumentException("A descendant chain must contain between one and eight hops.", nameof(children));
+        }
+
+        string parentId = State.SessionId
+            ?? throw new InvalidOperationException("The root session has not started.");
+        EveDescendant[] hops = children.ToArray();
+        foreach (EveDescendant hop in hops)
+        {
+            ArgumentNullException.ThrowIfNull(hop);
+        }
+
+        JsonElement encoded = EveJsonElementFactory.CreateObject(writer =>
+        {
+            writer.WritePropertyName("children");
+            writer.WriteStartArray();
+            foreach (EveDescendant hop in hops)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("sessionId", hop.SessionId);
+                writer.WriteNumber("position", hop.Position);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        });
+        string route = EveRoutes.StreamDescendants(parentId)
+            + "?children=" + Uri.EscapeDataString(encoded.GetProperty("children").GetRawText());
+        return EveStreamFollower.FollowAsync(
+            _client,
+            hops[^1].SessionId,
+            options?.StartIndex ?? 0,
+            options?.Follow ?? true,
+            EveStreamFollowMode.SessionStream,
+            null,
+            null,
+            options?.ReconnectPolicy,
+            _client.MaxStreamEventBytes,
+            cancellationToken,
+            route,
+            options?.StartEventIndex ?? 0);
     }
 
     private static string ReadChildDescriptorString(JsonElement data, string name)
@@ -1039,7 +1117,7 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
-            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
             {
                 return new EveClearOutcome(EveClearStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
             }
@@ -1074,7 +1152,7 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
-            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
             {
                 return new EveResetOutcome(EveResetStatus.Accepted, null)
                 {
@@ -1118,7 +1196,7 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
-            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
             {
                 return new EveCompactOutcome(EveCompactStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
             }
@@ -1159,41 +1237,41 @@ public sealed class EveSession
                 $"The eve {routeLabel} route returned an invalid response.");
         }
 
-        private static bool TryReadControlDelivery(
-            JsonElement root,
-            string? currentSessionId,
-            string route,
-            out string? deliveryId)
-        {
-            deliveryId = null;
-            if (root.ValueKind != JsonValueKind.Object || root.TryGetProperty("status", out _))
-            {
-                return false;
-            }
-
-            if (!root.TryGetProperty("ok", out JsonElement ok) || ok.ValueKind != JsonValueKind.True)
-            {
-                throw new EveProtocolException($"The eve {route} route returned an invalid receipt.");
-            }
-
-            string sessionId = ReadRequiredSessionId(root, "sessionId", route);
-            EnsureSessionIdMatches(sessionId, currentSessionId, route);
-            deliveryId = ReadRequiredSessionId(root, "deliveryId", route);
-            return true;
-        }
-
-        private void MarkProtocolVersion(string sessionId, int version)
-        {
-            lock (_stateGate)
-            {
-                if (_state.SessionId == sessionId)
-                {
-                    _state = _state with { StreamVersion = version };
-                }
-            }
-        }
-
         return status;
+    }
+
+    private static bool ReadControlDelivery(
+        JsonElement root,
+        string? currentSessionId,
+        string route,
+        out string? deliveryId)
+    {
+        deliveryId = null;
+        if (root.ValueKind != JsonValueKind.Object || root.TryGetProperty("status", out _))
+        {
+            return false;
+        }
+
+        if (!root.TryGetProperty("ok", out JsonElement ok) || ok.ValueKind != JsonValueKind.True)
+        {
+            throw new EveProtocolException($"The eve {route} route returned an invalid receipt.");
+        }
+
+        string sessionId = ReadRequiredSessionId(root, "sessionId", route);
+        EnsureSessionIdMatches(sessionId, currentSessionId, route);
+        deliveryId = ReadRequiredSessionId(root, "deliveryId", route);
+        return true;
+    }
+
+    private void MarkProtocolVersion(string sessionId, int version)
+    {
+        lock (_stateGate)
+        {
+            if (_state.SessionId == sessionId)
+            {
+                _state = _state with { StreamVersion = version };
+            }
+        }
     }
 
     private static string ReadRequiredSessionId(

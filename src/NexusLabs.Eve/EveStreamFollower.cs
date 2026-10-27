@@ -39,6 +39,7 @@ internal static class EveStreamFollower
         int initialEventIndex = 0,
         Action<int>? onSourcePosition = null)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialEventIndex);
         ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy, mode);
         int startIndex = initialStartIndex;
         int eventIndex = initialEventIndex;
@@ -46,11 +47,13 @@ internal static class EveStreamFollower
         int idleReconnects = 0;
         bool initialConnection = true;
         int? tailIndex = null;
+        string progressAt = "1970-01-01T00:00:00.000Z";
 
         while (true)
         {
             bool deliveredEvent = false;
             ConnectionReadState readState = new();
+            readState.LastCommitAt = progressAt;
             bool streamControlEnabled =
                 startIndex >= 0 && policy.Idle.MaxAttempts > 0;
             HttpResponseMessage? response = null;
@@ -109,6 +112,7 @@ internal static class EveStreamFollower
                         streamControlEnabled,
                         startIndex,
                         onSourcePosition,
+                        follow ? null : tailIndex,
                         connectionAbortSource.Token)
                     .GetAsyncEnumerator(connectionAbortSource.Token);
                 bool sessionEnded = false;
@@ -133,6 +137,11 @@ internal static class EveStreamFollower
                     EveStreamEvent streamEvent = connection.Current;
                     if (streamEvent.Metadata?.Position is EveStreamPosition position)
                     {
+                        if (!follow && tailIndex is int sourceBound && position.Line > sourceBound)
+                        {
+                            yield break;
+                        }
+
                         if (position.Line == startIndex && position.Index < eventIndex)
                         {
                             continue;
@@ -168,6 +177,7 @@ internal static class EveStreamFollower
                 if (readState.StreamVersion == 27)
                 {
                     startIndex = Math.Max(startIndex, readState.NextLineIndex);
+                    progressAt = readState.LastCommitAt;
                 }
             }
             finally
@@ -196,6 +206,7 @@ internal static class EveStreamFollower
             }
 
             if (cancellationToken.IsCancellationRequested
+                || (!follow && tailIndex is int closedBound && startIndex > closedBound)
                 || readState.StreamEnded
                 || (initialStartIndex < 0 && readState.StreamVersion != 27)
                 || policy.Idle.MaxAttempts == 0)
@@ -246,11 +257,12 @@ internal static class EveStreamFollower
         bool streamControlEnabled,
         int startIndex,
         Action<int>? onSourcePosition,
+        int? tailIndex,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         int streamVersion = ReadStreamVersion(response);
         EveStreamDecoder decoder = new(streamVersion);
-        EveV27LineDecoder? lineDecoder = streamVersion == 27 ? new(startIndex) : null;
+        EveV27LineDecoder? lineDecoder = streamVersion == 27 ? new(startIndex, readState.LastCommitAt) : null;
         readState.StreamVersion = streamVersion;
         readState.NextLineIndex = startIndex;
         if (lineDecoder is not null)
@@ -302,8 +314,13 @@ internal static class EveStreamFollower
                 }
 
                 readState.NextLineIndex = lineDecoder.NextLine;
+                readState.LastCommitAt = lineDecoder.LastCommitAt;
                 onSourcePosition?.Invoke(lineDecoder.NextLine);
                 readState.LeaseEnded = lineDecoder.LeaseEnded;
+                if (tailIndex is int bound && lineDecoder.NextLine > bound)
+                {
+                    yield break;
+                }
                 if (lineDecoder.StreamEnded)
                 {
                     readState.StreamEnded = true;
@@ -706,5 +723,7 @@ internal static class EveStreamFollower
         internal int StreamVersion { get; set; }
 
         internal int NextLineIndex { get; set; }
+
+        internal string LastCommitAt { get; set; } = "1970-01-01T00:00:00.000Z";
     }
 }
