@@ -12,12 +12,16 @@ public sealed record EveStreamEvent
         string type,
         EveStreamEventKind kind,
         JsonElement data,
-        EveStreamEventMetadata? metadata)
+        EveStreamEventMetadata? metadata,
+        JsonElement? scope = null,
+        int streamVersion = 26)
     {
         Type = type;
         Kind = kind;
         Data = data.Clone();
         Metadata = metadata;
+        Scope = scope?.Clone();
+        StreamVersion = streamVersion;
     }
 
     /// <summary>
@@ -41,6 +45,17 @@ public sealed record EveStreamEvent
     public EveStreamEventMetadata? Metadata { get; }
 
     /// <summary>
+    /// Gets version-27 owner coordinates, retaining unknown scope fields.
+    /// Legacy events carry their coordinates in <see cref="Data"/> instead.
+    /// </summary>
+    public JsonElement? Scope { get; }
+
+    /// <summary>
+    /// Gets the response protocol used to decode this event.
+    /// </summary>
+    public int StreamVersion { get; }
+
+    /// <summary>
     /// Gets whether this event is a session-level boundary for the current turn.
     /// </summary>
     /// <remarks>
@@ -50,7 +65,29 @@ public sealed record EveStreamEvent
     public bool IsCurrentTurnBoundary =>
         Kind is EveStreamEventKind.SessionWaiting
             or EveStreamEventKind.SessionFailed
-            or EveStreamEventKind.SessionCompleted;
+            or EveStreamEventKind.SessionCompleted
+            or EveStreamEventKind.TurnSettled
+            or EveStreamEventKind.SessionEnded
+        || (Kind == EveStreamEventKind.TurnPaused && HasAwaitingInteraction(Data));
+
+    private static bool HasAwaitingInteraction(JsonElement data)
+    {
+        if (!data.TryGetProperty("awaiting", out JsonElement awaiting)
+            || awaiting.ValueKind != JsonValueKind.Array)
+        {
+            throw new EveProtocolException("A turn.paused event requires an awaiting array.");
+        }
+
+        for (int index = 0; index < awaiting.GetArrayLength(); index++)
+        {
+            if (awaiting[index].TryGetProperty("interactionId", out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Gets whether this event represents an unrecovered turn or session failure.
@@ -58,7 +95,39 @@ public sealed record EveStreamEvent
     public bool IsFailure =>
         Kind is EveStreamEventKind.StepFailed
             or EveStreamEventKind.TurnFailed
-            or EveStreamEventKind.SessionFailed;
+            or EveStreamEventKind.SessionFailed
+        || (Kind is EveStreamEventKind.TurnSettled or EveStreamEventKind.SessionEnded
+            && Data.TryGetProperty("outcome", out JsonElement outcome)
+            && outcome.GetString() == "failed");
+
+    internal static EveStreamEvent ParseVersion27(
+        JsonElement record,
+        EveStreamEventMetadata metadata)
+    {
+        if (record.ValueKind != JsonValueKind.Object
+            || !record.TryGetProperty("type", out JsonElement typeValue)
+            || typeValue.ValueKind != JsonValueKind.String
+            || string.IsNullOrWhiteSpace(typeValue.GetString())
+            || !record.TryGetProperty("data", out JsonElement data)
+            || data.ValueKind != JsonValueKind.Object)
+        {
+            throw new EveProtocolException("A version-27 record requires a nonempty type and object data.");
+        }
+
+        JsonElement? scope = null;
+        if (record.TryGetProperty("scope", out JsonElement scopeValue))
+        {
+            if (scopeValue.ValueKind != JsonValueKind.Object)
+            {
+                throw new EveProtocolException("A version-27 scope must be an object.");
+            }
+
+            scope = scopeValue;
+        }
+
+        string type = typeValue.GetString()!;
+        return new EveStreamEvent(type, ResolveKind(type), data, metadata, scope, 27);
+    }
 
     /// <summary>
     /// Deserializes this event's <see cref="Data"/> with caller-provided source-generated metadata.
@@ -446,6 +515,28 @@ public sealed record EveStreamEvent
     private static EveStreamEventKind ResolveKind(string type) =>
         type switch
         {
+            "session.ended" => EveStreamEventKind.SessionEnded,
+            "turn.settled" => EveStreamEventKind.TurnSettled,
+            "turn.paused" => EveStreamEventKind.TurnPaused,
+            "delivery.admitted" => EveStreamEventKind.DeliveryAdmitted,
+            "delivery.consumed" => EveStreamEventKind.DeliveryConsumed,
+            "delivery.settled" => EveStreamEventKind.DeliverySettled,
+            "content.delta" => EveStreamEventKind.ContentDelta,
+            "content.completed" => EveStreamEventKind.ContentCompleted,
+            "interaction.opened" => EveStreamEventKind.InteractionOpened,
+            "interaction.settled" => EveStreamEventKind.InteractionSettled,
+            "child.opened" => EveStreamEventKind.ChildOpened,
+            "child.sent" => EveStreamEventKind.ChildSent,
+            "call.input" => EveStreamEventKind.CallInput,
+            "call.requested" => EveStreamEventKind.CallRequested,
+            "call.started" => EveStreamEventKind.CallStarted,
+            "call.progress" => EveStreamEventKind.CallProgress,
+            "call.settled" => EveStreamEventKind.CallSettled,
+            "response.submitted" => EveStreamEventKind.ResponseSubmitted,
+            "response.admitted" => EveStreamEventKind.ResponseAdmitted,
+            "response.settled" => EveStreamEventKind.ResponseSettled,
+            "run.started" => EveStreamEventKind.RunStarted,
+            "run.settled" => EveStreamEventKind.RunSettled,
             "session.started" => EveStreamEventKind.SessionStarted,
             "turn.started" => EveStreamEventKind.TurnStarted,
             "turn.waiting" => EveStreamEventKind.TurnWaiting,

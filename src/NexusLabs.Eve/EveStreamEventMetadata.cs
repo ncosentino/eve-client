@@ -11,12 +11,18 @@ public sealed record EveStreamEventMetadata
         string at,
         string? id,
         IReadOnlyList<string>? deliveryIds,
-        JsonElement raw)
+        JsonElement raw,
+        EveStreamPosition? position = null,
+        bool? endOfLine = null,
+        int? next = null)
     {
         At = at;
         Id = id;
         DeliveryIds = deliveryIds;
         Raw = raw.Clone();
+        Position = position;
+        EndOfLine = endOfLine;
+        Next = next;
     }
 
     /// <summary>
@@ -44,6 +50,22 @@ public sealed record EveStreamEventMetadata
     /// one identifier when the server coalesces multiple accepted messages into one delivery.
     /// </remarks>
     public IReadOnlyList<string>? DeliveryIds { get; }
+
+    /// <summary>
+    /// Gets the version-27 source-line and fact position, or null for legacy events.
+    /// </summary>
+    public EveStreamPosition? Position { get; }
+
+    /// <summary>
+    /// Gets whether this record completes its source line, or null for legacy events.
+    /// A response boundary does not stop consumption in the middle of a commit.
+    /// </summary>
+    public bool? EndOfLine { get; }
+
+    /// <summary>
+    /// Gets optional exclusive source coverage reported by the reader.
+    /// </summary>
+    public int? Next { get; }
 
     /// <summary>
     /// Gets the complete server-provided metadata object.

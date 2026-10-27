@@ -93,10 +93,10 @@ public static class EveProtocol
 
     internal static void ValidateMessageStreamVersion(int version)
     {
-        if (version is < 21 or > 26)
+        if (version is < 21 or > 27)
         {
             throw new EveProtocolException(
-                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 26.");
+                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 27.");
         }
     }
 
