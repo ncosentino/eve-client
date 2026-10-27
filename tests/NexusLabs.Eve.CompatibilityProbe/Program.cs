@@ -802,7 +802,7 @@ if (approvalResolution.Data.GetProperty("interactionId").GetString() != approval
 }
 
 int resolutionIndex = -1;
-int resumedStepIndex = -1;
+int resumedModelIndex = -1;
 for (int eventIndex = 0; eventIndex < resumedOutcome.Events.Count; eventIndex++)
 {
     switch (resumedOutcome.Events[eventIndex].Type)
@@ -810,16 +810,16 @@ for (int eventIndex = 0; eventIndex < resumedOutcome.Events.Count; eventIndex++)
         case "interaction.settled":
             resolutionIndex = eventIndex;
             break;
-        case "run.started" when resumedStepIndex < 0:
-            resumedStepIndex = eventIndex;
+        case "model.requested" when resumedModelIndex < 0:
+            resumedModelIndex = eventIndex;
             break;
     }
 }
 
-if (resolutionIndex < 0 || resumedStepIndex <= resolutionIndex)
+if (resolutionIndex < 0 || resumedModelIndex <= resolutionIndex)
 {
     throw new InvalidOperationException(
-        "The durable input resolution did not precede the resumed step.");
+        "The durable input resolution did not precede the resumed model request.");
 }
 
 EveSession cancelledApprovalSession = client.CreateSession();
