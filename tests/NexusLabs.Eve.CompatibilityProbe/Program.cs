@@ -508,11 +508,14 @@ foreach (bool prewarm in new[] { false, true })
     EveMessageResponse stubResponse = await stubSession.SendAsync("REQUEST_TOOL_STUB", timeout.Token);
     EveTurnOutcome stubOutcome = await stubResponse.GetOutcomeAsync(timeout.Token);
     RequireSuccessfulResponse(stubOutcome, probeScenario);
+    // Call identities retain the server's case-sensitive protocol equality.
+#pragma warning disable NLF0016
     HashSet<string?> stubCallIds = stubOutcome.Events
         .Where(static streamEvent => streamEvent.Type == "call.requested"
             && streamEvent.Data.GetProperty("capability").GetProperty("name").GetString() == "client_context_probe")
         .Select(static streamEvent => streamEvent.Data.GetProperty("callId").GetString())
         .ToHashSet(StringComparer.Ordinal);
+#pragma warning restore NLF0016
     EveStreamEvent[] stubResults = stubOutcome.Events
         .Where(static streamEvent => streamEvent.Type == "call.settled")
         .Where(streamEvent => stubCallIds.Contains(streamEvent.Data.GetProperty("callId").GetString()))
