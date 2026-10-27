@@ -265,6 +265,59 @@ public sealed class EveV27OutcomeTests
     }
 
     [Test]
+    public async Task AnswerCancellationUsesItsDecidingResponseBeforeDeliveryConsumption(
+        CancellationToken cancellationToken)
+    {
+        string? cancelled = null;
+        EveStreamEvent[] facts =
+        [
+            Fact("delivery.admitted", EveStreamEventKind.DeliveryAdmitted,
+                """{"deliveryId":"d"}"""),
+            Fact("response.submitted", EveStreamEventKind.ResponseSubmitted,
+                """{"deliveryId":"other","responseId":"unrelated"}"""),
+            Fact("interaction.settled", EveStreamEventKind.InteractionSettled,
+                """{"interactionId":"other","outcome":"accepted","cause":{"responseId":"unrelated"}}""",
+                turnId: "wrong"),
+            Fact("response.submitted", EveStreamEventKind.ResponseSubmitted,
+                """{"deliveryId":"d","responseId":"answer"}"""),
+            Fact("interaction.settled", EveStreamEventKind.InteractionSettled,
+                """{"interactionId":"other","outcome":"accepted","cause":{"responseId":"unrelated"}}""",
+                turnId: "wrong"),
+            Fact("interaction.settled", EveStreamEventKind.InteractionSettled,
+                """{"interactionId":"approval","outcome":"accepted","cause":{"responseId":"answer"}}""",
+                turnId: "held"),
+            Fact("delivery.consumed", EveStreamEventKind.DeliveryConsumed,
+                """{"deliveryId":"d","turnId":"held"}"""),
+            Fact("delivery.settled", EveStreamEventKind.DeliverySettled,
+                """{"deliveryId":"d","turnId":"held","outcome":"handled"}"""),
+        ];
+        EveMessageResponse response = new(
+            "session", "d", true, true, token => StreamAsync(facts, token),
+            (turnId, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                cancelled = turnId;
+                return Task.FromResult(new EveCancellationOutcome(
+                    "session", EveCancellationStatus.Accepted));
+            }, cancellationToken);
+
+        int observed = 0;
+        await foreach (EveStreamEvent fact in response.WithCancellation(cancellationToken))
+        {
+            observed++;
+            if (fact.Kind == EveStreamEventKind.InteractionSettled
+                && fact.Data.GetProperty("interactionId").GetString() == "approval")
+            {
+                await response.CancelAsync(cancellationToken).WaitAsync(
+                    TimeSpan.FromSeconds(30), cancellationToken);
+            }
+        }
+
+        await Assert.That(observed).IsEqualTo(8);
+        await Assert.That(cancelled).IsEqualTo("held");
+    }
+
+    [Test]
     public async Task SessionEndDrainsItsCommitAndPreservesFailure(
         CancellationToken cancellationToken)
     {

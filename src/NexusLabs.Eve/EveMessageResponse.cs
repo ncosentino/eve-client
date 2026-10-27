@@ -204,6 +204,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         HashSet<string> pendingAuthorizations = CreatePendingIdentitySet();
         HashSet<string> pendingInputRequestIds = CreatePendingIdentitySet();
         HashSet<string> observedInputRequestIds = CreatePendingIdentitySet();
+        HashSet<string> v27ResponseIds = CreatePendingIdentitySet();
         bool correlationStarted = !_correlateDelivery;
         bool reachedBoundary = false;
         bool v27Admitted = false;
@@ -256,7 +257,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
 
                     foreach (EveStreamEvent fact in admittingLine)
                     {
-                        ObserveV27TurnIdentity(fact, deliveryId);
+                        ObserveV27TurnIdentity(fact, deliveryId, v27ResponseIds);
                         if (fact.Kind == EveStreamEventKind.SessionEnded
                             || (fact.Kind == EveStreamEventKind.DeliverySettled
                                 && MatchesDelivery(fact, deliveryId)))
@@ -351,8 +352,29 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             deliveryId,
             StringComparison.Ordinal);
 
-    private void ObserveV27TurnIdentity(EveStreamEvent streamEvent, string deliveryId)
+    private void ObserveV27TurnIdentity(
+        EveStreamEvent streamEvent,
+        string deliveryId,
+        HashSet<string> responseIds)
     {
+        if (streamEvent.Kind == EveStreamEventKind.ResponseSubmitted
+            && MatchesDelivery(streamEvent, deliveryId)
+            && EveV27ResponseSummary.String(streamEvent.Data, "responseId") is string responseId)
+        {
+            responseIds.Add(responseId);
+        }
+
+        if (streamEvent.Kind == EveStreamEventKind.InteractionSettled
+            && streamEvent.Data.TryGetProperty("cause", out JsonElement responseCause)
+            && EveV27ResponseSummary.String(responseCause, "responseId") is string decidingResponseId
+            && responseIds.Contains(decidingResponseId)
+            && streamEvent.Scope is JsonElement scope
+            && EveV27ResponseSummary.String(scope, "turnId") is string resumedTurnId
+            && !string.IsNullOrWhiteSpace(resumedTurnId))
+        {
+            _turnIdentity.TrySetResult(new TurnIdentity(resumedTurnId, null));
+        }
+
         bool consumed = streamEvent.Kind == EveStreamEventKind.DeliveryConsumed
             && MatchesDelivery(streamEvent, deliveryId);
         bool started = streamEvent.Kind == EveStreamEventKind.TurnStarted
