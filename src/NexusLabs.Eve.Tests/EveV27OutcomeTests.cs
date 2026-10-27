@@ -148,7 +148,8 @@ public sealed class EveV27OutcomeTests
         await Assert.That(outcome.PendingInteractions[2].Kind).IsEqualTo("future-kind");
         await Assert.That(outcome.PendingInteractions[2].Request.GetProperty("extra")
             .GetProperty("mode").GetString()).IsEqualTo("future");
-        await Assert.That(outcome.InputRequests.Count).IsEqualTo(2);
+        await Assert.That(outcome.InputRequests.Count).IsEqualTo(3);
+        await Assert.That(outcome.InputRequests[1].Prompt).IsEqualTo("Duplicate");
         await Assert.That(outcome.PendingInputRequests.Count).IsEqualTo(1);
         await Assert.That(outcome.PendingInputRequests[0].RequestId).IsEqualTo("q");
         await Assert.That(outcome.InteractionResolutions.Count).IsEqualTo(1);

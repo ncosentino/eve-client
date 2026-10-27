@@ -19,6 +19,7 @@ internal static class EveV27ResponseSummary
         HashSet<string> settledInteractions = new(StringComparer.Ordinal);
 #pragma warning restore NLF0016
         List<EveInteractionResolution> resolutions = [];
+        List<EveInputRequest> inputHistory = [];
         JsonElement? settlement = null;
         JsonElement? sessionEnd = null;
         string? consumedBy = null;
@@ -54,6 +55,11 @@ internal static class EveV27ResponseSummary
                 case EveStreamEventKind.InteractionOpened:
                     EveInteraction interaction = new(data);
                     interactions.TryAdd(interaction.InteractionId, interaction);
+                    if (ProjectInput(interaction) is EveInputRequest observedRequest)
+                    {
+                        inputHistory.Add(observedRequest);
+                    }
+
                     break;
                 case EveStreamEventKind.InteractionSettled:
                     EveInteractionResolution resolution = new(data);
@@ -125,13 +131,11 @@ internal static class EveV27ResponseSummary
 
         EveInteraction[] pending = interactions.Values
             .Where(item => !settledInteractions.Contains(item.InteractionId)).ToArray();
-        EveInputRequest[] requests = interactions.Values.Select(ProjectInput)
-            .OfType<EveInputRequest>().ToArray();
         EveInputRequest[] pendingRequests = pending.Select(ProjectInput)
             .OfType<EveInputRequest>().ToArray();
         return new EveTurnOutcome(
             result, message, events,
-            requests, pendingRequests, [], sessionId, status)
+            inputHistory, pendingRequests, [], sessionId, status)
         {
             Interactions = interactions.Values.ToArray(),
             PendingInteractions = pending,
