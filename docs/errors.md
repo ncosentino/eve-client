@@ -62,6 +62,21 @@ recorded history on a server supporting stranded-session recovery.
 Successful responses that do not satisfy the expected eve contract throw
 `EveProtocolException`.
 
+### Agent inspection
+
+Eve `0.84.0` retains agent-info schema version `5` but omits dynamic resolver
+`eventNames` and memory `visibility`. `GetInfoAsync` accepts both these current
+shapes and historical v5 payloads. Supplied historical `eventNames` must still be
+an array of strings, and supplied `visibility` must be `scope` or `session`.
+Hooks still require `eventNames`; schema versions `3` and `4` retain their
+original required fields. Source bindings, unique identities, and enclosing
+object shapes remain strictly validated.
+
+`EveAgentInfo.Raw` preserves the complete accepted payload, including historical
+fields and uninterpreted values in extensible metadata such as output schemas
+and kernel-effect options. Unknown object properties outside those extensible
+values remain protocol errors.
+
 ## Version mismatch
 
 A client and agent on opposite sides of the eve `0.31.0` cutover accept the first
