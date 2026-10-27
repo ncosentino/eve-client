@@ -15,9 +15,17 @@ const usage = {
   },
 };
 
+let callbackCallSequence = 0;
+
 export const model = new MockLanguageModelV3({
   modelId: "nexuslabs-eve-compatibility",
   provider: "nexuslabs-test",
+  doGenerate: async () => ({
+    content: [{ type: "text", text: "DETERMINISTIC_COMPACTION_SUMMARY" }],
+    finishReason: { raw: undefined, unified: "stop" },
+    usage,
+    warnings: [],
+  }),
   doStream: async (options) => {
     const prompt = JSON.stringify(options.prompt);
     const shouldCallChild =
@@ -124,27 +132,28 @@ export const model = new MockLanguageModelV3({
           }
 
           if (shouldCallCallbackConnection) {
+            const callbackCallId = `call_callback_auth_${++callbackCallSequence}`;
             const input = JSON.stringify({
               name: "callback-auth__probeHealth",
               input: {},
             });
             controller.enqueue({
-              id: "call_callback_auth",
+              id: callbackCallId,
               toolName: "eve__tool",
               type: "tool-input-start",
             });
             controller.enqueue({
               delta: input,
-              id: "call_callback_auth",
+              id: callbackCallId,
               type: "tool-input-delta",
             });
             controller.enqueue({
-              id: "call_callback_auth",
+              id: callbackCallId,
               type: "tool-input-end",
             });
             controller.enqueue({
               input,
-              toolCallId: "call_callback_auth",
+              toolCallId: callbackCallId,
               toolName: "eve__tool",
               type: "tool-call",
             });
