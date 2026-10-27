@@ -1,1 +1,1 @@
-export { default } from "../../sandbox";
+export { default, environment } from "../../sandbox";
