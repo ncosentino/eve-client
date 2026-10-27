@@ -9,6 +9,7 @@ public sealed record EveResetOutcome
     {
         Status = status;
         PreviousSessionId = previousSessionId;
+        SessionId = previousSessionId;
     }
 
     /// <summary>
@@ -21,4 +22,10 @@ public sealed record EveResetOutcome
     /// <see cref="Status"/> is <see cref="EveResetStatus.NoActiveSession"/>.
     /// </summary>
     public string? PreviousSessionId { get; }
+
+    /// <summary>Gets the session targeted by an accepted or completed reset.</summary>
+    public string? SessionId { get; internal init; }
+
+    /// <summary>Gets the version-27 receipt. Its acceptance does not prove retirement.</summary>
+    public string? DeliveryId { get; internal init; }
 }

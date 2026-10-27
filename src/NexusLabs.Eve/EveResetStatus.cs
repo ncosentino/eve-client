@@ -14,4 +14,7 @@ public enum EveResetStatus
     /// No durable session owned the continuation token, so nothing was retired.
     /// </summary>
     NoActiveSession,
+
+    /// <summary>A version-27 reset delivery was accepted but has not necessarily applied.</summary>
+    Accepted,
 }

@@ -21,4 +21,7 @@ public sealed record EveCompactOutcome
     /// <see cref="Status"/> is <see cref="EveCompactStatus.NoActiveSession"/>.
     /// </summary>
     public string? SessionId { get; }
+
+    /// <summary>Gets the version-27 receipt to observe before assuming compaction applied.</summary>
+    public string? DeliveryId { get; internal init; }
 }

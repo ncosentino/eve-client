@@ -205,13 +205,77 @@ public sealed class EveSession
         }
 
         return PostTurnRequestAsync(
-            _ => EveRequestWriter.WriteResponseTurn(inputResponses, options),
+            state => EveRequestWriter.WriteResponseTurn(inputResponses, options, state.StreamVersion == 27),
             options,
             true,
             false,
             false,
             true,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Submits version-27 answers, including when an attached handle has not opened a stream yet.
+    /// </summary>
+    /// <param name="answers">A nonempty batch keyed by interaction identities.</param>
+    /// <param name="cancellationToken">Cancels delivery and stream consumption.</param>
+    /// <returns>The accepted delivery and its event stream.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The answer batch is empty.</exception>
+    public Task<EveMessageResponse> AnswerAsync(
+        IReadOnlyList<EveInteractionAnswer> answers,
+        CancellationToken cancellationToken) =>
+        AnswerAsync(answers, null, cancellationToken);
+
+    /// <summary>Submits version-27 interaction answers with per-turn settings.</summary>
+    /// <param name="answers">The interaction answers.</param>
+    /// <param name="options">Optional headers, context and reconnection settings.</param>
+    /// <param name="cancellationToken">Cancels delivery and stream consumption.</param>
+    /// <returns>The accepted delivery and its event stream.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The answer batch is empty.</exception>
+    public async Task<EveMessageResponse> AnswerAsync(
+        IReadOnlyList<EveInteractionAnswer> answers,
+        EveTurnOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(answers);
+        if (State.SessionId is null)
+        {
+            throw new InvalidOperationException("An interaction answer requires an existing session.");
+        }
+
+        EveMessageResponse response = await PostTurnRequestAsync(
+            _ => EveRequestWriter.WriteInteractionAnswers(answers, options),
+            options, true, false, false, true, cancellationToken);
+        MarkProtocolVersion(response.SessionId, 27);
+        return response;
+    }
+
+    /// <summary>
+    /// Reads a version-27 delivery's durable settlement, including an asynchronous control receipt.
+    /// The read starts at the beginning so an already-applied control cannot be missed.
+    /// </summary>
+    /// <param name="deliveryId">The accepted receipt identifier.</param>
+    /// <param name="cancellationToken">Cancels the durable read.</param>
+    /// <returns>The delivery outcome after its complete settlement commit.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The delivery identifier is empty.</exception>
+    public Task<EveTurnOutcome> GetDeliveryOutcomeAsync(
+        string deliveryId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deliveryId);
+        string sessionId = State.SessionId
+            ?? throw new InvalidOperationException("A delivery read requires an existing session.");
+        EveSessionState start = new() { SessionId = sessionId, StreamVersion = 27 };
+        AcceptedTurn receipt = new(sessionId, deliveryId);
+        EveMessageResponse response = new(
+            sessionId, deliveryId, true, false,
+            token => CreateTurnStreamAsync(receipt, start, null, cancellationToken, token),
+            (turnId, token) => CancelAsync(turnId, token),
+            cancellationToken);
+        return response.GetOutcomeAsync(cancellationToken);
     }
 
     private async Task<EveMessageResponse> PostTurnRequestAsync(
@@ -296,6 +360,12 @@ public sealed class EveSession
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (State.StreamVersion == 27 && options.CancelOwnedTasks is not null)
+        {
+            throw new ArgumentException(
+                "Version 27 cancellation does not accept a tasks scope. Omit CancelOwnedTasks.",
+                nameof(options));
+        }
         string? sessionId = State.SessionId;
         if (sessionId is null)
         {
@@ -329,6 +399,15 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(responseBody);
             JsonElement root = document.RootElement;
+            if (TryReadControlDelivery(root, sessionId, "cancel", out string? deliveryId))
+            {
+                MarkProtocolVersion(sessionId, 27);
+                return new EveCancellationOutcome(sessionId, EveCancellationStatus.Accepted)
+                {
+                    DeliveryId = deliveryId,
+                };
+            }
+
             string status = ReadSuccessfulControlStatus(root, "cancel");
 
             switch (status)
@@ -390,7 +469,13 @@ public sealed class EveSession
             EveRequestKind.ClearSession,
             EveRoutes.ClearSession(sessionId),
             cancellationToken);
-        return ParseClearOutcome(responseBody, sessionId);
+        EveClearOutcome outcome = ParseClearOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -419,7 +504,13 @@ public sealed class EveSession
             EveRequestKind.ResetSession,
             EveRoutes.ResetSession(sessionId),
             cancellationToken);
-        return ParseResetOutcome(responseBody, sessionId);
+        EveResetOutcome outcome = ParseResetOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -451,7 +542,13 @@ public sealed class EveSession
             EveRequestKind.CompactSession,
             EveRoutes.CompactSession(sessionId),
             cancellationToken);
-        return ParseCompactOutcome(responseBody, sessionId);
+        EveCompactOutcome outcome = ParseCompactOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -942,6 +1039,11 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveClearOutcome(EveClearStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -972,6 +1074,15 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveResetOutcome(EveResetStatus.Accepted, null)
+                {
+                    SessionId = currentSessionId,
+                    DeliveryId = deliveryId,
+                };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -1007,6 +1118,11 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (TryReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveCompactOutcome(EveCompactStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -1041,6 +1157,40 @@ public sealed class EveSession
         {
             throw new EveProtocolException(
                 $"The eve {routeLabel} route returned an invalid response.");
+        }
+
+        private static bool TryReadControlDelivery(
+            JsonElement root,
+            string? currentSessionId,
+            string route,
+            out string? deliveryId)
+        {
+            deliveryId = null;
+            if (root.ValueKind != JsonValueKind.Object || root.TryGetProperty("status", out _))
+            {
+                return false;
+            }
+
+            if (!root.TryGetProperty("ok", out JsonElement ok) || ok.ValueKind != JsonValueKind.True)
+            {
+                throw new EveProtocolException($"The eve {route} route returned an invalid receipt.");
+            }
+
+            string sessionId = ReadRequiredSessionId(root, "sessionId", route);
+            EnsureSessionIdMatches(sessionId, currentSessionId, route);
+            deliveryId = ReadRequiredSessionId(root, "deliveryId", route);
+            return true;
+        }
+
+        private void MarkProtocolVersion(string sessionId, int version)
+        {
+            lock (_stateGate)
+            {
+                if (_state.SessionId == sessionId)
+                {
+                    _state = _state with { StreamVersion = version };
+                }
+            }
         }
 
         return status;

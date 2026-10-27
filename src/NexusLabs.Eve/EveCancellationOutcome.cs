@@ -27,4 +27,10 @@ public sealed record EveCancellationOutcome
     /// Gets the cancellation disposition.
     /// </summary>
     public EveCancellationStatus Status { get; }
+
+    /// <summary>
+    /// Gets the version-27 delivery receipt. Acceptance does not prove that cancellation applied;
+    /// read its durable settlement with <see cref="EveSession.GetDeliveryOutcomeAsync"/>.
+    /// </summary>
+    public string? DeliveryId { get; internal init; }
 }

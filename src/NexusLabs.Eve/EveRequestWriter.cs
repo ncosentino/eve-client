@@ -86,7 +86,8 @@ internal static class EveRequestWriter
 
     internal static byte[] WriteResponseTurn(
         IReadOnlyList<EveInputResponse> inputResponses,
-        EveTurnOptions? options)
+        EveTurnOptions? options,
+        bool interactionAnswers = false)
     {
         ArgumentNullException.ThrowIfNull(inputResponses);
         ValidateOptions(options);
@@ -100,12 +101,12 @@ internal static class EveRequestWriter
         return Write(
             writer =>
             {
-                writer.WritePropertyName("inputResponses");
+                writer.WritePropertyName(interactionAnswers ? "answers" : "inputResponses");
                 writer.WriteStartArray();
                 foreach (EveInputResponse response in inputResponses)
                 {
                     writer.WriteStartObject();
-                    writer.WriteString("requestId", response.RequestId);
+                    writer.WriteString(interactionAnswers ? "interactionId" : "requestId", response.RequestId);
                     if (response.OptionId is not null)
                     {
                         writer.WriteString("optionId", response.OptionId);
@@ -123,6 +124,19 @@ internal static class EveRequestWriter
             },
             options,
             null);
+    }
+
+    internal static byte[] WriteInteractionAnswers(
+        IReadOnlyList<EveInteractionAnswer> answers,
+        EveTurnOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(answers);
+        EveInputResponse[] responses = answers.Select(static answer =>
+        {
+            ArgumentNullException.ThrowIfNull(answer);
+            return new EveInputResponse(answer.InteractionId, answer.OptionId, answer.Text);
+        }).ToArray();
+        return WriteResponseTurn(responses, options, true);
     }
 
     internal static byte[] WriteCancel(EveCancellationOptions options)
