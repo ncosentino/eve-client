@@ -216,9 +216,9 @@ await foreach (EveStreamEvent streamEvent in childParentSession.StreamSubagentAs
 }
 
 RecordedStreamRequest childRequest = streamRecorder.StreamRequests[recordedBeforeChild];
-string expectedChildPath = childDescriptor.Data.GetProperty("stream").GetString()
-    ?? throw new InvalidOperationException("The child omitted its authorized stream route.");
+string expectedChildPath = $"/eve/v1/session/{Uri.EscapeDataString(childParentResponse.SessionId)}/descendants/stream";
 if (new Uri(childRequest.Uri).AbsolutePath != expectedChildPath
+    || !childRequest.Uri.Contains("children=", StringComparison.Ordinal)
     || childRequest.Uri.Contains("startIndex=", StringComparison.Ordinal)
     || childRequest.StreamVersion != "27"
     || !childEvents.Any(static streamEvent =>
@@ -227,7 +227,7 @@ if (new Uri(childRequest.Uri).AbsolutePath != expectedChildPath
         && streamEvent.Data.GetProperty("value").GetString() == "CHILD_STREAM_OK"))
 {
     throw new InvalidOperationException(
-        "The direct child route did not return its independent durable stream. "
+        "The root-authorized descendant route did not return its independent durable stream. "
         + $"Route: {childRequest.Uri}; version: {childRequest.StreamVersion}; "
         + $"events: {string.Join(", ", childEvents.Select(static streamEvent => streamEvent.Type))}.");
 }

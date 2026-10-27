@@ -58,7 +58,7 @@ internal sealed class BoundaryHttpMessageHandler : HttpMessageHandler
             };
             response.Headers.TryAddWithoutValidation(
                 EveProtocol.StreamVersionHeaderName,
-                EveProtocol.MessageStreamVersion);
+                "26");
             return Task.FromResult(response);
         }
 

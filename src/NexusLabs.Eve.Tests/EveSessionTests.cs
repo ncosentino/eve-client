@@ -3216,7 +3216,7 @@ public sealed class EveSessionTests
 
     [Test]
     [Arguments("20")]
-    [Arguments("27")]
+    [Arguments("28")]
     [Arguments("invalid")]
     public async Task FollowAsync_RejectsInvalidStreamVersionHeader(
         string version,
@@ -3593,7 +3593,7 @@ public sealed class EveSessionTests
     }
 
     private static HttpResponseMessage StreamResponse(params string[] events) =>
-        StreamResponseWithVersion(EveProtocol.MessageStreamVersion, events);
+        StreamResponseWithVersion("26", events);
 
     private static HttpResponseMessage StreamResponseWithVersion(string streamVersion, params string[] events)
     {
@@ -3622,7 +3622,7 @@ public sealed class EveSessionTests
             + ""","meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":["delivery_1"]}}""";
     }
 
-    private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = EveProtocol.MessageStreamVersion)
+    private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = "26")
     {
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {

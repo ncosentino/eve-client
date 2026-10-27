@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.79.1";
+    public const string ReferenceEveVersion = "0.84.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -38,7 +38,7 @@ public static class EveProtocol
     /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming, and
     /// <c>0.69.0</c> raised it to <c>26</c> for the blocking-workflow protocol.
     /// </remarks>
-    public const string MessageStreamVersion = "26";
+    public const string MessageStreamVersion = "27";
 
     /// <summary>
     /// Gets the agent-info payload schema versions this package understands.

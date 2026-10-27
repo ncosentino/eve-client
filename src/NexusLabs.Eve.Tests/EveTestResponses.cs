@@ -8,7 +8,7 @@ internal static class EveTestResponses
     internal static HttpResponseMessage StreamResponse(
         string body,
         int? tailIndex = null,
-        string streamVersion = EveProtocol.MessageStreamVersion)
+        string streamVersion = "26")
     {
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {
