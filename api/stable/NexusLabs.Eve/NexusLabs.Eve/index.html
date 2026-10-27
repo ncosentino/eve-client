@@ -427,6 +427,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../../" class="md-tabs__link">
           
   
@@ -807,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -820,6 +840,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -942,10 +1058,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -963,8 +1079,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1117,6 +1233,10 @@
 <td style="text-align: left;">Wraps one AI SDK-compatible user-content part.</td>
 </tr>
 <tr>
+<td style="text-align: left;"><a href="../EveDescendant/" title="NexusLabs.Eve.EveDescendant">EveDescendant</a></td>
+<td style="text-align: left;">Identifies a recorded version-27 child hop on its parent's authorized reader.</td>
+</tr>
+<tr>
 <td style="text-align: left;"><a href="../EveHealthResponseException/" title="NexusLabs.Eve.EveHealthResponseException">EveHealthResponseException</a></td>
 <td style="text-align: left;">Represents a successful health response that does not satisfy the eve health schema.</td>
 </tr>
@@ -1143,6 +1263,18 @@
 <tr>
 <td style="text-align: left;"><a href="../EveInputResponse/" title="NexusLabs.Eve.EveInputResponse">EveInputResponse</a></td>
 <td style="text-align: left;">Resolves one human-input request emitted by an eve session.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="../EveInteraction/" title="NexusLabs.Eve.EveInteraction">EveInteraction</a></td>
+<td style="text-align: left;">Preserves a version-27 interaction's first descriptor. Identities are case-sensitive.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="../EveInteractionAnswer/" title="NexusLabs.Eve.EveInteractionAnswer">EveInteractionAnswer</a></td>
+<td style="text-align: left;">Answers a version-27 human interaction using its stable interaction identity.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="../EveInteractionResolution/" title="NexusLabs.Eve.EveInteractionResolution">EveInteractionResolution</a></td>
+<td style="text-align: left;">Preserves an authoritative version-27 interaction settlement, without legacy batch coordinates.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="../EveMessageContent/" title="NexusLabs.Eve.EveMessageContent">EveMessageContent</a></td>
@@ -1237,6 +1369,10 @@
 <tr>
 <td style="text-align: left;"><a href="../EveHttpRequestContext/" title="NexusLabs.Eve.EveHttpRequestContext">EveHttpRequestContext</a></td>
 <td style="text-align: left;">Describes one HTTP request before dynamic eve headers are resolved.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="../EveStreamPosition/" title="NexusLabs.Eve.EveStreamPosition">EveStreamPosition</a></td>
+<td style="text-align: left;">Identifies a fact or progress record within a version-27 source line.</td>
 </tr>
 </tbody>
 </table>

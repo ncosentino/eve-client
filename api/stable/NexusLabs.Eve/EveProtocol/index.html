@@ -427,6 +427,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../../" class="md-tabs__link">
           
   
@@ -807,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -820,6 +840,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -942,10 +1058,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -963,8 +1079,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1076,7 +1192,7 @@
 <p><a name='NexusLabs.Eve.EveProtocol.MessageStreamVersion'></a></p>
 <h2 id="eveprotocolmessagestreamversion-field">EveProtocol.MessageStreamVersion Field<a class="headerlink" href="#eveprotocolmessagestreamversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the durable message-stream protocol version used by the reference client.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"26"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">MessageStreamVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"27"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_1">Field Value<a class="headerlink" href="#field-value_1" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1088,7 +1204,9 @@ baseline; the value does not follow from whether the event vocabulary changed. e
 <code>0.39.1</code> raised it to <code>23</code> for durable <code>input.resolved</code> events,
 <code>0.46.1</code> raised it to <code>24</code> for durable <code>action.input.appended</code> events, and
 <code>0.50.0</code> raised it to <code>25</code> for delta-only text streaming, and
-<code>0.69.0</code> raised it to <code>26</code> for the blocking-workflow protocol.</p>
+<code>0.69.0</code> raised it to <code>26</code> for the blocking-workflow protocol.
+Eve <code>0.84.0</code> raised it to <code>27</code> for source-line commits, interactions,
+delivery settlement and owner-scoped facts.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.MinimumEveVersion'></a></p>
 <h2 id="eveprotocolminimumeveversion-field">EveProtocol.MinimumEveVersion Field<a class="headerlink" href="#eveprotocolminimumeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the oldest eve release this package can talk to.</p>
@@ -1108,7 +1226,7 @@ also accepts newer supported response versions.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.ReferenceEveVersion'></a></p>
 <h2 id="eveprotocolreferenceeveversion-field">EveProtocol.ReferenceEveVersion Field<a class="headerlink" href="#eveprotocolreferenceeveversion-field" title="Permanent link">&para;</a></h2>
 <p>Gets the upstream TypeScript package version used as the compatibility reference.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.79.1"</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">public</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">ReferenceEveVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.84.0"</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="field-value_3">Field Value<a class="headerlink" href="#field-value_3" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
@@ -1127,9 +1245,10 @@ also accepts newer supported response versions.</p>
 <h4 id="field-value_5">Field Value<a class="headerlink" href="#field-value_5" title="Permanent link">&para;</a></h4>
 <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.string" title="System.String">System.String</a></p>
 <h3 id="remarks_2">Remarks<a class="headerlink" href="#remarks_2" title="Permanent link">&para;</a></h3>
-<p>Eligible absolute-cursor streams send this version through the internal
+<p>Legacy eligible absolute-cursor streams send this version through the internal
 <code>streamControlVersion</code> query parameter. Lease control records remain internal and
-are never projected as durable <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a> values.</p>
+are never projected as durable <a href="../EveStreamEvent/" title="NexusLabs.Eve.EveStreamEvent">EveStreamEvent</a> values. Version 27
+uses unversioned transport records, including source positions and heartbeats.</p>
 <p><a name='NexusLabs.Eve.EveProtocol.StreamVersionHeaderName'></a></p>
 <h2 id="eveprotocolstreamversionheadername-field">EveProtocol.StreamVersionHeaderName Field<a class="headerlink" href="#eveprotocolstreamversionheadername-field" title="Permanent link">&para;</a></h2>
 <p>Gets the response header that carries the stream protocol version.</p>

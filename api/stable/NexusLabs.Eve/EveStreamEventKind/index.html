@@ -427,6 +427,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../../" class="md-tabs__link">
           
   
@@ -807,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Architecture
   
 
     
@@ -820,6 +840,102 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/adr-0001-source-aware-stream-cursors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source-aware cursors
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -942,10 +1058,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
-          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
             
   
   
@@ -963,8 +1079,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1198,6 +1314,72 @@ remains available through <a href="../EveStreamEvent/#NexusLabs.Eve.EveStreamEve
 <h3 id="remarks_5">Remarks<a class="headerlink" href="#remarks_5" title="Permanent link">&para;</a></h3>
 <p>The <code>on</code> discriminator is <code>input</code> or <code>tasks</code>.
 Response boundaries also depend on unresolved requests and sign-in callbacks.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.SessionEnded'></a></p>
+<p><code>SessionEnded</code> 36</p>
+<p>Version-27 session termination.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnSettled'></a></p>
+<p><code>TurnSettled</code> 37</p>
+<p>Version-27 turn settlement, including cancelled and failed outcomes.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.TurnPaused'></a></p>
+<p><code>TurnPaused</code> 38</p>
+<p>Version-27 turn suspension on tasks or interactions.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.DeliveryAdmitted'></a></p>
+<p><code>DeliveryAdmitted</code> 39</p>
+<p>Version-27 delivery acceptance.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.DeliveryConsumed'></a></p>
+<p><code>DeliveryConsumed</code> 40</p>
+<p>Version-27 delivery consumption by a turn.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.DeliverySettled'></a></p>
+<p><code>DeliverySettled</code> 41</p>
+<p>Version-27 delivery settlement.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ContentDelta'></a></p>
+<p><code>ContentDelta</code> 42</p>
+<p>Version-27 provisional content update.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ContentCompleted'></a></p>
+<p><code>ContentCompleted</code> 43</p>
+<p>Version-27 completed text, reasoning or result content.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.InteractionOpened'></a></p>
+<p><code>InteractionOpened</code> 44</p>
+<p>Version-27 human interaction introduction.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.InteractionSettled'></a></p>
+<p><code>InteractionSettled</code> 45</p>
+<p>Version-27 human interaction settlement.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ChildOpened'></a></p>
+<p><code>ChildOpened</code> 46</p>
+<p>Version-27 child stream descriptor.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ChildSent'></a></p>
+<p><code>ChildSent</code> 47</p>
+<p>Version-27 delivery accepted by a child session.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.CallStarted'></a></p>
+<p><code>CallStarted</code> 48</p>
+<p>Version-27 tool or agent call introduction.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.CallInput'></a></p>
+<p><code>CallInput</code> 49</p>
+<p>Version-27 provisional call input.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.CallRequested'></a></p>
+<p><code>CallRequested</code> 50</p>
+<p>Version-27 call request.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.CallProgress'></a></p>
+<p><code>CallProgress</code> 51</p>
+<p>Version-27 provisional call output.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.CallSettled'></a></p>
+<p><code>CallSettled</code> 52</p>
+<p>Version-27 tool or agent call settlement.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.RunStarted'></a></p>
+<p><code>RunStarted</code> 53</p>
+<p>Version-27 model run introduction.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.RunSettled'></a></p>
+<p><code>RunSettled</code> 54</p>
+<p>Version-27 model run settlement.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ResponseSubmitted'></a></p>
+<p><code>ResponseSubmitted</code> 55</p>
+<p>Version-27 interaction answer submission.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ResponseAdmitted'></a></p>
+<p><code>ResponseAdmitted</code> 56</p>
+<p>Version-27 interaction answer admission.</p>
+<p><a name='NexusLabs.Eve.EveStreamEventKind.ResponseSettled'></a></p>
+<p><code>ResponseSettled</code> 57</p>
+<p>Version-27 interaction answer settlement.</p>
 
 
 

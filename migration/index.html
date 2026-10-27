@@ -1513,7 +1513,7 @@ older turn.</p>
 using delivery correlation reject the accepted response rather than risk returning stale
 durable events. That historical migration was also server-first: older clients ignore
 the additive response field, while the newer client requires it.</p>
-<p>The following operations do not require delivery correlation:</p>
+<p>On legacy stream protocols, the following operations do not require delivery correlation:</p>
 <ul>
 <li>The initial <code>SendAsync</code> creates a session and has no prior durable events for that
   session, so its accepted response does not need <code>deliveryId</code>.</li>

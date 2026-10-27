@@ -1541,16 +1541,16 @@
 </thead>
 <tbody>
 <tr>
-<td>Unreleased</td>
+<td>0.1.0-alpha.17</td>
 <td style="text-align: right;">0.84.0</td>
 <td style="text-align: right;">27</td>
-<td>Agent-info v5; legacy 21–26 retained; minimum 0.54.2</td>
+<td>Current prerelease; agent-info v5; legacy 21–26 retained; minimum 0.54.2</td>
 </tr>
 <tr>
 <td>0.1.0-alpha.16</td>
 <td style="text-align: right;">0.79.1</td>
 <td style="text-align: right;">26</td>
-<td>Current prerelease; agent-info v5; stream control 1</td>
+<td>Previous compatibility target; agent-info v5; stream control 1</td>
 </tr>
 <tr>
 <td>0.1.0-alpha.15</td>
@@ -1667,15 +1667,17 @@ from pre-<code>0.52.3</code> servers lack <code>deliveryId</code>, leaving no sa
 accepted turn from older durable events. This client rejects that response instead of
 returning a potentially wrong turn. That historical cutover also required upgrading the
 eve server before the client.</p>
-<p>Two operations do not require delivery correlation:</p>
+<p>On legacy stream protocols, two operations do not require delivery correlation:</p>
 <ul>
 <li>The initial <code>SendAsync</code> creates the session, so no prior session events can be replayed.</li>
 <li><code>RespondAsync</code> submits responses to pending human input rather than accepting a new
   message delivery.</li>
 </ul>
-<p>Their accepted responses may omit <code>deliveryId</code>; every <code>SendAsync</code> on an existing session
+<p>Their legacy accepted responses may omit <code>deliveryId</code>; every <code>SendAsync</code> on an existing session
 requires a nonempty value. The current <code>0.54.2</code> cutover does not change message-stream
 protocol <code>25</code> or agent-info schema version <code>4</code>.</p>
+<p>Protocol 27 instead requires an accepted delivery identifier for every managed response,
+including initial creation and human-input answers. See <a href="../migration/">Migration</a>.</p>
 <h2 id="historical-eve-0310-route-boundary">Historical eve 0.31.0 route boundary<a class="headerlink" href="#historical-eve-0310-route-boundary" title="Permanent link">&para;</a></h2>
 <p>NexusLabs.Eve <code>0.1.0-alpha.4</code> through the releases before the <code>0.52.3</code> cutover used eve
 <code>0.31.0</code> as their minimum. That release moved session control operations from fixed
@@ -1889,6 +1891,8 @@ turn. Set <code>EveTurnOptions.ClientContext</code> again for each later turn th
 second model call still receives the context, verifies that the next turn does not, and
 then resupplies it to prove the lifetime boundary is per turn.</p>
 <h2 id="accepted-message-delivery-correlation">Accepted message delivery correlation<a class="headerlink" href="#accepted-message-delivery-correlation" title="Permanent link">&para;</a></h2>
+<p>This section describes legacy stream protocols. Protocol 27 correlates every managed
+response using delivery facts rather than legacy <code>meta.deliveryIds</code>.</p>
 <p>Eve <code>0.52.3</code> adds a nonempty <code>deliveryId</code> to the accepted response for a message posted
 to an existing session. Durable events produced for that accepted message carry ordered
 <code>meta.deliveryIds</code>; one turn can name multiple identifiers when deliveries are
