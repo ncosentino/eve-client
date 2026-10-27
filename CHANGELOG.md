@@ -7,6 +7,52 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.0-alpha.17] - 2026-10-27
+
+### Added
+
+- Eve 0.84.0 message-stream protocol 27 support, including atomic commit facts,
+  progress records, transport coverage markers, and complete settlement commits.
+  Raw event types, owner scope, and unknown fields remain available.
+- Source-aware `EveStreamPosition` coordinates and persisted
+  `EveSessionState.StreamEventIndex` / `StreamVersion` fields, so stopping within a
+  multi-fact line resumes without losing or repeating consumed facts.
+- Interaction and resolution projections, explicit `AnswerAsync` for interaction
+  answers, delivery settlement/failure details, and cancelled turn outcomes.
+- Asynchronous control delivery receipts and `GetDeliveryOutcomeAsync` to verify
+  durable cancellation, clear, compaction, and reset effects.
+- Root-authorized descendant streaming with recorded child coordinates and
+  independent cursors, including explicit multi-hop descendant chains.
+
+### Changed
+
+- **Reference eve version:** `0.84.0`; **minimum eve version:** `0.54.2`;
+  message-stream protocol `27`; stream-control protocol `1`; agent-info schema
+  version `5`. Legacy stream protocols 21–26 remain supported.
+- Protocol-27 events retain the new vocabulary rather than fabricating legacy
+  events. Raw-event consumers must migrate their handlers and persist complete
+  session state; upgrading the client does not migrate durable server sessions
+  across protocol generations.
+- Known protocol-27 sessions submit human-input answers using the new envelope,
+  reject obsolete task-cancellation scope, and distinguish reset admission from
+  actual retirement. Sign-in delivery settlement and resumed-turn completion are
+  separate boundaries.
+- The pinned deterministic real-server fixture uses an explicit in-process
+  JustBash sandbox and retains synthetic child history for descendant assertions.
+
+### Fixed
+
+- Agent-info schema-v5 inspection accepts the resolver and memory fields removed
+  in Eve 0.84.0 while retaining strict validation of supplied and historical fields.
+- Turn outcomes correlate accepted deliveries, select only their settled reply
+  and result parts, and retain input occurrence history separately from canonical
+  pending interactions.
+- Answered-turn cancellation resolves its guard through the matching submitted
+  response and deciding interaction before deferred delivery consumption.
+- Protocol-27 reconnects preserve line/fact offsets, fixed history bounds, lease
+  semantics, progress timestamps, and exact disconnect budgets. Unsupported
+  session-version conflicts fail without retrying.
+
 ## [0.1.0-alpha.16] - 2026-10-26
 
 ### Added
@@ -559,7 +605,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Forward-compatible raw JSON access for preview agent-info and stream-event extensions.
 - TUnit contract coverage derived from the Vercel TypeScript client.
 
-[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.16...HEAD
+[Unreleased]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.17...HEAD
+[0.1.0-alpha.17]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.16...v0.1.0-alpha.17
 [0.1.0-alpha.16]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.15...v0.1.0-alpha.16
 [0.1.0-alpha.15]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.14...v0.1.0-alpha.15
 [0.1.0-alpha.14]: https://github.com/ncosentino/eve-client/compare/v0.1.0-alpha.13...v0.1.0-alpha.14

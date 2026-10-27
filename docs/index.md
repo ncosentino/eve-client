@@ -33,7 +33,8 @@ accepting schema-v4 responses both with and without legacy `workflow` metadata. 
 schema-v4 servers can advertise the obsolete `task-update` action without a schema-version
 discriminator, so upgrade the server before this client. Eve `0.52.3` remains the
 historical delivery-correlation boundary for existing-session sends; initial session
-creation and `RespondAsync` human-input continuation do not require that correlation. See
+creation and `RespondAsync` human-input continuation do not require that correlation on
+legacy protocols. Protocol 27 requires a delivery receipt for every managed response. See
 [Compatibility](compatibility.md) and [Migration](migration.md).
 
 ## Start here

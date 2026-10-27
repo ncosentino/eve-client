@@ -43,7 +43,9 @@ returns `Waiting` outcomes at human-input parks without ending task-backed work.
 Eve `0.52.3` separately introduced the accepted response `deliveryId` used to skip stale
 durable events and return the accepted existing-session delivery. The initial `SendAsync`
 that creates a session and `RespondAsync` human-input continuation do not require that
-correlation; every `SendAsync` on an existing session does. eve is still a preview, so
+correlation on legacy stream protocols; every `SendAsync` on an existing session does.
+Protocol 27 requires a delivery receipt for all managed responses, including initial
+creation and human-input answers. eve is still a preview, so
 pin and test compatible versions before upgrading. See
 [Compatibility](docs/compatibility.md) and [Migration](docs/migration.md).
 
