@@ -1357,7 +1357,7 @@ public sealed class EveSession
             SessionId = sessionId,
             StreamIndex = checked(initialState.StreamIndex + 1),
             StreamEventIndex = 0,
-            StreamVersion = streamEvent.StreamVersion,
+            StreamVersion = initialState.StreamVersion,
         };
     }
 

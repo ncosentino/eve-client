@@ -30,7 +30,8 @@ public sealed record EveSessionState
     public int StreamEventIndex { get; init; }
 
     /// <summary>
-    /// Gets the observed stream protocol, or null before a stream has opened.
+    /// Gets the observed version-27 protocol or an explicitly restored legacy version.
+    /// Historical legacy cursors leave this unset to preserve their value semantics.
     /// Persist this value with the cursor when resuming an existing session.
     /// </summary>
     public int? StreamVersion { get; init; }

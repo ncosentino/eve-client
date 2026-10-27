@@ -53,6 +53,8 @@ nav:
   - Errors: errors.md
   - Compatibility: compatibility.md
   - Migration: migration.md
+  - Architecture:
+      - Source-aware cursors: adr/adr-0001-source-aware-stream-cursors.md
   - API Reference:
       - Overview: api/index.md
       - Development: api/dev/index.md

@@ -1596,7 +1596,7 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(1);
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=-1");
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=-1&includeTailIndex=1");
         await Assert.That(session.State).IsEqualTo(initialState);
     }
 

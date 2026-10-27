@@ -7,10 +7,23 @@ description: Consume live eve events and configure automatic cursor-based reconn
 Iterate an `EveMessageResponse` to process events as they arrive:
 
 ```csharp
+Dictionary<string, string> partKinds = new(StringComparer.Ordinal);
 await foreach (EveStreamEvent streamEvent in
     response.WithCancellation(cancellationToken))
 {
-    if (streamEvent.Kind == EveStreamEventKind.MessageAppended)
+    if (streamEvent.Kind == EveStreamEventKind.ContentDelta)
+    {
+        string partId = streamEvent.Data.GetProperty("partId").GetString()!;
+        if (streamEvent.Data.TryGetProperty("kind", out JsonElement kind))
+        {
+            partKinds[partId] = kind.GetString()!;
+        }
+        if (partKinds.TryGetValue(partId, out string? partKind) && partKind == "text")
+        {
+            Console.Write(streamEvent.Data.GetProperty("delta").GetString());
+        }
+    }
+    else if (streamEvent.Kind == EveStreamEventKind.MessageAppended)
     {
         string delta = streamEvent.Data.GetProperty("messageDelta").GetString() ?? "";
         Console.Write(delta);
@@ -19,7 +32,13 @@ await foreach (EveStreamEvent streamEvent in
 ```
 
 Known event names map to `EveStreamEventKind`. The original wire-level `Type`
-and `Data` remain available for forward compatibility.
+and `Data` remain available for forward compatibility. Version 27 also exposes
+owner `Scope`, source-line/fact `Metadata.Position`, and `Metadata.EndOfLine`.
+Its cursor counts source lines, not materialized events. Preserve the complete
+`session.State`, including partial-line `StreamEventIndex` and `StreamVersion`.
+Transport heartbeat, position, lease and end records never become public events.
+An independent child read can resume within a commit using
+`EveStreamOptions.StartIndex` and `StartEventIndex`.
 
 ## Version-27 delivery outcomes
 
@@ -84,7 +103,7 @@ await foreach (EveStreamEvent streamEvent in
 Treat a partial snapshot as provisional display state. Never persist one as a
 final tool result, and expect it to be superseded.
 
-## Streamed tool input
+## Legacy streamed tool input
 
 Eve `0.46.1` introduced `action.input.appended`
 (`EveStreamEventKind.ActionInputAppended`) while the model generates one tool
@@ -246,7 +265,9 @@ with the session cursor instead.
 
 ## Reconnection
 
-The default policy follows a durable stream from the next absolute event index.
+The default policy follows a durable stream from the next absolute source position.
+Legacy positions count events; version-27 positions count source lines and retain
+the consumed record offset within a partial commit.
 `SendAsync` and `RespondAsync` responses keep reconnecting until the current turn
 reaches a session boundary or the caller cancels consumption. Manually attached
 `StreamAsync` reads retain a finite idle reconnect budget.

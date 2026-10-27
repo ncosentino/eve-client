@@ -37,6 +37,8 @@ public static class EveProtocol
     /// <c>0.46.1</c> raised it to <c>24</c> for durable <c>action.input.appended</c> events, and
     /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming, and
     /// <c>0.69.0</c> raised it to <c>26</c> for the blocking-workflow protocol.
+    /// Eve <c>0.84.0</c> raised it to <c>27</c> for source-line commits, interactions,
+    /// delivery settlement and owner-scoped facts.
     /// </remarks>
     public const string MessageStreamVersion = "27";
 
@@ -80,9 +82,10 @@ public static class EveProtocol
     /// Gets the transport-control version used to renew leased session stream responses.
     /// </summary>
     /// <remarks>
-    /// Eligible absolute-cursor streams send this version through the internal
+    /// Legacy eligible absolute-cursor streams send this version through the internal
     /// <c>streamControlVersion</c> query parameter. Lease control records remain internal and
-    /// are never projected as durable <see cref="EveStreamEvent"/> values.
+    /// are never projected as durable <see cref="EveStreamEvent"/> values. Version 27
+    /// uses unversioned transport records, including source positions and heartbeats.
     /// </remarks>
     public const string StreamControlVersion = "1";
 

@@ -285,7 +285,7 @@ public sealed class EveChildStreamTests
         await Assert.That(count).IsEqualTo(1);
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://parent.example" + DirectPath + "?startIndex=-1");
+            "https://parent.example" + DirectPath + "?startIndex=-1&includeTailIndex=1");
         await Assert.That(parent.State.StreamIndex).IsEqualTo(12);
     }
 

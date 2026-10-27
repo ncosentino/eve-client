@@ -68,7 +68,8 @@ public sealed record EveStreamEventMetadata
     public int? Next { get; }
 
     /// <summary>
-    /// Gets the complete server-provided metadata object.
+    /// Gets the complete metadata object. Version 27 includes materialized reader coordinates
+    /// rather than legacy server-stamped event IDs and delivery-ID lists.
     /// </summary>
     public JsonElement Raw { get; }
 }

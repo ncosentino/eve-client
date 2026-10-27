@@ -19,7 +19,8 @@ public sealed record EveResetOutcome
 
     /// <summary>
     /// Gets the retired session identifier, or <see langword="null"/> when
-    /// <see cref="Status"/> is <see cref="EveResetStatus.NoActiveSession"/>.
+    /// <see cref="Status"/> is <see cref="EveResetStatus.NoActiveSession"/> or only
+    /// <see cref="EveResetStatus.Accepted"/>. Admission alone does not establish retirement.
     /// </summary>
     public string? PreviousSessionId { get; }
 
