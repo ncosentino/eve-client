@@ -69,8 +69,9 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
     /// when the accepted response omitted it.
     /// </summary>
     /// <remarks>
-    /// Existing-session message sends require this value. Initial session creation and
+    /// Existing-session message sends require this value. Legacy initial session creation and
     /// human-input responses may omit it and retain their uncorrelated stream behavior.
+    /// All version-27 managed responses require a real delivery receipt.
     /// </remarks>
     public string? DeliveryId { get; }
 
@@ -129,7 +130,9 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
             events.Add(streamEvent);
         }
 
-        return CreateOutcome(SessionId, events);
+        return events.Any(streamEvent => streamEvent.StreamVersion == 27)
+            ? EveV27ResponseSummary.Create(SessionId, DeliveryId, events)
+            : CreateOutcome(SessionId, events);
     }
 
     /// <summary>
@@ -203,12 +206,85 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         HashSet<string> observedInputRequestIds = CreatePendingIdentitySet();
         bool correlationStarted = !_correlateDelivery;
         bool reachedBoundary = false;
+        bool v27Admitted = false;
+        bool v27Seen = false;
+        bool v27Boundary = false;
+        List<EveStreamEvent> admittingLine = [];
 
         try
         {
             await foreach (EveStreamEvent streamEvent in
                 _createStream(cancellationToken).WithCancellation(cancellationToken))
             {
+                if (streamEvent.StreamVersion == 27)
+                {
+                    v27Seen = true;
+                    if (DeliveryId is not string deliveryId)
+                    {
+                        throw new EveProtocolException(
+                            "A version-27 managed response requires an accepted delivery identifier.");
+                    }
+
+                    if (!v27Admitted)
+                    {
+                        if (streamEvent.Kind == EveStreamEventKind.SessionEnded)
+                        {
+                            throw new EveProtocolException(
+                                "The session ended before admitting the accepted delivery.");
+                        }
+
+                        if (admittingLine.Count > 0
+                            && admittingLine[0].Metadata?.Position?.Line
+                                != streamEvent.Metadata?.Position?.Line)
+                        {
+                            admittingLine.Clear();
+                        }
+
+                        admittingLine.Add(streamEvent);
+                        if (streamEvent.Kind != EveStreamEventKind.DeliveryAdmitted
+                            || !MatchesDelivery(streamEvent, deliveryId))
+                        {
+                            continue;
+                        }
+
+                        v27Admitted = true;
+                    }
+                    else
+                    {
+                        admittingLine.Add(streamEvent);
+                    }
+
+                    foreach (EveStreamEvent fact in admittingLine)
+                    {
+                        ObserveV27TurnIdentity(fact, deliveryId);
+                        if (fact.Kind == EveStreamEventKind.SessionEnded
+                            || (fact.Kind == EveStreamEventKind.DeliverySettled
+                                && MatchesDelivery(fact, deliveryId)))
+                        {
+                            v27Boundary = true;
+                            if (fact.Kind == EveStreamEventKind.SessionEnded
+                                || EveV27ResponseSummary.String(fact.Data, "outcome")
+                                    != "awaiting-input")
+                            {
+                                lock (_stateGate)
+                                {
+                                    _settled = true;
+                                }
+                            }
+                        }
+
+                        yield return fact;
+                        if (v27Boundary && fact.Metadata?.EndOfLine != false)
+                        {
+                            reachedBoundary = true;
+                            yield break;
+                        }
+                    }
+
+                    admittingLine.Clear();
+                    continue;
+                }
+
                 if (!ShouldObserveEvent(streamEvent, ref correlationStarted))
                 {
                     continue;
@@ -254,7 +330,7 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
                 }
             }
 
-            if (_correlateDelivery
+            if ((_correlateDelivery || v27Seen)
                 && !reachedBoundary
                 && !cancellationToken.IsCancellationRequested
                 && !_sendCancellationToken.IsCancellationRequested)
@@ -266,6 +342,36 @@ public sealed class EveMessageResponse : IAsyncEnumerable<EveStreamEvent>
         finally
         {
             _turnIdentity.TrySetResult(default);
+        }
+    }
+
+    private static bool MatchesDelivery(EveStreamEvent streamEvent, string deliveryId) =>
+        string.Equals(
+            EveV27ResponseSummary.String(streamEvent.Data, "deliveryId"),
+            deliveryId,
+            StringComparison.Ordinal);
+
+    private void ObserveV27TurnIdentity(EveStreamEvent streamEvent, string deliveryId)
+    {
+        bool consumed = streamEvent.Kind == EveStreamEventKind.DeliveryConsumed
+            && MatchesDelivery(streamEvent, deliveryId);
+        bool started = streamEvent.Kind == EveStreamEventKind.TurnStarted
+            && streamEvent.Data.TryGetProperty("cause", out JsonElement cause)
+            && string.Equals(
+                EveV27ResponseSummary.String(cause, "deliveryId"),
+                deliveryId,
+                StringComparison.Ordinal);
+        if (consumed || started)
+        {
+            try
+            {
+                _turnIdentity.TrySetResult(new TurnIdentity(ReadTurnId(streamEvent), null));
+            }
+            catch (EveProtocolException exception)
+            {
+                _turnIdentity.TrySetResult(new TurnIdentity(null, exception));
+                throw;
+            }
         }
     }
 

@@ -21,7 +21,44 @@ await foreach (EveStreamEvent streamEvent in
 Known event names map to `EveStreamEventKind`. The original wire-level `Type`
 and `Data` remain available for forward compatibility.
 
-## Preliminary tool output
+## Version-27 delivery outcomes
+
+Version-27 managed responses require the accepted delivery ID. They read the
+commit admitting that delivery through its matching `delivery.settled`, or
+`session.ended`, and drain the complete boundary commit when
+`Metadata.EndOfLine` is false. Unrelated delivery settlements do not end a response.
+The response remains single-use; legacy versions retain their existing behavior.
+If the session ends without settling the accepted delivery, event enumeration
+ends but `GetOutcomeAsync` throws `EveProtocolException` rather than inventing a
+successful delivery outcome.
+
+`GetOutcomeAsync` maps `awaiting-input` to `Waiting`, `applied` and `ignored` to
+`Completed`, and `refused` and `failed` to `Failed`. A `handled` delivery uses its
+matched turn's completed, failed, or `Cancelled` outcome. `DeliveryOutcome` and
+`DeliverySettlement` retain the delivery's own result independently.
+
+Only text part IDs listed by the matched `turn.settled.reply` contribute to
+`Message`, joined by newlines. Narration is not an answer. `Data` is the matched
+turn's latest completed result, overridden by a result part named in its reply.
+Non-conversational delivery outcomes expose neither reply nor structured result.
+Unknown facts, content kinds, and raw fields remain available in `Events`.
+
+`Interactions` retains the first descriptor per case-sensitive interaction ID.
+`PendingInteractions` removes settled identities without reopening duplicates.
+`InteractionResolutions` preserves raw settlements; v27 never fabricates the
+legacy sequence or step-index fields of `EveInputResolution`. Common question,
+approval, and budget descriptors also populate `InputRequests` and
+`PendingInputRequests`; their `Action` retains the raw interaction descriptor,
+not a fabricated legacy tool action. Sign-ins, including
+`request.signIn.callbackUrl`, remain
+available through `EveInteraction.Request` and `CallbackUrl`.
+
+A callback-backed v27 sign-in does **not** keep the delivery response open:
+`awaiting-input` returns immediately after draining its commit. Its identified
+held turn remains cancellable. The callback-follow behavior below applies only
+to legacy protocols.
+
+## Legacy preliminary tool output
 
 A tool implemented as an async generator streams provisional snapshots. Each
 non-terminal snapshot arrives as `action.partial`

@@ -19,4 +19,9 @@ public enum EveTurnStatus
     /// The session is waiting for another user message or input response.
     /// </summary>
     Waiting,
+
+    /// <summary>
+    /// The delivery's turn was cooperatively cancelled.
+    /// </summary>
+    Cancelled,
 }

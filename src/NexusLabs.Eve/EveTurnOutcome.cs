@@ -39,6 +39,7 @@ public sealed record EveTurnOutcome
     /// <remarks>
     /// The latest completed answer is retained across task and input waits. Messages completed
     /// with the <c>tool-calls</c> finish reason do not replace it.
+    /// Version 27 instead joins text parts named by the matched turn's reply, excluding narration.
     /// </remarks>
     public string? Message { get; }
 
@@ -50,6 +51,10 @@ public sealed record EveTurnOutcome
     /// <summary>
     /// Gets all human-input requests emitted during the turn.
     /// </summary>
+    /// <remarks>
+    /// Version 27 projects the first question, approval, or budget descriptor per interaction ID.
+    /// Use <see cref="Interactions"/> for sign-ins, unknown kinds, and complete raw descriptors.
+    /// </remarks>
     public IReadOnlyList<EveInputRequest> InputRequests { get; }
 
     /// <summary>
@@ -67,6 +72,40 @@ public sealed record EveTurnOutcome
     /// Gets all authoritative human-input resolutions emitted while this response was consumed.
     /// </summary>
     public IReadOnlyList<EveInputResolution> InputResolutions { get; }
+
+    /// <summary>
+    /// Gets first-observed version-27 interaction descriptors, including sign-ins and unknown kinds.
+    /// Legacy streams leave this collection empty.
+    /// </summary>
+    public IReadOnlyList<EveInteraction> Interactions { get; internal init; } = [];
+
+    /// <summary>
+    /// Gets version-27 interactions without an observed settlement.
+    /// </summary>
+    public IReadOnlyList<EveInteraction> PendingInteractions { get; internal init; } = [];
+
+    /// <summary>
+    /// Gets version-27 interaction settlements without inventing legacy batch coordinates.
+    /// Version-27 resolutions do not populate <see cref="InputResolutions"/>.
+    /// </summary>
+    public IReadOnlyList<EveInteractionResolution> InteractionResolutions { get; internal init; } = [];
+
+    /// <summary>
+    /// Gets the matching version-27 delivery settlement, including unknown raw fields.
+    /// </summary>
+    public JsonElement? DeliverySettlement { get; internal init; }
+
+    /// <summary>
+    /// Gets the version-27 delivery outcome exactly as received, or null for a legacy response.
+    /// </summary>
+    public string? DeliveryOutcome => DeliverySettlement is JsonElement settlement
+        ? EveV27ResponseSummary.String(settlement, "outcome")
+        : null;
+
+    /// <summary>
+    /// Gets the correlated failure payload, including a synthesized delivery failure when required.
+    /// </summary>
+    public JsonElement? Failure { get; internal init; }
 
     /// <summary>
     /// Gets the runtime-owned session identifier.
