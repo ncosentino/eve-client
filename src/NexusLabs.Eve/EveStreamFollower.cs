@@ -219,23 +219,21 @@ internal static class EveStreamFollower
                 continue;
             }
 
+            if (readState.StreamVersion == 27 && !follow
+                && ++idleReconnects >= policy.Open.MaxAttempts)
+            {
+                throw new EveProtocolException(
+                    "The version-27 bounded stream disconnected before reaching its fixed tail.");
+            }
+
             bool enforceIdleLimit = readState.StreamVersion != 27
                 ? policy.EnforceIdleAttemptLimit
-                : !follow || configuredPolicy?.StreamIdleRetry?.MaxAttempts is not null;
-            int idleLimit = readState.StreamVersion == 27 && !follow
-                ? policy.Open.MaxAttempts
-                : policy.Idle.MaxAttempts;
+                : follow && configuredPolicy?.StreamIdleRetry?.MaxAttempts is not null;
             if (enforceIdleLimit
                 && !deliveredEvent
                 && !initialConnection
-                && ++idleReconnects >= idleLimit)
+                && ++idleReconnects >= policy.Idle.MaxAttempts)
             {
-                if (readState.StreamVersion == 27 && !follow)
-                {
-                    throw new EveProtocolException(
-                        "The version-27 bounded stream disconnected before reaching its fixed tail.");
-                }
-
                 yield break;
             }
 
@@ -245,7 +243,10 @@ internal static class EveStreamFollower
                 yield break;
             }
 
-            reconnectDelay = Min(reconnectDelay + reconnectDelay, policy.Idle.MaxDelay);
+            TimeSpan maxDelay = readState.StreamVersion == 27
+                ? configuredPolicy?.StreamIdleRetry?.MaxDelay ?? TimeSpan.FromSeconds(5)
+                : policy.Idle.MaxDelay;
+            reconnectDelay = Min(reconnectDelay + reconnectDelay, maxDelay);
         }
     }
 

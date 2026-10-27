@@ -59,6 +59,15 @@ Agent-info stays at schema 5 but no longer requires resolver `eventNames` or
 memory `visibility`. This client accepts both historical and current v5 shapes;
 older schema versions and malformed supplied values remain validated.
 
+Review server-side history retention independently of transport compatibility.
+Eve 0.84 derives Workflow retention from resolved trace policy unless explicitly
+configured: a policy that does not retain both inputs and outputs can select
+zero retention. Completed child or retired-session history can therefore return
+permanent HTTP 410 `session_expired`. Choose a retention policy consistent with
+the application's data policy when post-completion history is required; the SDK
+does not retry or resurrect deleted history. The synthetic compatibility fixture
+explicitly uses the World's default retention to exercise completed child reads.
+
 ## Historical move from Eve 0.71.0 to 0.79.1
 
 Alpha.16 preserves the first input descriptor for each case-sensitive request ID.

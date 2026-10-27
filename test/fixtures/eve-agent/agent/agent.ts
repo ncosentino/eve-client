@@ -275,6 +275,7 @@ export const model = new MockLanguageModelV3({
 });
 
 export default defineAgent({
+  experimental: { workflow: { retention: "default" } },
   model,
   modelContextWindowTokens: 8_192,
 });

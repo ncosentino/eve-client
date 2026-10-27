@@ -188,6 +188,35 @@ public sealed class EveV27StreamTests
     }
 
     [Test]
+    public async Task BoundedVersion27_UsesTheExactConsecutiveDisconnectBudget(
+        CancellationToken cancellationToken)
+    {
+        using RecordingHttpMessageHandler handler = new();
+        using HttpMessageInvoker transport = new(handler, false);
+        handler.Enqueue(static (_, _) => Task.FromResult(EveTestResponses.StreamResponse("", 0, "27")));
+        handler.Enqueue(static (_, _) => Task.FromResult(EveTestResponses.StreamResponse("", 0, "27")));
+        EveSession session = Client(transport).AttachSession("session");
+        EveStreamOptions options = new()
+        {
+            Follow = false,
+            ReconnectPolicy = new EveStreamReconnectPolicy
+            {
+                StreamOpenRetry = new EveRetryPolicy { MaxAttempts = 2 },
+                StreamIdleRetry = new EveRetryPolicy { BaseDelay = TimeSpan.Zero, MaxDelay = TimeSpan.Zero },
+            },
+        };
+
+        await Assert.That(async () =>
+        {
+            await foreach (EveStreamEvent fact in session.StreamAsync(options, cancellationToken))
+            {
+                throw new InvalidOperationException($"Unexpected fact {fact.Type} in an empty disconnected stream.");
+            }
+        }).Throws<EveProtocolException>();
+        await Assert.That(handler.Calls.Count).IsEqualTo(2);
+    }
+
+    [Test]
     public async Task TailRelativeVersion27_ResolvesToAnAbsoluteBoundedCursor(
         CancellationToken cancellationToken)
     {
