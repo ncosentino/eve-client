@@ -16,9 +16,11 @@ public sealed class EveV27StreamTests
 
         await Assert.That(events.Count).IsEqualTo(2);
         await Assert.That(events[0].Metadata!.Position).IsEqualTo(new EveStreamPosition(7, 0));
-        await Assert.That(events[0].Metadata!.EndOfLine).IsEqualTo(false);
+        await Assert.That(events[0].Metadata!.EndOfLine!.Value).IsFalse()
+            .Because("The first fact does not finish its commit.");
         await Assert.That(events[1].Metadata!.Position).IsEqualTo(new EveStreamPosition(7, 1));
-        await Assert.That(events[1].Metadata!.EndOfLine).IsEqualTo(true);
+        await Assert.That(events[1].Metadata!.EndOfLine!.Value).IsTrue()
+            .Because("The last fact completes its source line.");
         await Assert.That(events[1].Kind).IsEqualTo(EveStreamEventKind.Unknown);
         await Assert.That(events[1].Scope!.Value.GetProperty("future").GetBoolean())
             .IsTrue().Because("Unknown owner metadata remains available to future consumers.");
