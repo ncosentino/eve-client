@@ -22,12 +22,13 @@ remote session prewarming, compact named-agent mounts, NDJSON streaming,
 reconnect-by-index, attachments, and structured output.
 
 This package requires Vercel `eve` **0.54.2** or newer and currently targets
-**0.79.1**, using message-stream protocol **26**, stream-control protocol **1**, and
-agent-info schema **v5**. Earlier supported stream and inspection schemas remain accepted.
+**0.84.0**, using message-stream protocol **27** and agent-info schema **v5**.
+Legacy stream protocols **21–26**, their stream-control protocol **1**, and earlier
+supported inspection schemas remain accepted.
 Eve `0.54.2` is the first published release whose strict schema-v4 kernel-effect action
 set is exactly `subagent-call`, `task-cancel`, and `workflow-tool-call`. Earlier
 schema-v4 servers can still advertise the obsolete `task-update` action under the same
-schema version, so **upgrade the eve server before upgrading this client**.
+schema version, so **upgrade a pre-0.54.2 server before upgrading this client**.
 
 Eve `0.59.0` adds message-free remote session prewarming and readiness retries for the
 first later send. It also uses compact `/eve/<agent>/v1/*` routes for named workspace
@@ -183,8 +184,10 @@ EveMessageResponse response = await resumed.SendAsync(
     cancellationToken);
 ```
 
-`SessionId` addresses every turn, control, and stream; `StreamIndex` prevents
-replaying consumed events. When only the identifier was persisted, attach to it
+`SessionId` addresses every turn, control, and stream. Persist the complete state:
+version 27 uses `StreamIndex` for source lines and `StreamEventIndex` for a partially
+consumed commit, with `StreamVersion` identifying the observed protocol. Never
+derive a cursor from the number of materialized events. When only the identifier was persisted, attach to it
 with `client.AttachSession(sessionId)`.
 
 Once a turn is accepted, cancellation can be requested before its stream settles:

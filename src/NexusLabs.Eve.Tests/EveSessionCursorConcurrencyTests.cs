@@ -322,7 +322,7 @@ public sealed class EveSessionCursorConcurrencyTests
         };
         response.Headers.TryAddWithoutValidation(
             EveProtocol.StreamVersionHeaderName,
-            EveProtocol.MessageStreamVersion);
+            "26");
         return response;
     }
 

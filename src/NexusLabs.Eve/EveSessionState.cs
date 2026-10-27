@@ -18,7 +18,21 @@ public sealed record EveSessionState
     public string? SessionId { get; init; }
 
     /// <summary>
-    /// Gets the absolute number of stream events already consumed.
+    /// Gets the next absolute source position: an event index before version 27,
+    /// or a source-line index in version 27.
     /// </summary>
     public int StreamIndex { get; init; }
+
+    /// <summary>
+    /// Gets the next fact within <see cref="StreamIndex"/> when a version-27 commit
+    /// has been partially consumed. Zero starts at the beginning of the line.
+    /// </summary>
+    public int StreamEventIndex { get; init; }
+
+    /// <summary>
+    /// Gets the observed version-27 protocol or an explicitly restored legacy version.
+    /// Historical legacy cursors leave this unset to preserve their value semantics.
+    /// Persist this value with the cursor when resuming an existing session.
+    /// </summary>
+    public int? StreamVersion { get; init; }
 }

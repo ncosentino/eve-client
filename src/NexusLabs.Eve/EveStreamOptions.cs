@@ -11,6 +11,12 @@ public sealed record EveStreamOptions
     public int? StartIndex { get; init; }
 
     /// <summary>
+    /// Gets an optional record offset within the starting version-27 commit.
+    /// Omit it to use the saved session cursor, or zero when explicitly choosing a new line.
+    /// </summary>
+    public int? StartEventIndex { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the stream keeps following live events (the default).
     /// </summary>
     /// <remarks>

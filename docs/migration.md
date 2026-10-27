@@ -1,10 +1,10 @@
 ---
-description: Upgrade an eve deployment and NexusLabs.Eve client safely across the 0.54.2 strict agent-info boundary.
+description: Upgrade safely across Eve stream, interaction, control and inspection boundaries.
 ---
 
-# Migrating to eve 0.54.2
+# Migration boundaries
 
-The current client requires eve `0.54.2` or newer and uses eve `0.79.1` as its
+The current client requires eve `0.54.2` or newer and uses eve `0.84.0` as its
 compatibility reference. Eve `0.54.2` is the first published release whose agent-info
 schema-v4 kernel-effect action set is exactly `subagent-call`, `task-cancel`, and
 `workflow-tool-call`.
@@ -14,7 +14,61 @@ payload remains version `4`, so the client has no schema discriminator with whic
 accept both contracts strictly. It rejects `task-update` in v4 while historical schema
 v3 continues accepting and preserving that action through `EveAgentInfo.Raw`.
 
-## Moving from Eve 0.71.0 to 0.79.1
+## Moving to Eve 0.84.0 and protocol 27
+
+Alpha.16 and earlier reject version-27 streams. Deploy the v27-capable client
+before exposing callers to Eve 0.84.0, while retaining a qualified older server
+for legacy traffic. Drain old deliveries or retain their owning deployment:
+protocol-generation compatibility does not migrate existing durable sessions.
+A permanent `session_version_unsupported` error requires a new compatible
+session or its original server, not repeated stream retries.
+
+Version 27 stores atomic commits containing several facts, not one event per
+line. Persist the entire `EveSessionState`, including `StreamEventIndex` and
+`StreamVersion`; do not manufacture a cursor from `Events.Count`. Response
+readers drain the full commit containing their matching delivery settlement.
+
+Raw consumers must migrate to the actual new vocabulary: `content.delta`,
+`content.completed`, `call.requested`, `call.settled`, `interaction.opened`,
+`interaction.settled`, `child.opened`, `turn.paused`, `turn.settled` and
+`session.ended`. Owners live in `Scope`. The library preserves these facts rather
+than rewriting them into old `message.completed` or `subagent.called` events.
+
+An accepted message or answer carries a delivery ID. `GetOutcomeAsync` selects
+that delivery's turn, reply and result, and can report `Cancelled`. An
+`awaiting-input` outcome ends even for callback-backed sign-ins; complete the
+callback and follow the session independently when more work is expected.
+
+After consuming a v27 stream, `RespondAsync` translates existing
+`EveInputResponse` values to `answers[].interactionId`. For a freshly attached
+handle whose protocol is unknown, use `AnswerAsync` with `EveInteractionAnswer`,
+or restore complete persisted state. Do not send both old and new field names.
+The obsolete `CancelOwnedTasks` option is rejected when the handle is known v27.
+
+Cancel, clear, compact and reset return asynchronous admission receipts.
+Use their `DeliveryId` with `GetDeliveryOutcomeAsync` and inspect the durable
+outcome before assuming the operation applied. `EveResetStatus.Accepted` does
+not claim the session has already retired; the handle remains pinned to it.
+
+For children, pass the received `child.opened` event to `StreamSubagentAsync`.
+Its committed source position establishes the root-authorized descendant read.
+`StreamDescendantAsync` follows a chain of at most eight recorded hops without
+contacting event-supplied URLs or advancing the parent's cursor.
+
+Agent-info stays at schema 5 but no longer requires resolver `eventNames` or
+memory `visibility`. This client accepts both historical and current v5 shapes;
+older schema versions and malformed supplied values remain validated.
+
+Review server-side history retention independently of transport compatibility.
+Eve 0.84 derives Workflow retention from resolved trace policy unless explicitly
+configured: a policy that does not retain both inputs and outputs can select
+zero retention. Completed child or retired-session history can therefore return
+permanent HTTP 410 `session_expired`. Choose a retention policy consistent with
+the application's data policy when post-completion history is required; the SDK
+does not retry or resurrect deleted history. The synthetic compatibility fixture
+explicitly uses the World's default retention to exercise completed child reads.
+
+## Historical move from Eve 0.71.0 to 0.79.1
 
 Alpha.16 preserves the first input descriptor for each case-sensitive request ID.
 Repeated requests no longer replace its prompt/options/action or reopen a settled

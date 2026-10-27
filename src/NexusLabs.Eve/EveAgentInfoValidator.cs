@@ -62,6 +62,7 @@ internal sealed class EveAgentInfoValidator
     private static readonly string[] DiagnosticsProperties =
         ["discoveryErrors", "discoveryWarnings"];
     private static readonly string[] DynamicResolverProperties = ["eventNames", "slug"];
+    private static readonly string[] DynamicResolverV5RequiredProperties = ["slug"];
     private static readonly string[] ExtensionScopeProperties = ["namespace", "sourceRoot"];
     private static readonly string[] FilesystemBackingAllowedProperties =
         ["extensionScope", "externalDependencies", "kind", "sourcePath"];
@@ -92,6 +93,7 @@ internal sealed class EveAgentInfoValidator
     private static readonly string[] MemoryAllowedProperties =
         ["description", "slot", "visibility"];
     private static readonly string[] MemoryRequiredProperties = ["slot", "visibility"];
+    private static readonly string[] MemoryV5RequiredProperties = ["slot"];
     private static readonly string[] ModelAllowedProperties =
     [
         "contextWindowTokens",
@@ -559,7 +561,7 @@ internal sealed class EveAgentInfoValidator
         {
             JsonElement hook = hooks[index];
             string path = $"$.hooks[{index}]";
-            ValidateDynamicResolver(hook, path, isVersionFour);
+            ValidateDynamicResolver(hook, path, isVersionFour, requiresEventNames: true);
             AddIdentity(
                 identities,
                 RequireString(hook, "slug", path),
@@ -661,13 +663,16 @@ internal sealed class EveAgentInfoValidator
                 memory,
                 path,
                 true,
-                MemoryRequiredProperties,
+                _isVersionFive ? MemoryV5RequiredProperties : MemoryRequiredProperties,
                 MemoryAllowedProperties);
             string slot = RequireString(memory, "slot", path);
-            string visibility = RequireString(memory, "visibility", path);
-            if (visibility is not "scope" and not "session")
+            if (memory.TryGetProperty("visibility", out _))
             {
-                ThrowInvalid($"{path}.visibility has unsupported value '{visibility}'.");
+                string visibility = RequireString(memory, "visibility", path);
+                if (visibility is not "scope" and not "session")
+                {
+                    ThrowInvalid($"{path}.visibility has unsupported value '{visibility}'.");
+                }
             }
 
             ValidateOptionalString(memory, "description", path);
@@ -906,15 +911,21 @@ internal sealed class EveAgentInfoValidator
     private void ValidateDynamicResolver(
         JsonElement resolver,
         string path,
-        bool isVersionFour)
+        bool isVersionFour,
+        bool requiresEventNames = false)
     {
         ValidateSource(
             resolver,
             path,
             isVersionFour,
-            DynamicResolverProperties,
+            _isVersionFive && !requiresEventNames
+                ? DynamicResolverV5RequiredProperties
+                : DynamicResolverProperties,
             DynamicResolverProperties);
-        ValidateStringArray(RequireArray(resolver, "eventNames", path), $"{path}.eventNames");
+        if (resolver.TryGetProperty("eventNames", out _))
+        {
+            ValidateStringArray(RequireArray(resolver, "eventNames", path), $"{path}.eventNames");
+        }
         RequireString(resolver, "slug", path);
     }
 

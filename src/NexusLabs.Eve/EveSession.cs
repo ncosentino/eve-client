@@ -205,13 +205,77 @@ public sealed class EveSession
         }
 
         return PostTurnRequestAsync(
-            _ => EveRequestWriter.WriteResponseTurn(inputResponses, options),
+            state => EveRequestWriter.WriteResponseTurn(inputResponses, options, state.StreamVersion == 27),
             options,
             true,
             false,
             false,
             true,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Submits version-27 answers, including when an attached handle has not opened a stream yet.
+    /// </summary>
+    /// <param name="answers">A nonempty batch keyed by interaction identities.</param>
+    /// <param name="cancellationToken">Cancels delivery and stream consumption.</param>
+    /// <returns>The accepted delivery and its event stream.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The answer batch is empty.</exception>
+    public Task<EveMessageResponse> AnswerAsync(
+        IReadOnlyList<EveInteractionAnswer> answers,
+        CancellationToken cancellationToken) =>
+        AnswerAsync(answers, null, cancellationToken);
+
+    /// <summary>Submits version-27 interaction answers with per-turn settings.</summary>
+    /// <param name="answers">The interaction answers.</param>
+    /// <param name="options">Optional headers, context and reconnection settings.</param>
+    /// <param name="cancellationToken">Cancels delivery and stream consumption.</param>
+    /// <returns>The accepted delivery and its event stream.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The answer batch is empty.</exception>
+    public async Task<EveMessageResponse> AnswerAsync(
+        IReadOnlyList<EveInteractionAnswer> answers,
+        EveTurnOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(answers);
+        if (State.SessionId is null)
+        {
+            throw new InvalidOperationException("An interaction answer requires an existing session.");
+        }
+
+        EveMessageResponse response = await PostTurnRequestAsync(
+            _ => EveRequestWriter.WriteInteractionAnswers(answers, options),
+            options, true, false, false, true, cancellationToken);
+        MarkProtocolVersion(response.SessionId, 27);
+        return response;
+    }
+
+    /// <summary>
+    /// Reads a version-27 delivery's durable settlement, including an asynchronous control receipt.
+    /// The read starts at the beginning so an already-applied control cannot be missed.
+    /// </summary>
+    /// <param name="deliveryId">The accepted receipt identifier.</param>
+    /// <param name="cancellationToken">Cancels the durable read.</param>
+    /// <returns>The delivery outcome after its complete settlement commit.</returns>
+    /// <exception cref="InvalidOperationException">The session has not started.</exception>
+    /// <exception cref="ArgumentException">The delivery identifier is empty.</exception>
+    public Task<EveTurnOutcome> GetDeliveryOutcomeAsync(
+        string deliveryId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deliveryId);
+        string sessionId = State.SessionId
+            ?? throw new InvalidOperationException("A delivery read requires an existing session.");
+        EveSessionState start = new() { SessionId = sessionId, StreamVersion = 27 };
+        AcceptedTurn receipt = new(sessionId, deliveryId);
+        EveMessageResponse response = new(
+            sessionId, deliveryId, true, false,
+            token => CreateTurnStreamAsync(receipt, start, null, cancellationToken, token),
+            (turnId, token) => CancelAsync(turnId, token),
+            cancellationToken);
+        return response.GetOutcomeAsync(cancellationToken);
     }
 
     private async Task<EveMessageResponse> PostTurnRequestAsync(
@@ -296,6 +360,12 @@ public sealed class EveSession
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (State.StreamVersion == 27 && options.CancelOwnedTasks is not null)
+        {
+            throw new ArgumentException(
+                "Version 27 cancellation does not accept a tasks scope. Omit CancelOwnedTasks.",
+                nameof(options));
+        }
         string? sessionId = State.SessionId;
         if (sessionId is null)
         {
@@ -329,6 +399,15 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(responseBody);
             JsonElement root = document.RootElement;
+            if (ReadControlDelivery(root, sessionId, "cancel", out string? deliveryId))
+            {
+                MarkProtocolVersion(sessionId, 27);
+                return new EveCancellationOutcome(sessionId, EveCancellationStatus.Accepted)
+                {
+                    DeliveryId = deliveryId,
+                };
+            }
+
             string status = ReadSuccessfulControlStatus(root, "cancel");
 
             switch (status)
@@ -390,7 +469,13 @@ public sealed class EveSession
             EveRequestKind.ClearSession,
             EveRoutes.ClearSession(sessionId),
             cancellationToken);
-        return ParseClearOutcome(responseBody, sessionId);
+        EveClearOutcome outcome = ParseClearOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -419,7 +504,13 @@ public sealed class EveSession
             EveRequestKind.ResetSession,
             EveRoutes.ResetSession(sessionId),
             cancellationToken);
-        return ParseResetOutcome(responseBody, sessionId);
+        EveResetOutcome outcome = ParseResetOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -451,7 +542,13 @@ public sealed class EveSession
             EveRequestKind.CompactSession,
             EveRoutes.CompactSession(sessionId),
             cancellationToken);
-        return ParseCompactOutcome(responseBody, sessionId);
+        EveCompactOutcome outcome = ParseCompactOutcome(responseBody, sessionId);
+        if (outcome.DeliveryId is not null)
+        {
+            MarkProtocolVersion(sessionId, 27);
+        }
+
+        return outcome;
     }
 
     /// <summary>
@@ -498,8 +595,14 @@ public sealed class EveSession
         }
 
         int startIndex = options?.StartIndex ?? initialState.StreamIndex;
+        int startEventIndex = options?.StartEventIndex
+            ?? (options?.StartIndex is null ? initialState.StreamEventIndex : 0);
+        if (startEventIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "A record offset cannot be negative.");
+        }
         bool follow = options?.Follow ?? true;
-        if (!follow && startIndex < 0)
+        if (!follow && startIndex < 0 && initialState.StreamVersion != 27)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(options),
@@ -511,6 +614,7 @@ public sealed class EveSession
         return StreamAndAdvanceAsync(
             initialState,
             startIndex,
+            startEventIndex,
             follow,
             options?.ReconnectPolicy,
             cancellationToken);
@@ -562,6 +666,22 @@ public sealed class EveSession
         ArgumentNullException.ThrowIfNull(childEvent);
         string parentId = State.SessionId
             ?? throw new InvalidOperationException("The eve parent session has no session identifier.");
+        if (childEvent.Type == "child.opened" && childEvent.StreamVersion == 27)
+        {
+            if (childEvent.Metadata?.Position is not EveStreamPosition position
+                || position.Line < 0)
+            {
+                throw new ArgumentException(
+                    "A version-27 child descriptor requires its received source-line position.",
+                    nameof(childEvent));
+            }
+
+            return StreamDescendantAsync(
+                [new EveDescendant(ReadChildDescriptorString(childEvent.Data, "sessionId"), position.Line)],
+                options,
+                cancellationToken);
+        }
+
         bool legacy = childEvent.Type == "subagent.called";
         if ((!legacy && childEvent.Type != "agent.started")
             || childEvent.Data.ValueKind != JsonValueKind.Object)
@@ -617,7 +737,69 @@ public sealed class EveSession
             options?.ReconnectPolicy,
             _client.MaxStreamEventBytes,
             cancellationToken,
-            path);
+            path,
+            options?.StartEventIndex ?? 0);
+    }
+
+    /// <summary>
+    /// Reads a recorded chain of version-27 children through this root's authenticated endpoint.
+    /// No URL supplied by an event is contacted. The server verifies every recorded relationship.
+    /// </summary>
+    /// <param name="children">Between one and eight child hops, ordered from the root.</param>
+    /// <param name="options">Optional independent child cursor and following policy.</param>
+    /// <param name="cancellationToken">Stops local reading without cancelling remote work.</param>
+    /// <returns>The final child's independent stream without advancing this root.</returns>
+    /// <exception cref="ArgumentException">The chain length or a child entry is invalid.</exception>
+    /// <exception cref="InvalidOperationException">The root session has not started.</exception>
+    /// <exception cref="EveClientException">The server rejects the recorded relationship or authentication.</exception>
+    public IAsyncEnumerable<EveStreamEvent> StreamDescendantAsync(
+        IReadOnlyList<EveDescendant> children,
+        EveStreamOptions? options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(children);
+        if (children.Count is < 1 or > 8)
+        {
+            throw new ArgumentException("A descendant chain must contain between one and eight hops.", nameof(children));
+        }
+
+        string parentId = State.SessionId
+            ?? throw new InvalidOperationException("The root session has not started.");
+        EveDescendant[] hops = children.ToArray();
+        foreach (EveDescendant hop in hops)
+        {
+            ArgumentNullException.ThrowIfNull(hop);
+        }
+
+        JsonElement encoded = EveJsonElementFactory.CreateObject(writer =>
+        {
+            writer.WritePropertyName("children");
+            writer.WriteStartArray();
+            foreach (EveDescendant hop in hops)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("sessionId", hop.SessionId);
+                writer.WriteNumber("position", hop.Position);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        });
+        string route = EveRoutes.StreamDescendants(parentId)
+            + "?children=" + Uri.EscapeDataString(encoded.GetProperty("children").GetRawText());
+        return EveStreamFollower.FollowAsync(
+            _client,
+            hops[^1].SessionId,
+            options?.StartIndex ?? 0,
+            options?.Follow ?? true,
+            EveStreamFollowMode.SessionStream,
+            null,
+            null,
+            options?.ReconnectPolicy,
+            _client.MaxStreamEventBytes,
+            cancellationToken,
+            route,
+            options?.StartEventIndex ?? 0);
     }
 
     private static string ReadChildDescriptorString(JsonElement data, string name)
@@ -800,89 +982,87 @@ public sealed class EveSession
         using CancellationTokenSource linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
             sendCancellationToken,
             streamCancellationToken);
-        int eventCount = 0;
-
-        try
+        bool sameSession = string.Equals(
+            initialState.SessionId, acceptedTurn.SessionId, StringComparison.Ordinal);
+        EveSessionState cursorState = initialState with
         {
-            int startIndex = string.Equals(
-                initialState.SessionId,
-                acceptedTurn.SessionId,
-                StringComparison.Ordinal)
-                ? initialState.StreamIndex
-                : 0;
-            await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
-                _client,
-                acceptedTurn.SessionId,
-                startIndex,
-                true,
-                EveStreamFollowMode.ActiveTurnResponse,
-                options?.Headers,
-                options?.ProtectedHeaderOverrides,
-                options?.StreamReconnectPolicy,
-                _client.MaxStreamEventBytes,
-                linkedSource.Token))
+            SessionId = acceptedTurn.SessionId,
+            StreamIndex = sameSession ? initialState.StreamIndex : 0,
+            StreamEventIndex = sameSession ? initialState.StreamEventIndex : 0,
+        };
+        await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
+            _client,
+            acceptedTurn.SessionId,
+            cursorState.StreamIndex,
+            true,
+            EveStreamFollowMode.ActiveTurnResponse,
+            options?.Headers,
+            options?.ProtectedHeaderOverrides,
+            options?.StreamReconnectPolicy,
+            _client.MaxStreamEventBytes,
+            linkedSource.Token,
+            initialEventIndex: cursorState.StreamEventIndex,
+            onSourcePosition: position =>
             {
-                eventCount++;
-                yield return streamEvent;
-            }
-        }
-        finally
+                cursorState = cursorState with
+                {
+                    StreamIndex = position,
+                    StreamEventIndex = 0,
+                    StreamVersion = 27,
+                };
+                MergeState(cursorState);
+            }))
         {
-            MergeState(AdvanceState(
-                initialState,
-                acceptedTurn.SessionId,
-                eventCount));
+            cursorState = AdvanceState(cursorState, acceptedTurn.SessionId, streamEvent);
+            MergeState(cursorState);
+            yield return streamEvent;
         }
     }
 
     private async IAsyncEnumerable<EveStreamEvent> StreamAndAdvanceAsync(
         EveSessionState initialState,
         int startIndex,
+        int startEventIndex,
         bool follow,
         EveStreamReconnectPolicy? reconnectPolicy,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        int eventCount = 0;
         EveSessionState cursorState = initialState with
         {
             StreamIndex = startIndex,
+            StreamEventIndex = startEventIndex,
         };
 
-        try
-        {
-            await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
-                _client,
-                initialState.SessionId!,
-                startIndex,
-                follow,
-                EveStreamFollowMode.SessionStream,
-                null,
-                null,
-                reconnectPolicy,
-                _client.MaxStreamEventBytes,
-                cancellationToken))
+        await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
+            _client,
+            initialState.SessionId!,
+            startIndex,
+            follow,
+            EveStreamFollowMode.SessionStream,
+            null,
+            null,
+            reconnectPolicy,
+            _client.MaxStreamEventBytes,
+            cancellationToken,
+            initialEventIndex: startEventIndex,
+            onSourcePosition: position =>
             {
-                eventCount++;
-                if (startIndex >= 0)
+                cursorState = cursorState with
                 {
-                    MergeState(AdvanceState(
-                        cursorState,
-                        initialState.SessionId!,
-                        eventCount));
-                }
-
-                yield return streamEvent;
-            }
-        }
-        finally
+                    StreamIndex = position,
+                    StreamEventIndex = 0,
+                    StreamVersion = 27,
+                };
+                MergeState(cursorState);
+            }))
         {
-            if (startIndex >= 0)
+            cursorState = AdvanceState(cursorState, initialState.SessionId!, streamEvent);
+            if (startIndex >= 0 || streamEvent.StreamVersion == 27)
             {
-                MergeState(AdvanceState(
-                    cursorState,
-                    initialState.SessionId!,
-                    eventCount));
+                MergeState(cursorState);
             }
+
+            yield return streamEvent;
         }
     }
 
@@ -937,6 +1117,11 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveClearOutcome(EveClearStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -967,6 +1152,15 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveResetOutcome(EveResetStatus.Accepted, null)
+                {
+                    SessionId = currentSessionId,
+                    DeliveryId = deliveryId,
+                };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -1002,6 +1196,11 @@ public sealed class EveSession
         {
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
+            if (ReadControlDelivery(root, currentSessionId, routeLabel, out string? deliveryId))
+            {
+                return new EveCompactOutcome(EveCompactStatus.Accepted, currentSessionId) { DeliveryId = deliveryId };
+            }
+
             string status = ReadSuccessfulControlStatus(root, routeLabel);
 
             switch (status)
@@ -1039,6 +1238,40 @@ public sealed class EveSession
         }
 
         return status;
+    }
+
+    private static bool ReadControlDelivery(
+        JsonElement root,
+        string? currentSessionId,
+        string route,
+        out string? deliveryId)
+    {
+        deliveryId = null;
+        if (root.ValueKind != JsonValueKind.Object || root.TryGetProperty("status", out _))
+        {
+            return false;
+        }
+
+        if (!root.TryGetProperty("ok", out JsonElement ok) || ok.ValueKind != JsonValueKind.True)
+        {
+            throw new EveProtocolException($"The eve {route} route returned an invalid receipt.");
+        }
+
+        string sessionId = ReadRequiredSessionId(root, "sessionId", route);
+        EnsureSessionIdMatches(sessionId, currentSessionId, route);
+        deliveryId = ReadRequiredSessionId(root, "deliveryId", route);
+        return true;
+    }
+
+    private void MarkProtocolVersion(string sessionId, int version)
+    {
+        lock (_stateGate)
+        {
+            if (_state.SessionId == sessionId)
+            {
+                _state = _state with { StreamVersion = version };
+            }
+        }
     }
 
     private static string ReadRequiredSessionId(
@@ -1079,12 +1312,20 @@ public sealed class EveSession
                     candidate.SessionId,
                     StringComparison.Ordinal))
             {
-                if (candidate.StreamIndex > _state.StreamIndex)
+                if (candidate.StreamIndex > _state.StreamIndex
+                    || (candidate.StreamIndex == _state.StreamIndex
+                        && candidate.StreamEventIndex > _state.StreamEventIndex))
                 {
                     _state = _state with
                     {
                         StreamIndex = candidate.StreamIndex,
+                        StreamEventIndex = candidate.StreamEventIndex,
+                        StreamVersion = candidate.StreamVersion,
                     };
+                }
+                else if (_state.StreamVersion is null && candidate.StreamVersion is not null)
+                {
+                    _state = _state with { StreamVersion = candidate.StreamVersion };
                 }
 
                 return;
@@ -1094,17 +1335,31 @@ public sealed class EveSession
         }
     }
 
-    // eve 0.31.0 made the session handle fixed: no boundary event recycles the identifier and
-    // no continuation token is carried, so advancing is purely a cursor addition.
     private static EveSessionState AdvanceState(
         EveSessionState initialState,
         string sessionId,
-        int eventCount) =>
-        initialState with
+        EveStreamEvent streamEvent)
+    {
+        if (streamEvent.Metadata?.Position is EveStreamPosition position)
+        {
+            bool endOfLine = streamEvent.Metadata.EndOfLine == true;
+            return initialState with
+            {
+                SessionId = sessionId,
+                StreamIndex = endOfLine ? checked(position.Line + 1) : position.Line,
+                StreamEventIndex = endOfLine ? 0 : checked(position.Index + 1),
+                StreamVersion = 27,
+            };
+        }
+
+        return initialState with
         {
             SessionId = sessionId,
-            StreamIndex = initialState.StreamIndex + eventCount,
+            StreamIndex = checked(initialState.StreamIndex + 1),
+            StreamEventIndex = 0,
+            StreamVersion = initialState.StreamVersion,
         };
+    }
 
     private sealed record AcceptedTurn(string SessionId, string? DeliveryId);
 }

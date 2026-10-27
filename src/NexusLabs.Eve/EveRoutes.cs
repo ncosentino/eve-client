@@ -12,6 +12,9 @@ internal static class EveRoutes
     internal static string StreamSession(string sessionId) =>
         $"/eve/v1/session/{Uri.EscapeDataString(sessionId)}/stream";
 
+    internal static string StreamDescendants(string sessionId) =>
+        $"{ContinueSession(sessionId)}/descendants/stream";
+
     internal static string StreamSubagent(
         string parentSessionId,
         string callId,

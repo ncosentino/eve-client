@@ -259,6 +259,11 @@ public sealed class EveClient
                 "A persisted stream index cannot be negative.");
         }
 
+        if (state.StreamEventIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(state), "A partial-commit record offset cannot be negative.");
+        }
+
         return new EveSession(this, state);
     }
 

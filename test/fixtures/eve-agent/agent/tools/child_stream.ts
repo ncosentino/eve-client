@@ -13,7 +13,7 @@ export default defineWorkflowTool({
     const child = context.agent("probe_child");
     const response = await child.send("CHILD_STREAM_RESPONSE");
     const result = await response.result();
-    if (result.message !== "CHILD_STREAM_OK") {
+    if (result.status !== "completed" || result.reply !== "CHILD_STREAM_OK") {
       throw new Error("The deterministic child did not produce its expected response.");
     }
     return { status: "CHILD_TOOL_OK" };

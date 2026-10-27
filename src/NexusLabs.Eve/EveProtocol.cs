@@ -8,7 +8,7 @@ public static class EveProtocol
     /// <summary>
     /// Gets the upstream TypeScript package version used as the compatibility reference.
     /// </summary>
-    public const string ReferenceEveVersion = "0.79.1";
+    public const string ReferenceEveVersion = "0.84.0";
 
     /// <summary>
     /// Gets the oldest eve release this package can talk to.
@@ -37,8 +37,10 @@ public static class EveProtocol
     /// <c>0.46.1</c> raised it to <c>24</c> for durable <c>action.input.appended</c> events, and
     /// <c>0.50.0</c> raised it to <c>25</c> for delta-only text streaming, and
     /// <c>0.69.0</c> raised it to <c>26</c> for the blocking-workflow protocol.
+    /// Eve <c>0.84.0</c> raised it to <c>27</c> for source-line commits, interactions,
+    /// delivery settlement and owner-scoped facts.
     /// </remarks>
-    public const string MessageStreamVersion = "26";
+    public const string MessageStreamVersion = "27";
 
     /// <summary>
     /// Gets the agent-info payload schema versions this package understands.
@@ -80,9 +82,10 @@ public static class EveProtocol
     /// Gets the transport-control version used to renew leased session stream responses.
     /// </summary>
     /// <remarks>
-    /// Eligible absolute-cursor streams send this version through the internal
+    /// Legacy eligible absolute-cursor streams send this version through the internal
     /// <c>streamControlVersion</c> query parameter. Lease control records remain internal and
-    /// are never projected as durable <see cref="EveStreamEvent"/> values.
+    /// are never projected as durable <see cref="EveStreamEvent"/> values. Version 27
+    /// uses unversioned transport records, including source positions and heartbeats.
     /// </remarks>
     public const string StreamControlVersion = "1";
 
@@ -93,10 +96,10 @@ public static class EveProtocol
 
     internal static void ValidateMessageStreamVersion(int version)
     {
-        if (version is < 21 or > 26)
+        if (version is < 21 or > 27)
         {
             throw new EveProtocolException(
-                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 26.");
+                $"Unsupported eve stream protocol version '{version}'. Supported versions are 21 through 27.");
         }
     }
 

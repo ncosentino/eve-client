@@ -21,4 +21,7 @@ public sealed record EveClearOutcome
     /// <see cref="Status"/> is <see cref="EveClearStatus.NoActiveSession"/>.
     /// </summary>
     public string? SessionId { get; }
+
+    /// <summary>Gets the version-27 receipt to observe before assuming the clear applied.</summary>
+    public string? DeliveryId { get; internal init; }
 }

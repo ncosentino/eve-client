@@ -1596,7 +1596,7 @@ public sealed class EveSessionTests
         await Assert.That(events.Count).IsEqualTo(1);
         await Assert.That(handler.Calls.Count).IsEqualTo(1);
         await Assert.That(handler.Calls[0].Uri).IsEqualTo(
-            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=-1");
+            "https://agent.example.com/eve/v1/session/session_1/stream?startIndex=-1&includeTailIndex=1");
         await Assert.That(session.State).IsEqualTo(initialState);
     }
 
@@ -3216,7 +3216,7 @@ public sealed class EveSessionTests
 
     [Test]
     [Arguments("20")]
-    [Arguments("27")]
+    [Arguments("28")]
     [Arguments("invalid")]
     public async Task FollowAsync_RejectsInvalidStreamVersionHeader(
         string version,
@@ -3593,7 +3593,7 @@ public sealed class EveSessionTests
     }
 
     private static HttpResponseMessage StreamResponse(params string[] events) =>
-        StreamResponseWithVersion(EveProtocol.MessageStreamVersion, events);
+        StreamResponseWithVersion("26", events);
 
     private static HttpResponseMessage StreamResponseWithVersion(string streamVersion, params string[] events)
     {
@@ -3622,7 +3622,7 @@ public sealed class EveSessionTests
             + ""","meta":{"at":"2026-09-08T12:00:00.000Z","deliveryIds":["delivery_1"]}}""";
     }
 
-    private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = EveProtocol.MessageStreamVersion)
+    private static HttpResponseMessage StreamResponse(Stream stream, string streamVersion = "26")
     {
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {

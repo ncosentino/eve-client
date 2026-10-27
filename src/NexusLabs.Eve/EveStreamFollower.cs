@@ -35,19 +35,25 @@ internal static class EveStreamFollower
         EveStreamReconnectPolicy? configuredPolicy,
         int? maximumEventBytes,
         [EnumeratorCancellation] CancellationToken cancellationToken,
-        string? streamRoutePath = null)
+        string? streamRoutePath = null,
+        int initialEventIndex = 0,
+        Action<int>? onSourcePosition = null)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(initialEventIndex);
         ResolvedReconnectPolicy policy = ResolvePolicy(configuredPolicy, mode);
         int startIndex = initialStartIndex;
+        int eventIndex = initialEventIndex;
         TimeSpan reconnectDelay = policy.Idle.BaseDelay;
         int idleReconnects = 0;
         bool initialConnection = true;
         int? tailIndex = null;
+        string progressAt = "1970-01-01T00:00:00.000Z";
 
         while (true)
         {
             bool deliveredEvent = false;
             ConnectionReadState readState = new();
+            readState.LastCommitAt = progressAt;
             bool streamControlEnabled =
                 startIndex >= 0 && policy.Idle.MaxAttempts > 0;
             HttpResponseMessage? response = null;
@@ -61,7 +67,7 @@ internal static class EveStreamFollower
                     sessionId,
                     startIndex,
                     follow,
-                    !follow && tailIndex is null,
+                    (!follow || startIndex < 0) && tailIndex is null,
                     streamControlEnabled,
                     headers,
                     protectedHeaderOverrides,
@@ -73,12 +79,27 @@ internal static class EveStreamFollower
                     yield break;
                 }
 
-                if (!follow && tailIndex is null)
+                int streamVersion = ReadStreamVersion(response);
+                if (streamVersion != 27 && eventIndex != 0)
+                {
+                    throw new EveProtocolException("A partial-commit cursor requires stream protocol 27.");
+                }
+                if ((!follow || (startIndex < 0 && streamVersion == 27)) && tailIndex is null)
                 {
                     tailIndex = ReadTailIndex(response);
                 }
 
-                if (tailIndex is int openBound && startIndex > openBound)
+                if (startIndex < 0 && streamVersion == 27)
+                {
+                    startIndex = Math.Max(0, checked(tailIndex!.Value + 1 + startIndex));
+                }
+
+                if (streamVersion == 27)
+                {
+                    onSourcePosition?.Invoke(startIndex);
+                }
+
+                if (!follow && tailIndex is int openBound && startIndex > openBound)
                 {
                     yield break;
                 }
@@ -89,8 +110,12 @@ internal static class EveStreamFollower
                         client.TimeProvider,
                         readState,
                         streamControlEnabled,
+                        startIndex,
+                        onSourcePosition,
+                        follow ? null : tailIndex,
                         connectionAbortSource.Token)
                     .GetAsyncEnumerator(connectionAbortSource.Token);
+                bool sessionEnded = false;
                 while (true)
                 {
                     bool hasEvent;
@@ -110,22 +135,49 @@ internal static class EveStreamFollower
                     }
 
                     EveStreamEvent streamEvent = connection.Current;
-                    startIndex++;
+                    if (streamEvent.Metadata?.Position is EveStreamPosition position)
+                    {
+                        if (!follow && tailIndex is int sourceBound && position.Line > sourceBound)
+                        {
+                            yield break;
+                        }
+
+                        if (position.Line == startIndex && position.Index < eventIndex)
+                        {
+                            continue;
+                        }
+
+                        bool endOfLine = streamEvent.Metadata.EndOfLine == true;
+                        startIndex = endOfLine ? checked(position.Line + 1) : position.Line;
+                        eventIndex = endOfLine ? 0 : checked(position.Index + 1);
+                    }
+                    else
+                    {
+                        startIndex++;
+                    }
                     deliveredEvent = true;
                     reconnectDelay = policy.Idle.BaseDelay;
                     idleReconnects = 0;
                     yield return streamEvent;
 
-                    if (streamEvent.Kind is EveStreamEventKind.SessionFailed
-                        or EveStreamEventKind.SessionCompleted)
+                    sessionEnded |= streamEvent.Kind is EveStreamEventKind.SessionFailed
+                        or EveStreamEventKind.SessionCompleted
+                        or EveStreamEventKind.SessionEnded;
+                    if (sessionEnded && streamEvent.Metadata?.EndOfLine != false)
                     {
                         yield break;
                     }
 
-                    if (tailIndex is int bound && startIndex > bound)
+                    if (!follow && tailIndex is int bound && startIndex > bound)
                     {
                         yield break;
                     }
+                }
+
+                if (readState.StreamVersion == 27)
+                {
+                    startIndex = Math.Max(startIndex, readState.NextLineIndex);
+                    progressAt = readState.LastCommitAt;
                 }
             }
             finally
@@ -154,7 +206,9 @@ internal static class EveStreamFollower
             }
 
             if (cancellationToken.IsCancellationRequested
-                || initialStartIndex < 0
+                || (!follow && tailIndex is int closedBound && startIndex > closedBound)
+                || readState.StreamEnded
+                || (initialStartIndex < 0 && readState.StreamVersion != 27)
                 || policy.Idle.MaxAttempts == 0)
             {
                 yield break;
@@ -165,7 +219,17 @@ internal static class EveStreamFollower
                 continue;
             }
 
-            if (policy.EnforceIdleAttemptLimit
+            if (readState.StreamVersion == 27 && !follow
+                && ++idleReconnects >= policy.Open.MaxAttempts)
+            {
+                throw new EveProtocolException(
+                    "The version-27 bounded stream disconnected before reaching its fixed tail.");
+            }
+
+            bool enforceIdleLimit = readState.StreamVersion != 27
+                ? policy.EnforceIdleAttemptLimit
+                : follow && configuredPolicy?.StreamIdleRetry?.MaxAttempts is not null;
+            if (enforceIdleLimit
                 && !deliveredEvent
                 && !initialConnection
                 && ++idleReconnects >= policy.Idle.MaxAttempts)
@@ -179,7 +243,10 @@ internal static class EveStreamFollower
                 yield break;
             }
 
-            reconnectDelay = Min(reconnectDelay + reconnectDelay, policy.Idle.MaxDelay);
+            TimeSpan maxDelay = readState.StreamVersion == 27
+                ? configuredPolicy?.StreamIdleRetry?.MaxDelay ?? TimeSpan.FromSeconds(5)
+                : policy.Idle.MaxDelay;
+            reconnectDelay = Min(reconnectDelay + reconnectDelay, maxDelay);
         }
     }
 
@@ -189,17 +256,27 @@ internal static class EveStreamFollower
         TimeProvider timeProvider,
         ConnectionReadState readState,
         bool streamControlEnabled,
+        int startIndex,
+        Action<int>? onSourcePosition,
+        int? tailIndex,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         int streamVersion = ReadStreamVersion(response);
         EveStreamDecoder decoder = new(streamVersion);
+        EveV27LineDecoder? lineDecoder = streamVersion == 27 ? new(startIndex, readState.LastCommitAt) : null;
+        readState.StreamVersion = streamVersion;
+        readState.NextLineIndex = startIndex;
+        if (lineDecoder is not null)
+        {
+            onSourcePosition?.Invoke(startIndex);
+        }
 
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using EveNdjsonLineReader reader = new(
             stream,
             maximumEventBytes,
             timeProvider,
-            StreamReadIdleTimeout);
+            streamVersion == 27 ? TimeSpan.FromSeconds(30) : StreamReadIdleTimeout);
 
         while (true)
         {
@@ -226,6 +303,31 @@ internal static class EveStreamFollower
             string trimmed = line.Trim();
             if (trimmed.Length == 0)
             {
+                continue;
+            }
+
+            if (lineDecoder is not null)
+            {
+                IReadOnlyList<EveStreamEvent> events = lineDecoder.Decode(trimmed);
+                foreach (EveStreamEvent streamEvent in events)
+                {
+                    yield return streamEvent;
+                }
+
+                readState.NextLineIndex = lineDecoder.NextLine;
+                readState.LastCommitAt = lineDecoder.LastCommitAt;
+                onSourcePosition?.Invoke(lineDecoder.NextLine);
+                readState.LeaseEnded = lineDecoder.LeaseEnded;
+                if (tailIndex is int bound && lineDecoder.NextLine > bound)
+                {
+                    yield break;
+                }
+                if (lineDecoder.StreamEnded)
+                {
+                    readState.StreamEnded = true;
+                    yield break;
+                }
+
                 continue;
             }
 
@@ -371,7 +473,7 @@ internal static class EveStreamFollower
             lastHeaders = clientException.ResponseHeaders;
             bool retryable = policy.RetryableStatusCodes.Contains(response.StatusCode)
                 && !(response.StatusCode == HttpStatusCode.Conflict
-                    && clientException.ErrorCode == "session_stranded");
+                    && clientException.ErrorCode is "session_stranded" or "session_version_unsupported");
             response.Dispose();
 
             if (!retryable)
@@ -616,5 +718,13 @@ internal static class EveStreamFollower
         internal bool LeaseEnded { get; set; }
 
         internal bool ReachedEndOfStream { get; set; }
+
+        internal bool StreamEnded { get; set; }
+
+        internal int StreamVersion { get; set; }
+
+        internal int NextLineIndex { get; set; }
+
+        internal string LastCommitAt { get; set; } = "1970-01-01T00:00:00.000Z";
     }
 }

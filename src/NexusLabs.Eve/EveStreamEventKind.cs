@@ -215,4 +215,49 @@ public enum EveStreamEventKind
     /// Response boundaries also depend on unresolved requests and sign-in callbacks.
     /// </remarks>
     TurnWaiting,
+
+    /// <summary>Version-27 session termination.</summary>
+    SessionEnded,
+    /// <summary>Version-27 turn settlement, including cancelled and failed outcomes.</summary>
+    TurnSettled,
+    /// <summary>Version-27 turn suspension on tasks or interactions.</summary>
+    TurnPaused,
+    /// <summary>Version-27 delivery acceptance.</summary>
+    DeliveryAdmitted,
+    /// <summary>Version-27 delivery consumption by a turn.</summary>
+    DeliveryConsumed,
+    /// <summary>Version-27 delivery settlement.</summary>
+    DeliverySettled,
+    /// <summary>Version-27 provisional content update.</summary>
+    ContentDelta,
+    /// <summary>Version-27 completed text, reasoning or result content.</summary>
+    ContentCompleted,
+    /// <summary>Version-27 human interaction introduction.</summary>
+    InteractionOpened,
+    /// <summary>Version-27 human interaction settlement.</summary>
+    InteractionSettled,
+    /// <summary>Version-27 child stream descriptor.</summary>
+    ChildOpened,
+    /// <summary>Version-27 delivery accepted by a child session.</summary>
+    ChildSent,
+    /// <summary>Version-27 tool or agent call introduction.</summary>
+    CallStarted,
+    /// <summary>Version-27 provisional call input.</summary>
+    CallInput,
+    /// <summary>Version-27 call request.</summary>
+    CallRequested,
+    /// <summary>Version-27 provisional call output.</summary>
+    CallProgress,
+    /// <summary>Version-27 tool or agent call settlement.</summary>
+    CallSettled,
+    /// <summary>Version-27 model run introduction.</summary>
+    RunStarted,
+    /// <summary>Version-27 model run settlement.</summary>
+    RunSettled,
+    /// <summary>Version-27 interaction answer submission.</summary>
+    ResponseSubmitted,
+    /// <summary>Version-27 interaction answer admission.</summary>
+    ResponseAdmitted,
+    /// <summary>Version-27 interaction answer settlement.</summary>
+    ResponseSettled,
 }

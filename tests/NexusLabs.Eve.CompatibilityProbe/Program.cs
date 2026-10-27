@@ -162,16 +162,22 @@ EveTurnOutcome textOutcome = await textResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(textOutcome, "text turn");
 RequireDurableEventEnvelope(textOutcome, "text turn");
 if (!textOutcome.Events.Any(static streamEvent =>
-    streamEvent.Kind == EveStreamEventKind.ReasoningAppended
-    && streamEvent.Data.GetProperty("reasoningDelta").GetString() == "DETERMINISTIC_REASONING"
-    && !streamEvent.Data.TryGetProperty("reasoningSoFar", out _)))
+    streamEvent.Type == "content.completed"
+    && streamEvent.Data.GetProperty("kind").GetString() == "reasoning"
+    && streamEvent.Data.GetProperty("value").GetString() == "DETERMINISTIC_REASONING"))
+{
+    throw new InvalidOperationException("The fixture did not complete its deterministic reasoning part.");
+}
+if (!textOutcome.Events.Any(static streamEvent =>
+    streamEvent.Type == "content.delta"
+    && streamEvent.Data.GetProperty("delta").GetString() == "DETERMINISTIC_REASONING"))
 {
     throw new InvalidOperationException("The fixture did not preserve streamed reasoning deltas.");
 }
 if (streamRecorder.StreamRequests.Count == 0
-    || streamRecorder.StreamRequests.Any(static request => request.StreamVersion != "26"))
+    || streamRecorder.StreamRequests.Any(static request => request.StreamVersion != "27"))
 {
-    throw new InvalidOperationException("The real Eve stream did not advertise protocol version 26.");
+    throw new InvalidOperationException("The real Eve stream did not advertise protocol version 27.");
 }
 
 EveSession childParentSession = client.CreateSession();
@@ -182,16 +188,16 @@ EveMessageResponse childParentResponse = await childParentSession.SendAsync(
 EveTurnOutcome childParentOutcome = await childParentResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(childParentOutcome, "child parent turn");
 EveStreamEvent childDescriptor = childParentOutcome.Events.Single(
-    static streamEvent => streamEvent.Type == "agent.started");
+    static streamEvent => streamEvent.Type == "child.opened");
 string childSessionId = childDescriptor.Data.GetProperty("sessionId").GetString()
     ?? throw new InvalidOperationException("The child announcement omitted its session identifier.");
 if (childSessionId == childParentResponse.SessionId
     || childDescriptor.Data.GetProperty("name").GetString() != "probe_child"
-    || childDescriptor.Data.GetProperty("callId").GetString() != "call_child"
+    || string.IsNullOrWhiteSpace(childDescriptor.Data.GetProperty("owner").GetProperty("callId").GetString())
     || childDescriptor.Data.TryGetProperty("remote", out _)
     || childParentOutcome.Events.Any(static streamEvent => streamEvent.Type == "subagent.called"))
 {
-    throw new InvalidOperationException("The real child announcement did not use local agent.started coordinates.");
+    throw new InvalidOperationException("The real child announcement did not use local child.opened coordinates.");
 }
 
 EveSessionState parentCursorBeforeChild = childParentSession.State;
@@ -210,17 +216,18 @@ await foreach (EveStreamEvent streamEvent in childParentSession.StreamSubagentAs
 }
 
 RecordedStreamRequest childRequest = streamRecorder.StreamRequests[recordedBeforeChild];
-string expectedChildPath = $"/eve/v1/session/{Uri.EscapeDataString(childSessionId)}/stream";
+string expectedChildPath = $"/eve/v1/session/{Uri.EscapeDataString(childParentResponse.SessionId)}/descendants/stream";
 if (new Uri(childRequest.Uri).AbsolutePath != expectedChildPath
-    || childDescriptor.Data.GetProperty("streamPath").GetString() != expectedChildPath
+    || !childRequest.Uri.Contains("children=", StringComparison.Ordinal)
     || childRequest.Uri.Contains("startIndex=", StringComparison.Ordinal)
-    || childRequest.StreamVersion != "26"
+    || childRequest.StreamVersion != "27"
     || !childEvents.Any(static streamEvent =>
-        streamEvent.Kind == EveStreamEventKind.MessageCompleted
-        && streamEvent.Data.GetProperty("message").GetString() == "CHILD_STREAM_OK"))
+        streamEvent.Type == "content.completed"
+        && streamEvent.Data.GetProperty("kind").GetString() == "text"
+        && streamEvent.Data.GetProperty("value").GetString() == "CHILD_STREAM_OK"))
 {
     throw new InvalidOperationException(
-        "The direct child route did not return its independent durable stream. "
+        "The root-authorized descendant route did not return its independent durable stream. "
         + $"Route: {childRequest.Uri}; version: {childRequest.StreamVersion}; "
         + $"events: {string.Join(", ", childEvents.Select(static streamEvent => streamEvent.Type))}.");
 }
@@ -228,8 +235,8 @@ foreach (EveStreamEvent childEvent in childEvents)
 {
     if (childEvent.Metadata is not EveStreamEventMetadata childMetadata
         || string.IsNullOrWhiteSpace(childMetadata.At)
-        || childMetadata.Id is not string childIdentifier
-        || !IsEventIdentifier(childIdentifier))
+        || childMetadata.Position is null
+        || childMetadata.EndOfLine is null)
     {
         throw new InvalidOperationException("The child stream omitted its independent durable metadata.");
     }
@@ -244,12 +251,13 @@ EveMessageResponse structuredResponse = await structuredSession.SendAsync(
     new EveTurnOptions { OutputSchema = outputSchema.RootElement },
     timeout.Token);
 EveTurnOutcome structuredOutcome = await structuredResponse.GetOutcomeAsync(timeout.Token);
-if (structuredOutcome.Status != EveTurnStatus.Waiting
+if (structuredOutcome.Status != EveTurnStatus.Completed
     || structuredOutcome.Data is not JsonElement structuredData
     || structuredData.GetProperty("status").GetString() != "STRUCTURED_OK")
 {
     throw new InvalidOperationException("The real Eve fixture did not return schema-constrained output.");
 }
+RequireDeliverySettlement(structuredOutcome.Events, structuredResponse.DeliveryId, "handled");
 
 EveSession deliveryCorrelationSession = client.CreateSession();
 probeScenario = "delivery correlation";
@@ -288,9 +296,10 @@ RequireSuccessfulResponse(
     "ACCEPTED_DELIVERY_RESPONSE");
 
 if (acceptedDeliveryOutcome.Events.Any(static streamEvent =>
-        streamEvent.Kind == EveStreamEventKind.MessageCompleted
+        streamEvent.Type == "content.completed"
+        && streamEvent.Data.GetProperty("kind").GetString() == "text"
         && string.Equals(
-            streamEvent.Data.GetProperty("message").GetString(),
+            streamEvent.Data.GetProperty("value").GetString(),
             "PRIOR_DELIVERY_RESPONSE",
             StringComparison.Ordinal)))
 {
@@ -299,16 +308,17 @@ if (acceptedDeliveryOutcome.Events.Any(static streamEvent =>
 }
 
 if (!acceptedDeliveryOutcome.Events.Any(streamEvent =>
-        streamEvent.Metadata?.DeliveryIds?.Contains(
-            acceptedDeliveryId,
-            StringComparer.Ordinal) == true))
+        streamEvent.Type == "delivery.settled"
+        && streamEvent.Data.GetProperty("deliveryId").GetString() == acceptedDeliveryId
+        && streamEvent.Data.GetProperty("outcome").GetString() == "handled"))
 {
     throw new InvalidOperationException(
-        "The accepted turn did not expose its delivery identifier in durable event metadata.");
+        "The accepted turn did not settle its own delivery.");
 }
 
-if (staleDeliveryCorrelationSession.State.StreamIndex
-    <= acceptedDeliveryOutcome.Events.Count)
+if (acceptedDeliveryOutcome.Events[^1].Metadata?.EndOfLine != true
+    || staleDeliveryCorrelationSession.State.StreamIndex
+        != acceptedDeliveryOutcome.Events[^1].Metadata?.Position?.Line + 1)
 {
     throw new InvalidOperationException(
         "The stale-cursor response did not consume prior durable events while selecting " +
@@ -371,18 +381,12 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
     authorizationEvents.Add(streamEvent);
     Console.Error.WriteLine($"Callback probe event: {streamEvent.Type}.");
 
-    if (streamEvent.Kind == EveStreamEventKind.AuthorizationRequired)
+    if (streamEvent.Type == "interaction.opened"
+        && streamEvent.Data.GetProperty("request").GetProperty("kind").GetString() == "sign-in")
     {
-        string? connectionName = streamEvent.Data.TryGetProperty(
-                "name",
-                out var name)
-            ? name.GetString()
-            : null;
-        string? webhookUrl = streamEvent.Data.TryGetProperty(
-                "webhookUrl",
-                out var webhook)
-            ? webhook.GetString()
-            : null;
+        JsonElement signIn = streamEvent.Data.GetProperty("request").GetProperty("signIn");
+        string? connectionName = signIn.GetProperty("name").GetString();
+        string? webhookUrl = signIn.GetProperty("callbackUrl").GetString();
         if (!string.Equals(connectionName, "callback-auth", StringComparison.Ordinal)
             || !Uri.TryCreate(webhookUrl, UriKind.Absolute, out Uri? reportedWebhook))
         {
@@ -394,36 +398,37 @@ await foreach (EveStreamEvent streamEvent in authorizationResponse.WithCancellat
         // fixture's selected port. The framework-owned path and token remain authoritative.
         authorizationWebhook = new Uri(baseUri, reportedWebhook.PathAndQuery);
     }
-    else if (streamEvent.Kind == EveStreamEventKind.TurnWaiting
-        && streamEvent.Data.GetProperty("on").GetString() == "input"
-        && authorizationWebhook is not null
-        && !authorizationCallbackSent)
-    {
-        probeScenario = "callback authorization webhook request";
-        using HttpResponseMessage callbackResponse = await transport.GetAsync(
-            authorizationWebhook,
-            timeout.Token);
-        if (!callbackResponse.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException(
-                "The callback authorization webhook returned " +
-                $"{(int)callbackResponse.StatusCode} {callbackResponse.StatusCode}.");
-        }
-
-        authorizationCallbackSent = true;
-        probeScenario = "callback authorization resumed response";
-    }
 }
 
-if (authorizationCallbackSent
-    && authorizationEvents[^1].Kind != EveStreamEventKind.SessionWaiting)
+if (authorizationWebhook is not null)
 {
+    RequireDeliverySettlement(authorizationEvents, authorizationResponse.DeliveryId, "awaiting-input");
+    probeScenario = "callback authorization webhook request";
+    using HttpResponseMessage callbackResponse = await transport.GetAsync(
+        authorizationWebhook,
+        timeout.Token);
+    if (!callbackResponse.IsSuccessStatusCode)
+    {
+        throw new InvalidOperationException(
+            $"The callback authorization webhook returned {callbackResponse.StatusCode}.");
+    }
+
+    authorizationCallbackSent = true;
     probeScenario = "callback authorization resumed attachment";
+    string? authorizationTurnId = authorizationEvents.Single(
+        static streamEvent => streamEvent.Type == "turn.started").Data.GetProperty("turnId").GetString();
+    bool callbackTurnSettled = false;
     await foreach (EveStreamEvent streamEvent in authorizationSession.StreamAsync(timeout.Token))
     {
         authorizationEvents.Add(streamEvent);
         Console.Error.WriteLine($"Callback continuation event: {streamEvent.Type}.");
-        if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
+        if (streamEvent.Type == "turn.settled"
+            && streamEvent.Data.GetProperty("turnId").GetString() == authorizationTurnId)
+        {
+            callbackTurnSettled = true;
+        }
+
+        if (callbackTurnSettled && streamEvent.Metadata?.EndOfLine == true)
         {
             break;
         }
@@ -431,15 +436,14 @@ if (authorizationCallbackSent
 }
 
 int authorizationRequiredIndex = authorizationEvents.FindIndex(
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationRequired);
+    static streamEvent => streamEvent.Type == "interaction.opened");
 int interimWaitingIndex = authorizationEvents.FindIndex(
     authorizationRequiredIndex + 1,
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.TurnWaiting
-        && streamEvent.Data.GetProperty("on").GetString() == "input");
+    static streamEvent => streamEvent.Type == "turn.paused");
 int authorizationCompletedIndex = authorizationEvents.FindIndex(
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.AuthorizationCompleted);
+    static streamEvent => streamEvent.Type == "interaction.settled");
 int finalWaitingIndex = authorizationEvents.FindLastIndex(
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.SessionWaiting);
+    static streamEvent => IsSettlement(streamEvent, "turn.settled", "completed"));
 if (!authorizationCallbackSent
     || authorizationRequiredIndex < 0
     || interimWaitingIndex <= authorizationRequiredIndex
@@ -453,12 +457,12 @@ if (!authorizationCallbackSent
 
 EveStreamEvent authorizationCompleted = authorizationEvents[authorizationCompletedIndex];
 if (!string.Equals(
-        authorizationCompleted.Data.GetProperty("name").GetString(),
-        "callback-auth",
+        authorizationCompleted.Data.GetProperty("interactionId").GetString(),
+        authorizationEvents[authorizationRequiredIndex].Data.GetProperty("interactionId").GetString(),
         StringComparison.Ordinal)
     || !string.Equals(
         authorizationCompleted.Data.GetProperty("outcome").GetString(),
-        "authorized",
+        "accepted",
         StringComparison.Ordinal))
 {
     throw new InvalidOperationException(
@@ -466,9 +470,10 @@ if (!string.Equals(
 }
 
 EveStreamEvent? authorizationMessage = authorizationEvents.LastOrDefault(
-    static streamEvent => streamEvent.Kind == EveStreamEventKind.MessageCompleted);
+    static streamEvent => streamEvent.Type == "content.completed"
+        && streamEvent.Data.GetProperty("kind").GetString() == "text");
 if (!string.Equals(
-        authorizationMessage?.Data.GetProperty("message").GetString(),
+        authorizationMessage?.Data.GetProperty("value").GetString(),
         "CONNECTION_OK",
         StringComparison.Ordinal))
 {
@@ -476,7 +481,8 @@ if (!string.Equals(
         "The callback-authorized turn did not resume to its deterministic response.");
 }
 
-if (authorizationSession.State.StreamIndex != authorizationEvents.Count)
+if (authorizationSession.State.StreamIndex
+    != authorizationEvents[^1].Metadata?.Position?.Line + 1)
 {
     throw new InvalidOperationException(
         "The callback authorization stream did not advance through its final boundary.");
@@ -504,14 +510,24 @@ foreach (bool prewarm in new[] { false, true })
     EveMessageResponse stubResponse = await stubSession.SendAsync("REQUEST_TOOL_STUB", timeout.Token);
     EveTurnOutcome stubOutcome = await stubResponse.GetOutcomeAsync(timeout.Token);
     RequireSuccessfulResponse(stubOutcome, probeScenario);
+    // Call identities retain the server's case-sensitive protocol equality.
+#pragma warning disable NLF0016
+    HashSet<string?> stubCallIds = stubOutcome.Events
+        .Where(static streamEvent => streamEvent.Type == "call.requested"
+            && streamEvent.Data.GetProperty("capability").GetProperty("name").GetString() == "client_context_probe")
+        .Select(static streamEvent => streamEvent.Data.GetProperty("callId").GetString())
+        .ToHashSet(StringComparer.Ordinal);
+#pragma warning restore NLF0016
     EveStreamEvent[] stubResults = stubOutcome.Events
-        .Where(static streamEvent => streamEvent.Kind == EveStreamEventKind.ActionResult)
+        .Where(static streamEvent => streamEvent.Type == "call.settled")
+        .Where(streamEvent => stubCallIds.Contains(streamEvent.Data.GetProperty("callId").GetString()))
         .ToArray();
     if (stubResults.Length != 2
-        || stubResults[0].Data.GetProperty("status").GetString() != "failed"
+        || stubResults[0].Data.GetProperty("outcome").GetString() != "failed"
         || stubResults[0].Data.GetProperty("error").GetProperty("message").GetString()
             ?.Contains("STUB_TRANSIENT", StringComparison.Ordinal) != true
-        || stubResults[1].Data.GetProperty("status").GetString() != "completed")
+        || stubResults[1].Data.GetProperty("outcome").GetString() != "completed"
+        || stubResults[1].Data.GetProperty("output").GetProperty("status").GetString() != "STUB_RESULT_OK")
     {
         throw new InvalidOperationException(
             "The real server did not consume a thrown stub outcome followed by its successful response.");
@@ -535,14 +551,14 @@ probeScenario = "active turn cancellation";
 EveMessageResponse cancellationResponse = await cancellationSession.SendAsync(
     "WAIT_FOR_CANCEL",
     timeout.Token);
-List<EveStreamEventKind> cancellationEvents = [];
+List<EveStreamEvent> cancellationEvents = [];
 EveCancellationOutcome? cancellation = null;
 
 await foreach (EveStreamEvent streamEvent in cancellationResponse.WithCancellation(timeout.Token))
 {
-    cancellationEvents.Add(streamEvent.Kind);
+    cancellationEvents.Add(streamEvent);
 
-    if (cancellation is null && streamEvent.Kind == EveStreamEventKind.TurnStarted)
+    if (cancellation is null && streamEvent.Type == "turn.started")
     {
         cancellation = await cancellationResponse.CancelAsync(timeout.Token);
     }
@@ -553,8 +569,17 @@ if (cancellation?.Status != EveCancellationStatus.Accepted)
     throw new InvalidOperationException("The Eve fixture did not accept turn cancellation.");
 }
 
-if (!cancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
-    || !cancellationEvents.Contains(EveStreamEventKind.SessionWaiting))
+if (string.IsNullOrWhiteSpace(cancellation.DeliveryId))
+{
+    throw new InvalidOperationException("The cancellation omitted its control receipt.");
+}
+EveTurnOutcome cancellationApplied = await cancellationSession.GetDeliveryOutcomeAsync(
+    cancellation.DeliveryId,
+    timeout.Token);
+RequireDeliverySettlement(cancellationApplied.Events, cancellation.DeliveryId, "applied");
+
+if (!cancellationEvents.Any(static streamEvent => IsSettlement(streamEvent, "turn.settled", "cancelled"))
+    || !cancellationEvents.Any(static streamEvent => streamEvent.Type == "delivery.settled"))
 {
     throw new InvalidOperationException(
         "The cancelled turn did not settle with turn.cancelled and session.waiting. " +
@@ -585,7 +610,9 @@ try
         timeout.Token))
     {
         catchUpEvents.Add(streamEvent);
-        if (catchUpReader.State.StreamIndex != catchUpEvents.Count)
+        if (streamEvent.Metadata?.Position is not EveStreamPosition position
+            || catchUpReader.State.StreamIndex != position.Line + (streamEvent.Metadata.EndOfLine == true ? 1 : 0)
+            || catchUpReader.State.StreamEventIndex != (streamEvent.Metadata.EndOfLine == true ? 0 : position.Index + 1))
         {
             throw new InvalidOperationException(
                 "The bounded catch-up read did not expose its consumed cursor before yielding " +
@@ -667,14 +694,16 @@ if (!int.TryParse(
         $"The Eve fixture reported an invalid tail index: '{observedTailIndex}'.");
 }
 
-if (catchUpEvents.Count != tailIndex + 1)
+if (catchUpEvents.Select(static streamEvent => streamEvent.Metadata?.Position?.Line).Distinct().Count()
+    != tailIndex + 1)
 {
     throw new InvalidOperationException(
         $"The bounded catch-up read returned {catchUpEvents.Count} events " +
         $"for tail index {tailIndex}.");
 }
 
-if (catchUpReader.State.StreamIndex != catchUpEvents.Count)
+if (catchUpReader.State.StreamIndex != tailIndex + 1
+    || catchUpReader.State.StreamEventIndex != 0)
 {
     throw new InvalidOperationException(
         "The bounded catch-up read did not advance the session cursor: " +
@@ -692,19 +721,20 @@ if (approvalOutcome.Status != EveTurnStatus.Waiting)
     throw new InvalidOperationException(
         $"The approval turn did not park for human input: status={approvalOutcome.Status}.");
 }
+RequireDeliverySettlement(approvalOutcome.Events, approvalResponse.DeliveryId, "awaiting-input");
 
 int approvalInputIndex = approvalOutcome.Events
     .ToList()
     .FindIndex(static streamEvent =>
-        streamEvent.Kind == EveStreamEventKind.ActionInputAppended
-        && streamEvent.Data.TryGetProperty("inputTextDelta", out var delta)
+        streamEvent.Type == "call.input"
+        && streamEvent.Data.TryGetProperty("delta", out var delta)
         && string.Equals(
             delta.GetString(),
             """{"reason":"compatibility"}""",
             StringComparison.Ordinal));
 int approvalRequestIndex = approvalOutcome.Events
     .ToList()
-    .FindIndex(static streamEvent => streamEvent.Kind == EveStreamEventKind.InputRequested);
+    .FindIndex(static streamEvent => streamEvent.Type == "interaction.opened");
 if (approvalInputIndex < 0 || approvalRequestIndex <= approvalInputIndex)
 {
     throw new InvalidOperationException(
@@ -713,98 +743,83 @@ if (approvalInputIndex < 0 || approvalRequestIndex <= approvalInputIndex)
 }
 
 EveStreamEvent approvalInput = approvalOutcome.Events[approvalInputIndex];
-if (!string.Equals(
-        approvalInput.Data.GetProperty("callId").GetString(),
-        "call_approval",
-        StringComparison.Ordinal)
-    || approvalInput.Data.TryGetProperty("inputTextOffset", out _)
-    || !string.Equals(
-        approvalInput.Data.GetProperty("toolName").GetString(),
-        "request_approval",
-        StringComparison.Ordinal)
-    || string.IsNullOrWhiteSpace(approvalInput.Data.GetProperty("turnId").GetString())
-    || !approvalInput.Data.GetProperty("sequence").TryGetInt32(out _)
-    || !approvalInput.Data.GetProperty("stepIndex").TryGetInt32(out _))
+if (!approvalOutcome.Events.Any(streamEvent => streamEvent.Type == "call.requested"
+        && streamEvent.Data.GetProperty("callId").GetString() == approvalInput.Data.GetProperty("callId").GetString()
+        && streamEvent.Data.GetProperty("capability").GetProperty("name").GetString() == "request_approval"))
 {
     throw new InvalidOperationException(
-        "The streamed approval input did not retain its protocol-v26 delta coordinates.");
+        "The streamed approval input did not retain its protocol-v27 call coordinates.");
 }
 
-if (approvalOutcome.InputRequests.Count != 1
-    || approvalOutcome.PendingInputRequests.Count != 1
-    || approvalOutcome.Events[^1].Kind != EveStreamEventKind.TurnWaiting
-    || approvalOutcome.Events[^1].Data.GetProperty("on").GetString() != "input")
+if (approvalOutcome.Interactions.Count != 1
+    || approvalOutcome.PendingInteractions.Count != 1
+    || !approvalOutcome.Events.Any(static streamEvent => streamEvent.Type == "turn.paused"))
 {
     throw new InvalidOperationException(
-        $"The approval turn emitted {approvalOutcome.InputRequests.Count} input requests.");
+        $"The approval turn emitted {approvalOutcome.Interactions.Count} interactions.");
 }
 
-EveInputRequest approvalRequest = approvalOutcome.InputRequests[0];
+EveInteraction approvalRequest = approvalOutcome.Interactions[0];
 
-if (approvalRequest.RawKind != "tool-approval"
-    || approvalRequest.Kind != EveInputRequestKind.ToolApproval)
+if (approvalRequest.Request.GetProperty("kind").GetString() != "approval")
 {
     throw new InvalidOperationException(
         $"eve {EveProtocol.ReferenceEveVersion} reported input request kind " +
-        $"'{approvalRequest.RawKind ?? "<absent>"}' projected as {approvalRequest.Kind}.");
+        $"'{approvalRequest.Kind}'.");
 }
 
-if (approvalRequest.Options.Count == 0)
+if (approvalRequest.Request.GetProperty("options").GetArrayLength() == 0)
 {
     throw new InvalidOperationException(
         "The approval request did not offer any selectable options.");
 }
 
 EveMessageResponse resumedResponse = await approvalSession.RespondAsync(
-    [new EveInputResponse(approvalRequest.RequestId, "approve")],
+    [new EveInputResponse(approvalRequest.InteractionId, "approve")],
     timeout.Token);
 EveTurnOutcome resumedOutcome = await resumedResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resumedOutcome, "approved tool turn");
-if (resumedOutcome.PendingInputRequests.Count != 0
-    || resumedOutcome.Events.Any(static streamEvent => streamEvent.Kind == EveStreamEventKind.TurnCancelled))
+if (resumedOutcome.PendingInteractions.Count != 0
+    || resumedOutcome.Events.Any(static streamEvent => IsSettlement(streamEvent, "turn.settled", "cancelled")))
 {
     throw new InvalidOperationException("The approved tool turn did not resume without pending input.");
 }
-if (resumedOutcome.InputResolutions.Count != 1)
+if (resumedOutcome.InteractionResolutions.Count != 1)
 {
     throw new InvalidOperationException(
-        $"The approved tool turn emitted {resumedOutcome.InputResolutions.Count} " +
+        $"The approved tool turn emitted {resumedOutcome.InteractionResolutions.Count} " +
         "input resolutions.");
 }
 
-EveInputResolution approvalResolution = resumedOutcome.InputResolutions[0];
-EveInputResponse? acceptedApprovalResponse = approvalResolution.Response;
-if (approvalResolution.RequestId != approvalRequest.RequestId
-    || approvalResolution.RawKind != "tool-approval"
-    || approvalResolution.Kind != EveInputRequestKind.ToolApproval
-    || approvalResolution.RawOutcome != "approved"
-    || approvalResolution.Outcome != EveInputResolutionOutcome.Approved
-    || acceptedApprovalResponse?.RequestId != approvalRequest.RequestId
-    || acceptedApprovalResponse.OptionId != "approve")
+EveStreamEvent approvalResolution = resumedOutcome.Events.Single(
+    static streamEvent => streamEvent.Type == "interaction.settled");
+if (approvalResolution.Data.GetProperty("interactionId").GetString() != approvalRequest.InteractionId
+    || approvalResolution.Data.GetProperty("outcome").GetString() != "accepted"
+    || approvalResolution.Data.GetProperty("response").GetProperty("optionId").GetString() != "approve")
 {
     throw new InvalidOperationException(
         "The approved tool turn did not project its authoritative input resolution.");
 }
 
 int resolutionIndex = -1;
-int resumedStepIndex = -1;
+int resumedModelIndex = -1;
 for (int eventIndex = 0; eventIndex < resumedOutcome.Events.Count; eventIndex++)
 {
-    switch (resumedOutcome.Events[eventIndex].Kind)
+    switch (resumedOutcome.Events[eventIndex].Type)
     {
-        case EveStreamEventKind.InputResolved:
+        case "interaction.settled":
             resolutionIndex = eventIndex;
             break;
-        case EveStreamEventKind.StepStarted when resumedStepIndex < 0:
-            resumedStepIndex = eventIndex;
+        case "model.requested" when resumedModelIndex < 0:
+            resumedModelIndex = eventIndex;
             break;
     }
 }
 
-if (resolutionIndex < 0 || resumedStepIndex <= resolutionIndex)
+if (resolutionIndex < 0 || resumedModelIndex <= resolutionIndex)
 {
     throw new InvalidOperationException(
-        "The durable input resolution did not precede the resumed step.");
+        "The durable input resolution did not precede the resumed model request.");
 }
 
 EveSession cancelledApprovalSession = client.CreateSession();
@@ -815,29 +830,29 @@ EveMessageResponse cancelledApprovalResponse = await cancelledApprovalSession.Se
 EveTurnOutcome cancelledApprovalHeld =
     await cancelledApprovalResponse.GetOutcomeAsync(timeout.Token);
 if (cancelledApprovalHeld.Status != EveTurnStatus.Waiting
-    || cancelledApprovalHeld.PendingInputRequests.Count != 1
-    || cancelledApprovalHeld.Events[^1].Kind != EveStreamEventKind.TurnWaiting)
+    || cancelledApprovalHeld.PendingInteractions.Count != 1
+    || !cancelledApprovalHeld.Events.Any(static streamEvent => streamEvent.Type == "turn.paused"))
 {
     throw new InvalidOperationException("The cancellation probe did not hold an approval request.");
 }
 
 EveCancellationOutcome cancelledApproval =
     await cancelledApprovalResponse.CancelAsync(timeout.Token);
-List<EveStreamEvent> cancelledApprovalEvents = [];
-await foreach (EveStreamEvent streamEvent in cancelledApprovalSession.StreamAsync(timeout.Token))
+if (string.IsNullOrWhiteSpace(cancelledApproval.DeliveryId))
 {
-    cancelledApprovalEvents.Add(streamEvent);
-    if (streamEvent.Kind == EveStreamEventKind.SessionWaiting)
-    {
-        break;
-    }
+    throw new InvalidOperationException("The held cancellation omitted its control receipt.");
 }
+EveTurnOutcome cancelledApprovalApplied = await cancelledApprovalSession.GetDeliveryOutcomeAsync(
+    cancelledApproval.DeliveryId,
+    timeout.Token);
+IReadOnlyList<EveStreamEvent> cancelledApprovalEvents = cancelledApprovalApplied.Events;
+RequireDeliverySettlement(cancelledApprovalEvents, cancelledApproval.DeliveryId, "applied");
 
 if (cancelledApproval.Status != EveCancellationStatus.Accepted
     || !cancelledApprovalEvents.Any(static streamEvent =>
-        streamEvent.Kind == EveStreamEventKind.TurnCancelled)
+        IsSettlement(streamEvent, "turn.settled", "cancelled"))
     || cancelledApprovalEvents.Any(static streamEvent =>
-        streamEvent.Kind == EveStreamEventKind.MessageCompleted))
+        streamEvent.Type == "content.completed" && streamEvent.Data.GetProperty("kind").GetString() == "text"))
 {
     throw new InvalidOperationException("Cancelling the held input turn did not settle without executing it.");
 }
@@ -849,35 +864,44 @@ EveMessageResponse resumedCancellationRequest = await resumedCancellationSession
     timeout.Token);
 EveTurnOutcome resumedCancellationHeld =
     await resumedCancellationRequest.GetOutcomeAsync(timeout.Token);
-if (resumedCancellationHeld.PendingInputRequests.Count != 1)
+if (resumedCancellationHeld.PendingInteractions.Count != 1)
 {
     throw new InvalidOperationException("The resumed cancellation probe did not hold one input request.");
 }
 
 EveMessageResponse resumedCancellationResponse = await resumedCancellationSession.RespondAsync(
-    [new EveInputResponse(resumedCancellationHeld.PendingInputRequests[0].RequestId, "approve")],
+    [new EveInputResponse(resumedCancellationHeld.PendingInteractions[0].InteractionId, "approve")],
     timeout.Token);
 EveCancellationOutcome? resumedCancellation = null;
-List<EveStreamEventKind> resumedCancellationEvents = [];
+List<EveStreamEvent> resumedCancellationEvents = [];
 await foreach (EveStreamEvent streamEvent in
     resumedCancellationResponse.WithCancellation(timeout.Token))
 {
-    resumedCancellationEvents.Add(streamEvent.Kind);
-    if (resumedCancellation is null && streamEvent.Kind == EveStreamEventKind.InputResolved)
+    resumedCancellationEvents.Add(streamEvent);
+    if (resumedCancellation is null && streamEvent.Type == "interaction.settled")
     {
         resumedCancellation = await resumedCancellationResponse.CancelAsync(timeout.Token);
     }
 }
 
 if (resumedCancellation?.Status != EveCancellationStatus.Accepted
-    || resumedCancellationEvents.Contains(EveStreamEventKind.TurnStarted)
-    || !resumedCancellationEvents.Contains(EveStreamEventKind.TurnCancelled)
-    || !resumedCancellationEvents.Contains(EveStreamEventKind.SessionWaiting))
+    || resumedCancellationEvents.Any(static streamEvent => streamEvent.Type == "turn.started")
+    || !resumedCancellationEvents.Any(static streamEvent => IsSettlement(streamEvent, "turn.settled", "cancelled"))
+    || !resumedCancellationEvents.Any(static streamEvent => streamEvent.Type == "delivery.settled"))
 {
     throw new InvalidOperationException(
         "The answered input did not support guarded cancellation of its resumed turn. " +
         $"Observed: {string.Join(", ", resumedCancellationEvents)}.");
 }
+
+if (string.IsNullOrWhiteSpace(resumedCancellation.DeliveryId))
+{
+    throw new InvalidOperationException("The resumed cancellation omitted its control receipt.");
+}
+EveTurnOutcome resumedCancellationApplied = await resumedCancellationSession.GetDeliveryOutcomeAsync(
+    resumedCancellation.DeliveryId,
+    timeout.Token);
+RequireDeliverySettlement(resumedCancellationApplied.Events, resumedCancellation.DeliveryId, "applied");
 
 EveSession resetSession = client.CreateSession();
 probeScenario = "reset";
@@ -894,22 +918,27 @@ if (!string.Equals(resetSession.State.SessionId, resetSessionId, StringCompariso
 EveTurnOutcome resetOutcome = await resetResponse.GetOutcomeAsync(timeout.Token);
 RequireSuccessfulResponse(resetOutcome, "reset turn");
 
+EveSessionState stateBeforeReset = resetSession.State;
 EveResetOutcome reset = await resetSession.ResetAsync(timeout.Token);
-if (reset.Status != EveResetStatus.Reset
-    || !string.Equals(reset.PreviousSessionId, resetSessionId, StringComparison.Ordinal))
+if (reset.Status != EveResetStatus.Accepted
+    || reset.SessionId != resetSessionId
+    || string.IsNullOrWhiteSpace(reset.DeliveryId))
 {
     throw new InvalidOperationException(
         $"The Eve fixture did not retire the session: status={reset.Status}, " +
         $"previousSessionId={reset.PreviousSessionId}, expected={resetSessionId}.");
 }
 
-if (resetSession.State != new EveSessionState
-{
-    SessionId = resetSessionId,
-    StreamIndex = resetOutcome.Events.Count,
-})
+if (resetSession.State != stateBeforeReset)
 {
     throw new InvalidOperationException("Reset did not retain the local session state.");
+}
+
+EveTurnOutcome resetApplied = await resetSession.GetDeliveryOutcomeAsync(reset.DeliveryId, timeout.Token);
+RequireDeliverySettlement(resetApplied.Events, reset.DeliveryId, "applied");
+if (!resetApplied.Events.Any(static streamEvent => streamEvent.Type == "session.ended"))
+{
+    throw new InvalidOperationException("The accepted reset did not retire the real session.");
 }
 
 // A reset handle keeps its identifier instead of recycling, so reusing it must be refused by
@@ -962,18 +991,43 @@ RequireSuccessfulResponse(afterResetOutcome, "post-reset turn");
 probeScenario = "clear and compaction";
 EveCompactOutcome compact = await afterResetSession.CompactAsync(timeout.Token);
 if (compact.Status != EveCompactStatus.Accepted
-    || compact.SessionId != afterResetResponse.SessionId)
+    || compact.SessionId != afterResetResponse.SessionId
+    || string.IsNullOrWhiteSpace(compact.DeliveryId))
 {
     throw new InvalidOperationException("The Eve fixture did not accept compaction for the active session.");
+}
+
+EveTurnOutcome compactApplied = await afterResetSession.GetDeliveryOutcomeAsync(compact.DeliveryId, timeout.Token);
+RequireDeliverySettlement(compactApplied.Events, compact.DeliveryId, "applied");
+if (!compactApplied.Events.Any(static streamEvent =>
+    IsSettlement(streamEvent, "context.settled", "completed")
+    && streamEvent.Data.GetProperty("kind").GetString() == "compaction"))
+{
+    throw new InvalidOperationException("The accepted compaction did not complete its real context change.");
 }
 
 EveClearOutcome clear = await afterResetSession.ClearAsync(timeout.Token);
 if (clear.Status != EveClearStatus.Accepted
     || clear.SessionId != afterResetResponse.SessionId
-    || afterResetSession.State.SessionId != afterResetResponse.SessionId)
+    || afterResetSession.State.SessionId != afterResetResponse.SessionId
+    || string.IsNullOrWhiteSpace(clear.DeliveryId))
 {
     throw new InvalidOperationException("The Eve fixture did not clear context without retiring the session.");
 }
+
+EveTurnOutcome clearApplied = await afterResetSession.GetDeliveryOutcomeAsync(clear.DeliveryId, timeout.Token);
+RequireDeliverySettlement(clearApplied.Events, clear.DeliveryId, "applied");
+if (!clearApplied.Events.Any(static streamEvent =>
+    IsSettlement(streamEvent, "context.settled", "completed")
+    && streamEvent.Data.GetProperty("kind").GetString() == "clear"
+    && streamEvent.Data.GetProperty("selects").ValueKind == JsonValueKind.Null))
+{
+    throw new InvalidOperationException("The accepted clear did not empty its real context.");
+}
+EveMessageResponse afterClearResponse = await afterResetSession.SendAsync(
+    "Return the deterministic compatibility response.",
+    timeout.Token);
+RequireSuccessfulResponse(await afterClearResponse.GetOutcomeAsync(timeout.Token), "post-clear turn");
 
 return 0;
 
@@ -982,7 +1036,7 @@ static void RequireSuccessfulResponse(
     string operation,
     string expectedMessage = "CONNECTION_OK")
 {
-    if (outcome.Status != EveTurnStatus.Waiting
+    if (outcome.Status != EveTurnStatus.Completed
         || !string.Equals(outcome.Message, expectedMessage, StringComparison.Ordinal))
     {
         EveStreamEvent? failure = outcome.Events.LastOrDefault(static streamEvent =>
@@ -999,11 +1053,17 @@ static void RequireSuccessfulResponse(
     {
         throw new InvalidOperationException($"The {operation} did not stream events.");
     }
+
+    RequireDeliverySettlement(outcome.Events, null, "handled");
+    if (!outcome.Events.Any(static streamEvent => IsSettlement(streamEvent, "turn.settled", "completed")))
+    {
+        throw new InvalidOperationException($"The {operation} did not complete its real turn.");
+    }
 }
 
 static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation)
 {
-    EveStreamEventDeduplicator deduplicator = new();
+    HashSet<EveStreamPosition> positions = [];
     int admitted = 0;
 
     foreach (EveStreamEvent streamEvent in outcome.Events)
@@ -1020,15 +1080,19 @@ static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation
                 $"The {operation} produced '{streamEvent.Type}' without a durable timestamp.");
         }
 
-        if (metadata.Id is not string identifier || !IsEventIdentifier(identifier))
+        if (metadata.Position is not EveStreamPosition position
+            || position.Line < 0
+            || position.Index < 0
+            || metadata.EndOfLine is null
+            || metadata.Id is not null
+            || metadata.DeliveryIds is not null)
         {
             throw new InvalidOperationException(
-                $"The {operation} produced '{streamEvent.Type}' with durable identifier " +
-                $"'{metadata.Id ?? "<absent>"}', which is not an eve stream protocol " +
-                $"{EveProtocol.MessageStreamVersion} event id.");
+                $"The {operation} produced '{streamEvent.Type}' without v27 source coordinates " +
+                "or with obsolete event identity metadata.");
         }
 
-        if (deduplicator.Admit(streamEvent))
+        if (positions.Add(position))
         {
             admitted++;
         }
@@ -1041,34 +1105,30 @@ static void RequireDurableEventEnvelope(EveTurnOutcome outcome, string operation
             $"{outcome.Events.Count} events.");
     }
 
-    if (deduplicator.Count != outcome.Events.Count)
+    if (positions.Count != outcome.Events.Count)
     {
         throw new InvalidOperationException(
-            $"The {operation} remembered {deduplicator.Count} identifiers for " +
+            $"The {operation} remembered {positions.Count} coordinates for " +
             $"{outcome.Events.Count} events.");
     }
 }
 
-// Mirrors the upstream shape check: the 'evt_' prefix followed by a Crockford base32 ULID.
-static bool IsEventIdentifier(string value)
+static bool IsSettlement(EveStreamEvent streamEvent, string type, string outcome)
 {
-    const string prefix = "evt_";
-    const int ulidLength = 26;
-    const string crockfordAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    return streamEvent.Type == type
+        && streamEvent.Data.GetProperty("outcome").GetString() == outcome;
+}
 
-    if (!value.StartsWith(prefix, StringComparison.Ordinal)
-        || value.Length != prefix.Length + ulidLength)
+static void RequireDeliverySettlement(
+    IReadOnlyList<EveStreamEvent> events,
+    string? deliveryId,
+    string outcome)
+{
+    if (!events.Any(streamEvent => IsSettlement(streamEvent, "delivery.settled", outcome)
+            && (deliveryId is null || streamEvent.Data.GetProperty("deliveryId").GetString() == deliveryId))
+        || events[^1].Metadata?.EndOfLine != true)
     {
-        return false;
+        throw new InvalidOperationException(
+            $"The real delivery '{deliveryId}' did not settle '{outcome}' through its complete commit.");
     }
-
-    foreach (char character in value.AsSpan(prefix.Length))
-    {
-        if (!crockfordAlphabet.Contains(character, StringComparison.Ordinal))
-        {
-            return false;
-        }
-    }
-
-    return true;
 }

@@ -205,7 +205,7 @@ public sealed class EveInputResolutionTests
                 Encoding.UTF8,
                 EveProtocol.MessageStreamContentType),
         };
-        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, EveProtocol.MessageStreamVersion);
+        response.Headers.TryAddWithoutValidation(EveProtocol.StreamVersionHeaderName, "26");
         return response;
     }
 
