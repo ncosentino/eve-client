@@ -498,6 +498,12 @@ public sealed class EveSession
         }
 
         int startIndex = options?.StartIndex ?? initialState.StreamIndex;
+        int startEventIndex = options?.StartEventIndex
+            ?? (options?.StartIndex is null ? initialState.StreamEventIndex : 0);
+        if (startEventIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "A record offset cannot be negative.");
+        }
         bool follow = options?.Follow ?? true;
         if (!follow && startIndex < 0)
         {
@@ -511,6 +517,7 @@ public sealed class EveSession
         return StreamAndAdvanceAsync(
             initialState,
             startIndex,
+            startEventIndex,
             follow,
             options?.ReconnectPolicy,
             cancellationToken);
@@ -800,89 +807,87 @@ public sealed class EveSession
         using CancellationTokenSource linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
             sendCancellationToken,
             streamCancellationToken);
-        int eventCount = 0;
-
-        try
+        bool sameSession = string.Equals(
+            initialState.SessionId, acceptedTurn.SessionId, StringComparison.Ordinal);
+        EveSessionState cursorState = initialState with
         {
-            int startIndex = string.Equals(
-                initialState.SessionId,
-                acceptedTurn.SessionId,
-                StringComparison.Ordinal)
-                ? initialState.StreamIndex
-                : 0;
-            await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
-                _client,
-                acceptedTurn.SessionId,
-                startIndex,
-                true,
-                EveStreamFollowMode.ActiveTurnResponse,
-                options?.Headers,
-                options?.ProtectedHeaderOverrides,
-                options?.StreamReconnectPolicy,
-                _client.MaxStreamEventBytes,
-                linkedSource.Token))
+            SessionId = acceptedTurn.SessionId,
+            StreamIndex = sameSession ? initialState.StreamIndex : 0,
+            StreamEventIndex = sameSession ? initialState.StreamEventIndex : 0,
+        };
+        await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
+            _client,
+            acceptedTurn.SessionId,
+            cursorState.StreamIndex,
+            true,
+            EveStreamFollowMode.ActiveTurnResponse,
+            options?.Headers,
+            options?.ProtectedHeaderOverrides,
+            options?.StreamReconnectPolicy,
+            _client.MaxStreamEventBytes,
+            linkedSource.Token,
+            initialEventIndex: cursorState.StreamEventIndex,
+            onSourcePosition: position =>
             {
-                eventCount++;
-                yield return streamEvent;
-            }
-        }
-        finally
+                cursorState = cursorState with
+                {
+                    StreamIndex = position,
+                    StreamEventIndex = 0,
+                    StreamVersion = 27,
+                };
+                MergeState(cursorState);
+            }))
         {
-            MergeState(AdvanceState(
-                initialState,
-                acceptedTurn.SessionId,
-                eventCount));
+            cursorState = AdvanceState(cursorState, acceptedTurn.SessionId, streamEvent);
+            MergeState(cursorState);
+            yield return streamEvent;
         }
     }
 
     private async IAsyncEnumerable<EveStreamEvent> StreamAndAdvanceAsync(
         EveSessionState initialState,
         int startIndex,
+        int startEventIndex,
         bool follow,
         EveStreamReconnectPolicy? reconnectPolicy,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        int eventCount = 0;
         EveSessionState cursorState = initialState with
         {
             StreamIndex = startIndex,
+            StreamEventIndex = startEventIndex,
         };
 
-        try
-        {
-            await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
-                _client,
-                initialState.SessionId!,
-                startIndex,
-                follow,
-                EveStreamFollowMode.SessionStream,
-                null,
-                null,
-                reconnectPolicy,
-                _client.MaxStreamEventBytes,
-                cancellationToken))
+        await foreach (EveStreamEvent streamEvent in EveStreamFollower.FollowAsync(
+            _client,
+            initialState.SessionId!,
+            startIndex,
+            follow,
+            EveStreamFollowMode.SessionStream,
+            null,
+            null,
+            reconnectPolicy,
+            _client.MaxStreamEventBytes,
+            cancellationToken,
+            initialEventIndex: startEventIndex,
+            onSourcePosition: position =>
             {
-                eventCount++;
-                if (startIndex >= 0)
+                cursorState = cursorState with
                 {
-                    MergeState(AdvanceState(
-                        cursorState,
-                        initialState.SessionId!,
-                        eventCount));
-                }
-
-                yield return streamEvent;
-            }
-        }
-        finally
+                    StreamIndex = position,
+                    StreamEventIndex = 0,
+                    StreamVersion = 27,
+                };
+                MergeState(cursorState);
+            }))
         {
-            if (startIndex >= 0)
+            cursorState = AdvanceState(cursorState, initialState.SessionId!, streamEvent);
+            if (startIndex >= 0 || streamEvent.StreamVersion == 27)
             {
-                MergeState(AdvanceState(
-                    cursorState,
-                    initialState.SessionId!,
-                    eventCount));
+                MergeState(cursorState);
             }
+
+            yield return streamEvent;
         }
     }
 
@@ -1079,12 +1084,20 @@ public sealed class EveSession
                     candidate.SessionId,
                     StringComparison.Ordinal))
             {
-                if (candidate.StreamIndex > _state.StreamIndex)
+                if (candidate.StreamIndex > _state.StreamIndex
+                    || (candidate.StreamIndex == _state.StreamIndex
+                        && candidate.StreamEventIndex > _state.StreamEventIndex))
                 {
                     _state = _state with
                     {
                         StreamIndex = candidate.StreamIndex,
+                        StreamEventIndex = candidate.StreamEventIndex,
+                        StreamVersion = candidate.StreamVersion,
                     };
+                }
+                else if (_state.StreamVersion is null && candidate.StreamVersion is not null)
+                {
+                    _state = _state with { StreamVersion = candidate.StreamVersion };
                 }
 
                 return;
@@ -1094,17 +1107,31 @@ public sealed class EveSession
         }
     }
 
-    // eve 0.31.0 made the session handle fixed: no boundary event recycles the identifier and
-    // no continuation token is carried, so advancing is purely a cursor addition.
     private static EveSessionState AdvanceState(
         EveSessionState initialState,
         string sessionId,
-        int eventCount) =>
-        initialState with
+        EveStreamEvent streamEvent)
+    {
+        if (streamEvent.Metadata?.Position is EveStreamPosition position)
+        {
+            bool endOfLine = streamEvent.Metadata.EndOfLine == true;
+            return initialState with
+            {
+                SessionId = sessionId,
+                StreamIndex = endOfLine ? checked(position.Line + 1) : position.Line,
+                StreamEventIndex = endOfLine ? 0 : checked(position.Index + 1),
+                StreamVersion = 27,
+            };
+        }
+
+        return initialState with
         {
             SessionId = sessionId,
-            StreamIndex = initialState.StreamIndex + eventCount,
+            StreamIndex = checked(initialState.StreamIndex + 1),
+            StreamEventIndex = 0,
+            StreamVersion = streamEvent.StreamVersion,
         };
+    }
 
     private sealed record AcceptedTurn(string SessionId, string? DeliveryId);
 }
