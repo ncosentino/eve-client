@@ -415,18 +415,20 @@ if (authorizationWebhook is not null)
 
     authorizationCallbackSent = true;
     probeScenario = "callback authorization resumed attachment";
-    bool callbackDeliverySettled = false;
+    string? authorizationTurnId = authorizationEvents.Single(
+        static streamEvent => streamEvent.Type == "turn.started").Data.GetProperty("turnId").GetString();
+    bool callbackTurnSettled = false;
     await foreach (EveStreamEvent streamEvent in authorizationSession.StreamAsync(timeout.Token))
     {
         authorizationEvents.Add(streamEvent);
         Console.Error.WriteLine($"Callback continuation event: {streamEvent.Type}.");
-        if (streamEvent.Type == "delivery.settled"
-            && streamEvent.Data.GetProperty("outcome").GetString() == "handled")
+        if (streamEvent.Type == "turn.settled"
+            && streamEvent.Data.GetProperty("turnId").GetString() == authorizationTurnId)
         {
-            callbackDeliverySettled = true;
+            callbackTurnSettled = true;
         }
 
-        if (callbackDeliverySettled && streamEvent.Metadata?.EndOfLine == true)
+        if (callbackTurnSettled && streamEvent.Metadata?.EndOfLine == true)
         {
             break;
         }
