@@ -22,7 +22,7 @@ Author: Nick Cosentino (https://www.devleader.ca).
 ## API Reference
 
 - [Overview](https://www.devleader.ca/projects/eve-client/api/) -- Browse development, stable, and versioned NexusLabs.Eve API documentation.
-- [Development](https://www.devleader.ca/projects/eve-client/api/dev/) -- A C# client for the Vercel eve HTTP API.
+- [Development](https://www.devleader.ca/projects/eve-client/api/dev/)
 - [Stable](https://www.devleader.ca/projects/eve-client/api/stable/) -- Browse the latest stable NexusLabs.Eve API reference.
 
 ## Operations

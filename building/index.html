@@ -1314,6 +1314,21 @@
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pwsh<span class="w"> </span>scripts/generate-api-docs.ps1<span class="w"> </span>-OutputDirectory<span class="w"> </span>docs/api/dev
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>python<span class="w"> </span>-m<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
 </code></pre></div>
+<p>API browser and social titles include the qualified type or namespace and the
+development, stable, or immutable version context. The metadata hook leaves
+visible headings and navigation labels unchanged.</p>
+<p>The hosted <code>Documentation titles</code> workflow renders focused fixtures and previews
+every published stable/archive page without writing to the archive. It also
+demonstrates the regression with the metadata hook disabled.</p>
+<p>For already-published API pages, dispatch that workflow on <code>main</code> with
+<code>refresh_published_titles=true</code>. It validates the complete archive before changing
+only browser, Open Graph, and Twitter title values, retains an outside-site
+receipt, commits to <code>gh-pages</code> without force pushing, and updates GitHub Pages.
+Repeat dispatches are safe. Historical API content is never regenerated.</p>
+<p>After successful maintenance, dispatch the existing <code>Documentation Deployment</code>
+workflow to update the canonical Cloudflare mirror. Its existing enable flag,
+environment, credentials, and 20-version retention policy remain unchanged.
+All publication workflows share the non-cancelling <code>pages</code> lock.</p>
 
 
 
