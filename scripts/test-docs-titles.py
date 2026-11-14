@@ -82,7 +82,7 @@ class RenderedTitlesTests(unittest.TestCase):
             "guides/blank.md": ("Blank Description", None),
             "guides/long.md": ("Lifecycle", None),
             "api/dev/NexusLabs.Eve/Factory_T_.md": (
-                "Factory<T>", "NexusLabs.Eve.Factory_T_ (Development API)",
+                "Factory", "NexusLabs.Eve.Factory_T_ (Development API)",
             ),
         }
         for version, label in (("dev", "Development"), ("stable", "Stable"), ("v0.1.0-alpha.1", "v0.1.0-alpha.1")):
