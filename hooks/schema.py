@@ -12,7 +12,7 @@ def on_page_content(html: str, page, config, files) -> str:
         "@context": "https://schema.org",
         "@type": "SoftwareSourceCode",
         "name": config.get("site_name", ""),
-        "description": config.get("site_description", ""),
+        "description": page.meta.get("description", config.get("site_description", "")),
         "url": config.get("site_url", ""),
         "codeRepository": config.get("repo_url", ""),
         "license": f"{config.get('repo_url', '')}/blob/main/LICENSE",
@@ -27,6 +27,6 @@ def on_page_content(html: str, page, config, files) -> str:
     return (
         html
         + '<script type="application/ld+json">\n'
-        + json.dumps(schema, indent=2)
+        + json.dumps(schema, indent=2).replace("<", "\\u003c")
         + "\n</script>\n"
     )

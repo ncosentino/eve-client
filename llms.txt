@@ -17,12 +17,12 @@ Author: Nick Cosentino (https://www.devleader.ca).
 
 ## Architecture
 
-- [Source-aware cursors](https://www.devleader.ca/projects/eve-client/adr/adr-0001-source-aware-stream-cursors/)
+- [Source-aware cursors](https://www.devleader.ca/projects/eve-client/adr/adr-0001-source-aware-stream-cursors/) -- Source-aware cursors. Eve stream protocols 21–26 store one event per source line. Protocol 27 stores commits containing multiple facts, progress records, and transport records that can report skipped source coverage. Counting...
 
 ## API Reference
 
 - [Overview](https://www.devleader.ca/projects/eve-client/api/) -- Browse development, stable, and versioned NexusLabs.Eve API documentation.
-- [Development](https://www.devleader.ca/projects/eve-client/api/dev/)
+- [Development](https://www.devleader.ca/projects/eve-client/api/dev/) -- API Reference (Development). Browse the NexusLabs.Eve namespace and public types.
 - [Stable](https://www.devleader.ca/projects/eve-client/api/stable/) -- Browse the latest stable NexusLabs.Eve API reference.
 
 ## Operations
