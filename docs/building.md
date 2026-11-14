@@ -49,6 +49,15 @@ API browser and social titles include the qualified type or namespace and the
 development, stable, or immutable version context. The metadata hook leaves
 visible headings and navigation labels unchanged.
 
+Descriptions use the same API identity followed by the XML-backed introduction,
+or a guide's title and first introductory paragraph. Code, notes, tables, and
+member-only prose are not summaries; pages without introductory prose use their
+identity alone. Maintain ordinary XML comments and guide introductions rather
+than adding bespoke descriptions. Existing nonempty descriptions take precedence,
+and the homepage retains its configured description unless explicitly overridden.
+Source metadata stays plain text; HTML attributes and JSON-LD are escaped only
+when rendered. This policy applies to normal builds, not frozen archive backfills.
+
 The hosted `Documentation titles` workflow renders focused fixtures and previews
 every published stable/archive page without writing to the archive. It also
 demonstrates the regression with the metadata hook disabled.

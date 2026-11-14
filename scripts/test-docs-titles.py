@@ -20,6 +20,8 @@ spec = importlib.util.spec_from_file_location(
 )
 refresh = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(refresh)
+import schema
+import titles
 
 
 class Metadata(HTMLParser):
@@ -131,10 +133,6 @@ class RenderedTitlesTests(unittest.TestCase):
         options = {}
         if os.environ.get("EVE_TITLE_BASELINE") == "true":
             options["hooks"] = ["docs/hooks/schema.py", "docs/hooks/llms_txt.py"]
-        elif os.environ.get("EVE_DESCRIPTION_BASELINE") == "true":
-            options["hooks"] = [
-                "docs/hooks/titles.py", "docs/hooks/schema.py", "docs/hooks/llms_txt.py",
-            ]
         config = load_config(
             config_file=str(ROOT / "mkdocs.yml"),
             docs_dir=str(docs), site_dir=str(cls.site),
@@ -214,6 +212,64 @@ class RenderedTitlesTests(unittest.TestCase):
         self.assertTrue(("Lifecycle. " + self.prose["guides/long.md"].strip()).startswith(
             description.removesuffix("..."),
         ))
+
+
+class SourceMetadataTests(unittest.TestCase):
+    def page(self, description=None, homepage=False):
+        return SimpleNamespace(
+            meta={} if description is None else {"description": description},
+            file=SimpleNamespace(src_uri="index.md" if homepage else "guide.md"),
+            title="Guide",
+            is_homepage=homepage,
+        )
+
+    def test_plain_source_metadata_and_content_survive_safe_rendering(self):
+        page = self.page()
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="Project summary.")
+        content = '<p>Use <code>Factory&lt;T&gt;</code> &amp; "quoted" inputs.</p>'
+        self.assertEqual(titles.on_page_content(content, page, config, None), content)
+        description = 'Guide. Use Factory<T> & "quoted" inputs.'
+        self.assertEqual(page.meta["description"], description)
+        context = titles.on_page_context({"page": page}, page, config, None)
+        self.assertIsNot(context["page"], page)
+        self.assertIn("&lt;T&gt;", str(context["page"].meta["description"]))
+        self.assertEqual(page.meta["description"], description)
+        self.assertEqual(context["page"].title, page.title)
+
+    def test_homepage_override_and_json_ld_are_plain_and_script_safe(self):
+        description = 'Explicit </script><script>alert("x")</script> & summary.'
+        page = self.page(description, homepage=True)
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="Project summary.")
+        titles.on_page_content("<p>Do not select this.</p>", page, config, None)
+        self.assertEqual(page.meta["description"], description)
+        html = schema.on_page_content("<p>Content</p>", page, vars(config), None)
+        payload = html.split('<script type="application/ld+json">\n', 1)[1].split(
+            "\n</script>", 1,
+        )[0]
+        self.assertNotIn("<", payload)
+        self.assertEqual(json.loads(payload)["description"], description)
+        self.assertEqual(html.count("</script>"), 1)
+
+    def test_non_string_override_is_rejected(self):
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="")
+        for value in (False, 42, ["summary"]):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                titles.on_page_content("<p>Introduction.</p>", self.page(value), config, None)
+
+    def test_missing_guide_prose_and_api_member_prose_use_identity_only(self):
+        for source, content, expected in (
+            ("guide.md", "<pre><code>Example</code></pre>", "NexusLabs.Eve: Guide."),
+            (
+                "api/dev/NexusLabs.Eve/Event.md",
+                "<h2>Event Class</h2><h2>Members</h2><p>Member-only prose.</p>",
+                "NexusLabs.Eve: NexusLabs.Eve.Event (Development API).",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(
+                    titles.page_description(content, PurePosixPath(source), "Guide", "NexusLabs.Eve"),
+                    expected,
+                )
 
 
 class PublishedTitlesTests(unittest.TestCase):

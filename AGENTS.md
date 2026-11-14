@@ -49,6 +49,9 @@ and structured-output support without using the TypeScript SDK.
   compatibility probe under `tests/NexusLabs.Eve.CompatibilityProbe`.
 - `version.json` is the only release-version source; package versions come from NBGV.
 - MkDocs publishes development, stable, and immutable versioned API documentation.
+- Documentation descriptions are derived automatically from API identity and XML summaries,
+  or guide titles and introductory prose. Maintain those ordinary sources, not bespoke
+  page descriptions; existing nonempty overrides and homepage configuration retain precedence.
 
 ## Conventions
 
