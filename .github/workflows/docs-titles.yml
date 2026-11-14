@@ -1,0 +1,140 @@
+name: Documentation titles
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/hooks/**'
+      - 'docs/overrides/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - 'scripts/*docs-titles.py'
+      - '.github/workflows/docs*.yml'
+      - '.github/workflows/release.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/hooks/**'
+      - 'docs/overrides/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - 'scripts/*docs-titles.py'
+      - '.github/workflows/docs*.yml'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      refresh_published_titles:
+        description: Refresh stable/archive title metadata on gh-pages (main only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-titles-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  titles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - name: Install documentation dependencies
+        run: python -m pip install -r requirements-docs.txt
+      - name: Demonstrate missing metadata regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          if EVE_TITLE_BASELINE=true python scripts/test-docs-titles.py RenderedTitlesTests > title-baseline.log 2>&1; then
+            cat title-baseline.log
+            echo "Expected uncorrected API titles to fail."
+            exit 1
+          fi
+          cat title-baseline.log
+          grep -q 'AssertionError:' title-baseline.log
+      - name: Validate rendered titles and publication safeguards
+        run: python scripts/test-docs-titles.py
+      - name: Validate existing documentation scripts
+        run: python -m unittest discover -s scripts/tests -p "test_*.py"
+      - name: Checkout entire published archive for read-only validation
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: published-preview
+          persist-credentials: false
+      - name: Preview every stable/archive title
+        run: python scripts/refresh-docs-titles.py published-preview --report published-title-preview.json
+      - name: Retain bounded title refresh preview
+        uses: actions/upload-artifact@v7
+        with:
+          name: published-title-preview-${{ github.run_attempt }}
+          path: published-title-preview.json
+          retention-days: 1
+          if-no-files-found: error
+
+  refresh-published-titles:
+    needs: titles
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.refresh_published_titles &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: published
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - name: Validate and apply only historical title values
+        run: python source/scripts/refresh-docs-titles.py published --apply --report published-title-refresh.json
+      - name: Retain bounded publication receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: published-title-refresh-${{ github.run_attempt }}
+          path: published-title-refresh.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Commit refreshed metadata without overwriting newer publication
+        working-directory: published
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- api/stable ':(glob)api/v*/**/*.html'
+          if git diff --cached --quiet; then
+            echo "Published title metadata already matches."
+          else
+            status=$?
+            test "$status" -eq 1
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git -c commit.gpgsign=false commit -m "docs: refresh published API title metadata"
+            git push origin HEAD:gh-pages
+          fi
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: published
+      - uses: actions/deploy-pages@v5
+        id: deployment

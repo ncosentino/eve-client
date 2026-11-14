@@ -10,8 +10,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: eve-client-docs-production
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:

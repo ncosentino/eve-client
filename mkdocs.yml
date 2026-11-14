@@ -67,6 +67,7 @@ plugins:
   - search
 
 hooks:
+  - docs/hooks/titles.py
   - docs/hooks/schema.py
   - docs/hooks/llms_txt.py
 
