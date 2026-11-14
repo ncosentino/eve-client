@@ -2,9 +2,11 @@
 
 from html.parser import HTMLParser
 import importlib.util
+import json
 import os
 from pathlib import Path, PurePosixPath
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 from mkdocs.commands.build import build
@@ -18,6 +20,8 @@ spec = importlib.util.spec_from_file_location(
 )
 refresh = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(refresh)
+import schema
+import titles
 
 
 class Metadata(HTMLParser):
@@ -73,6 +77,13 @@ class RenderedTitlesTests(unittest.TestCase):
             "getting-started.md": ("Getting Started", None),
             "api/index.md": ("API Reference", "API Reference"),
             "api/dev/index.md": ("API Reference (Development)", "API Reference (Development)"),
+            "guides/intro.md": ("Service Registration", None),
+            "guides/override.md": ("Authored Summary", None),
+            "guides/blank.md": ("Blank Description", None),
+            "guides/long.md": ("Lifecycle", None),
+            "api/dev/NexusLabs.Eve/Factory_T_.md": (
+                "Factory", "NexusLabs.Eve.Factory_T_ (Development API)",
+            ),
         }
         for version, label in (("dev", "Development"), ("stable", "Stable"), ("v0.1.0-alpha.1", "v0.1.0-alpha.1")):
             cls.pages[f"api/{version}/NexusLabs.Eve/index.md"] = (
@@ -85,10 +96,40 @@ class RenderedTitlesTests(unittest.TestCase):
                 cls.pages[f"api/{version}/{namespace}/Event.md"] = (
                     "Event", f"{namespace}.Event ({label} API)",
                 )
+        cls.prose = {
+            "guides/intro.md": (
+                '\n> Not an introduction.\n\n![Diagram](https://example.test/image.png)\n\n'
+                'Use `Factory<T>` to register **services** &amp; configure "plugins".\n'
+                '\nThis later paragraph is not the introduction.\n'
+            ),
+            "guides/blank.md": "\nRegister application services.\n",
+            "guides/long.md": "\n" + "Register services and manage application lifetimes. " * 15,
+            "api/dev/NexusLabs.Eve/Factory_T_.md": (
+                "\n#### NexusLabs.Eve\n\n## Factory Class\n\n"
+                "```csharp\npublic class Factory<T> {}\n```\n\n"
+                "Inheritance Object. Not a summary.\n\n## Remarks\n\nNot an introduction.\n"
+            ),
+        }
+        for source in cls.pages:
+            if source.endswith("/Event.md"):
+                cls.prose[source] = (
+                    "\n#### NexusLabs.Eve\n\n### Namespace\n\n## Event Class\n\n"
+                    "Represents a consumed stream event.\n\n```csharp\nclass Event {}\n```\n"
+                )
+        cls.authored = 'Explicit "quoted" <T> & safe summary.'
         for source, (heading, _) in cls.pages.items():
             path = docs / source
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(f"# {heading}\n", encoding="utf-8")
+            frontmatter = ""
+            if source == "guides/override.md":
+                frontmatter = f"---\ndescription: '{cls.authored}'\n---\n"
+            elif source == "guides/blank.md":
+                frontmatter = "---\ndescription: '   '\n---\n"
+            path.write_text(
+                frontmatter + f"# {heading.replace('<', '&lt;').replace('>', '&gt;')}\n"
+                + cls.prose.get(source, ""),
+                encoding="utf-8",
+            )
         options = {}
         if os.environ.get("EVE_TITLE_BASELINE") == "true":
             options["hooks"] = ["docs/hooks/schema.py", "docs/hooks/llms_txt.py"]
@@ -132,6 +173,103 @@ class RenderedTitlesTests(unittest.TestCase):
                     page.navigation,
                 )
         self.assertEqual(len(titles), len(set(titles)))
+
+    def test_descriptions_derive_from_introductions_or_truthful_identity(self):
+        expected = {
+            "index.md": "A C# client for the Vercel eve HTTP API.",
+            "guides/intro.md": (
+                'Service Registration. Use Factory<T> to register services & configure "plugins".'
+            ),
+            "guides/override.md": self.authored,
+            "guides/blank.md": "Blank Description. Register application services.",
+            "api/dev/NexusLabs.Eve/Factory_T_.md": (
+                "NexusLabs.Eve: NexusLabs.Eve.Factory_T_ (Development API)."
+            ),
+        }
+        for source, (heading, title) in self.pages.items():
+            if source.endswith("/Event.md"):
+                expected[source] = f"{title}. Represents a consumed stream event."
+            elif source.startswith("api/") and source not in expected:
+                expected[source] = f"NexusLabs.Eve: {title}."
+        for source, description in expected.items():
+            with self.subTest(source=source):
+                relative = source.removesuffix(".md")
+                path = self.site / (
+                    relative + ".html" if relative.endswith("index")
+                    else relative + "/index.html"
+                )
+                page = Metadata()
+                page.feed(path.read_text(encoding="utf-8"))
+                for name in ("description", "og:description", "twitter:description"):
+                    self.assertEqual(page.meta[name], description)
+
+    def test_long_introduction_is_bounded_without_cutting_a_word(self):
+        page = Metadata()
+        page.feed((self.site / "guides/long/index.html").read_text(encoding="utf-8"))
+        description = page.meta["description"]
+        self.assertLessEqual(len(description), 240)
+        self.assertTrue(description.endswith("..."))
+        self.assertTrue(("Lifecycle. " + self.prose["guides/long.md"].strip()).startswith(
+            description.removesuffix("..."),
+        ))
+
+
+class SourceMetadataTests(unittest.TestCase):
+    def page(self, description=None, homepage=False):
+        return SimpleNamespace(
+            meta={} if description is None else {"description": description},
+            file=SimpleNamespace(src_uri="index.md" if homepage else "guide.md"),
+            title="Guide",
+            is_homepage=homepage,
+        )
+
+    def test_plain_source_metadata_and_content_survive_safe_rendering(self):
+        page = self.page()
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="Project summary.")
+        content = '<p>Use <code>Factory&lt;T&gt;</code> &amp; "quoted" inputs.</p>'
+        self.assertEqual(titles.on_page_content(content, page, config, None), content)
+        description = 'Guide. Use Factory<T> & "quoted" inputs.'
+        self.assertEqual(page.meta["description"], description)
+        context = titles.on_page_context({"page": page}, page, config, None)
+        self.assertIsNot(context["page"], page)
+        self.assertIn("&lt;T&gt;", str(context["page"].meta["description"]))
+        self.assertEqual(page.meta["description"], description)
+        self.assertEqual(context["page"].title, page.title)
+
+    def test_homepage_override_and_json_ld_are_plain_and_script_safe(self):
+        description = 'Explicit </script><script>alert("x")</script> & summary.'
+        page = self.page(description, homepage=True)
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="Project summary.")
+        titles.on_page_content("<p>Do not select this.</p>", page, config, None)
+        self.assertEqual(page.meta["description"], description)
+        html = schema.on_page_content("<p>Content</p>", page, vars(config), None)
+        payload = html.split('<script type="application/ld+json">\n', 1)[1].split(
+            "\n</script>", 1,
+        )[0]
+        self.assertNotIn("<", payload)
+        self.assertEqual(json.loads(payload)["description"], description)
+        self.assertEqual(html.count("</script>"), 1)
+
+    def test_non_string_override_is_rejected(self):
+        config = SimpleNamespace(site_name="NexusLabs.Eve", site_description="")
+        for value in (False, 42, ["summary"]):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                titles.on_page_content("<p>Introduction.</p>", self.page(value), config, None)
+
+    def test_missing_guide_prose_and_api_member_prose_use_identity_only(self):
+        for source, content, expected in (
+            ("guide.md", "<pre><code>Example</code></pre>", "NexusLabs.Eve: Guide."),
+            (
+                "api/dev/NexusLabs.Eve/Event.md",
+                "<h2>Event Class</h2><h2>Members</h2><p>Member-only prose.</p>",
+                "NexusLabs.Eve: NexusLabs.Eve.Event (Development API).",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(
+                    titles.page_description(content, PurePosixPath(source), "Guide", "NexusLabs.Eve"),
+                    expected,
+                )
 
 
 class PublishedTitlesTests(unittest.TestCase):
