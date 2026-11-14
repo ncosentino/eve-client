@@ -78,6 +78,9 @@ class RenderedTitlesTests(unittest.TestCase):
             cls.pages[f"api/{version}/NexusLabs.Eve/index.md"] = (
                 "Index", f"NexusLabs.Eve API Reference ({label})",
             )
+            cls.pages[f"api/{version}/NexusLabs.Eve/NexusLabs.Eve.md"] = (
+                "NexusLabs.Eve", f"NexusLabs.Eve Namespace ({label} API)",
+            )
             for namespace in ("NexusLabs.Eve", "NexusLabs.Eve.Models"):
                 cls.pages[f"api/{version}/{namespace}/Event.md"] = (
                     "Event", f"{namespace}.Event ({label} API)",
@@ -93,7 +96,10 @@ class RenderedTitlesTests(unittest.TestCase):
             config_file=str(ROOT / "mkdocs.yml"),
             docs_dir=str(docs), site_dir=str(cls.site),
             site_url="https://example.test/reference/",
-            nav=[{heading: source} for source, (heading, _) in cls.pages.items()],
+            nav=[
+                {"Overview" if source == "api/index.md" else heading: source}
+                for source, (heading, _) in cls.pages.items()
+            ],
             markdown_extensions=["tables"],
             **options,
         )
@@ -121,7 +127,10 @@ class RenderedTitlesTests(unittest.TestCase):
                 self.assertEqual(page.meta["twitter:title"], page.meta["og:title"])
                 if metadata:
                     titles.append(page.title.strip())
-                self.assertIn(heading, page.navigation)
+                self.assertIn(
+                    "Overview" if source == "api/index.md" else heading,
+                    page.navigation,
+                )
         self.assertEqual(len(titles), len(set(titles)))
 
 

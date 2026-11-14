@@ -18,6 +18,8 @@ def api_title(path: PurePosixPath) -> str | None:
     if path.stem == 'index':
         prefix = f'{name} ' if name else ''
         title = f'{prefix}API Reference ({version})'
+    elif path.stem == name:
+        title = f'{name} Namespace ({version} API)'
     else:
         qualified_name = '.'.join((*parts[2:-1], path.stem))
         title = f'{qualified_name} ({version} API)'
