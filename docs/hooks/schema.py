@@ -3,6 +3,11 @@
 import json
 
 
+def _schema_script(schema: dict) -> str:
+    payload = json.dumps(schema, indent=2, ensure_ascii=False).replace('<', '\\u003c')
+    return '<script type="application/ld+json">\n' + payload + '\n</script>\n'
+
+
 def on_page_content(html: str, page, config, files) -> str:
     """Append structured data using the existing plain-text page metadata."""
     if page.meta.get('api_reference_title') is not None:
@@ -14,12 +19,7 @@ def on_page_content(html: str, page, config, files) -> str:
             'url': page.canonical_url,
             'description': page.meta['description'],
         }
-        return (
-            html
-            + '<script type="application/ld+json">\n'
-            + json.dumps(schema, indent=2, ensure_ascii=False).replace('<', '\\u003c')
-            + '\n</script>\n'
-        )
+        return html + _schema_script(schema)
     if not page.is_homepage:
         return html
 
@@ -39,9 +39,4 @@ def on_page_content(html: str, page, config, files) -> str:
             "url": "https://www.devleader.ca",
         },
     }
-    return (
-        html
-        + '<script type="application/ld+json">\n'
-        + json.dumps(schema, indent=2).replace("<", "\\u003c")
-        + "\n</script>\n"
-    )
+    return html + _schema_script(schema)
