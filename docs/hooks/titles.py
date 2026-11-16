@@ -3,6 +3,7 @@
 from copy import copy
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 MAX_DESCRIPTION_LENGTH = 240
 VOID_TAGS = {
@@ -128,6 +129,13 @@ def page_description(content: str, source: PurePosixPath, title: str, site_name:
 
 
 def on_page_content(content: str, page, config, files) -> str:
+    reference = api_title(PurePosixPath(page.file.src_uri))
+    if reference is not None:
+        page.meta['api_reference_title'] = reference
+        if page.canonical_url:
+            parts = urlsplit(page.canonical_url)
+            path = '/'.join(quote(unquote(segment), safe='') for segment in parts.path.split('/'))
+            page.canonical_url = urlunsplit(parts._replace(path=path.rstrip('/')))
     authored = page.meta.get('description')
     if authored is not None and not isinstance(authored, str):
         raise ValueError(f'{page.file.src_uri}: description must be a string.')

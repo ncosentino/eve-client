@@ -1,10 +1,12 @@
 """Verify API entities in rendered documentation, not source string fragments."""
 
 from html.parser import HTMLParser
+import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import tempfile
 import unittest
+from types import SimpleNamespace
 from urllib.parse import quote
 
 from mkdocs.commands.build import build
@@ -42,6 +44,22 @@ class PageMetadata(HTMLParser):
 
 
 class ApiSchemaTests(unittest.TestCase):
+    def test_existing_encoded_canonical_and_authored_description_are_reused(self):
+        spec = importlib.util.spec_from_file_location('api_metadata', ROOT / 'docs/hooks/titles.py')
+        metadata = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(metadata)
+        canonical = 'https://www.devleader.ca/projects/eve-client/api/dev/Example/Factory_T%2C%20U_'
+        page = SimpleNamespace(
+            file=SimpleNamespace(src_uri='api/dev/Example/Factory_T, U_.md'),
+            meta={'description': 'Authored <T, U> & "summary".'},
+            canonical_url=canonical + '/', is_homepage=False, title='Factory',
+        )
+        content = '<p>Do not replace an authored summary.</p>'
+        for _ in range(2):
+            self.assertEqual(metadata.on_page_content(content, page, None, None), content)
+            self.assertEqual(page.canonical_url, canonical)
+            self.assertEqual(page.meta['description'], 'Authored <T, U> & "summary".')
+
     def test_rendered_api_entities_reuse_metadata_and_preserve_version_identity(self):
         summary = 'Registers `Factory<T, U>` with &amp; "plugins" and `</script>` inputs.'
         pages = {'index.md': '# Home\n', 'guide.md': '# Guide\n\nGuide prose.\n'}

@@ -1,10 +1,25 @@
-"""Inject SoftwareSourceCode structured data on the documentation home page."""
+"""Inject API page metadata and documentation home-page structured data."""
 
 import json
 
 
 def on_page_content(html: str, page, config, files) -> str:
-    """Append JSON-LD metadata to the home page."""
+    """Append structured data using the existing plain-text page metadata."""
+    if page.meta.get('api_reference_title') is not None:
+        schema = {
+            '@context': 'https://schema.org',
+            '@type': 'APIReference',
+            '@id': page.canonical_url,
+            'name': page.meta['api_reference_title'],
+            'url': page.canonical_url,
+            'description': page.meta['description'],
+        }
+        return (
+            html
+            + '<script type="application/ld+json">\n'
+            + json.dumps(schema, indent=2, ensure_ascii=False).replace('<', '\\u003c')
+            + '\n</script>\n'
+        )
     if not page.is_homepage:
         return html
 

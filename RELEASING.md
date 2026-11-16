@@ -51,6 +51,14 @@ Cloudflare. GitHub Pages remains the fallback and archive source.
 
 ## Prepare a release
 
+### API documentation metadata
+
+Newly built API pages emit one `APIReference` entity using their qualified
+title and existing XML-derived page description. Its `@id` and `url` match the
+public canonical URL: slashless, with each path segment URI-escaped once.
+Development builds do not rewrite stable or archived snapshots. The home-page
+project entity is unchanged.
+
 First confirm the declared compatibility baseline still describes what the
 package implements:
 
